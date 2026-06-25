@@ -28,11 +28,15 @@ class AdministradorController extends Controller
         //         ->select('id', 'username', 'first_name','last_name', 'email')
         //         ->simplePaginate(10);
         // });
-        
-        $lista_usuario = User::whereNotNull('first_name')
-        ->select('id', 'username', 'first_name','last_name', 'email')
-        ->simplePaginate(10); // 10 usuarios por página
 
+        $lista_usuario = User::whereNotNull('first_name')
+            ->select('id', 'username', 'first_name', 'last_name', 'email')
+            ->simplePaginate(50); // 10 usuarios por página
+        // $lista_usuario = User::whereNotNull('first_name')
+        //     ->select('id', 'username', 'first_name', 'last_name', 'email')
+        //     ->paginate(30); // 30 usuarios por página
+
+        //var_dump($lista_usuario);
         return view('lista_usuarios', compact('lista_usuario'));
     }
 
@@ -48,21 +52,51 @@ class AdministradorController extends Controller
         //$usuario->where('id', $permisoId)->update(['columna' => $isChecked]);
 
         //validar si cuenta con el permiso
-        $busqueda = $user_permissions->where('user_id', $idusuario)->where('permission_id', $permisoid);
+        $busqueda = $user_permissions->where('user_id', $idusuario)->where('permission_id', $permisoid)->get();
 
-        //return response()->json(['message' => $permisoid .' , '.   $idusuario]);
-        if ($busqueda == NULL) {
-            /**Se  */
-            //aqui le falta un where para el usuario_id: $user_permissions->where('permission_id', $permisoid)->delete();
-            return response()->json(['message' => $permisoid . $idusuario]);
-        } else {
-            // $user_permissions::insert([
-            //     'user_id' => $idusuario,
-            //     'permission_id' => $permisoid
-            // ]);
+        //return response()->json(['message' => $busqueda]);
+        if ($busqueda->isEmpty()) {
+            /**Si el usuario no tiene permisos le insertamos  */
+            //$user_permissions->insert();
+            $usuario_insert = array('user_id' => $idusuario, "permission_id" => $permisoid);
+            $user_permissions->insert($usuario_insert);
+
             return response()->json(['message' => 'insertado']);
+        } else {
+            //Si el usuario le encontramos permisos se lo eliminamos 
+            //aqui le falta un where para el usuario_id: 
+            $user_permissions->where('permission_id', $permisoid)->where('user_id', $idusuario)->delete();
+            return response()->json(['message' => 'eliminado']);
         }
-        return response()->json(['message' => $idusuario]);
+        //return response()->json(['message' => $idusuario]);
+    }
+
+    public function get_usuario(Request $request)
+    {
+        $nombre = $request->input('nombre');
+        $apellido = $request->input('apellido');
+        $username = $request->input('username');
+        try {
+            $lista_usuario = User::where(function ($query) use ($nombre, $apellido, $username) {
+                if (!empty($nombre)) {
+                    $query->orWhereRaw('LOWER(first_name) LIKE ?', ["%" . strtolower($nombre) . "%"]);
+                }
+
+                if (!empty($apellido)) {
+                    $query->orWhereRaw('LOWER(last_name) LIKE ?', ["%" . strtolower($apellido) . "%"]);
+                }
+
+                if (!empty($username)) {
+                    $query->orWhereRaw('LOWER(username) LIKE ?', ["%" . strtolower($username) . "%"]);
+                }
+            })
+                ->select('id', 'username', 'first_name', 'last_name', 'email')
+                ->simplePaginate(10);
+
+            return view('lista_usuarios', compact('lista_usuario'));
+        } catch (\Exception $e) {
+            dd($e->getMessage()); // Imprime el mensaje de error en la pantalla
+        }
     }
 
     /**

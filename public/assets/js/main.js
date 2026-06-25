@@ -116,3 +116,81 @@ let menu, animate;
   // Auto update menu collapsed/expanded based on the themeConfig
   window.Helpers.setCollapsed(true, false);
 })();
+
+
+
+$(document).on('click', 'a[data-ajax-popup="true"], button[data-ajax-popup="true"], div[data-ajax-popup="true"]', function () {
+
+    var title1 = $(this).data("title");
+    var title2 = $(this).data("bs-original-title");
+    var title = (title1 != undefined) ? title1 : title2;
+    var size = ($(this).data('size') == '') ? 'md' : $(this).data('size');
+    var url = $(this).data('url');
+    $("#commonModal .modal-title").html(title);
+    $("#commonModal .modal-dialog").addClass('modal-' + size);
+    $.ajax({
+        url: url,
+        success: function (data) {
+            $('#commonModal .body').html(data);
+            $("#commonModal").modal('show');
+            // daterange_set();
+            // taskCheckbox();
+            // common_bind("#commonModal");
+            // commonLoader();
+            // select2();
+
+            // if ($(".d_clock").length > 0) {
+            //     // alert('hiii')
+            //     $($(".d_clock")).each(function (index, element) {
+            //         var id = $(element).attr('id');
+
+
+            //         document.querySelector("#" + id).flatpickr({
+            //             enableTime: true,
+            //             noCalendar: true,
+            //         });
+
+            //     });
+            // }
+            // // document.querySelector("#pc-timepicker-1").flatpickr({
+            // //     enableTime: true,
+            // //     noCalendar: true,
+            // // });
+
+
+            // if ($(".d_week").length > 0) {
+            //     $($(".d_week")).each(function (index, element) {
+            //         var id = $(element).attr('id');
+
+            //         (function () {
+            //             const d_week = new Datepicker(document.querySelector('#' + id), {
+            //                 buttonClass: 'btn',
+            //                 format: 'yyyy-mm-dd',
+            //             });
+            //         })();
+
+            //     });
+            // }
+
+            // if ($(".d_filter").length > 0) {
+            //     $($(".d_filter")).each(function (index, element) {
+            //         var id = $(element).attr('id');
+
+            //         (function () {
+            //             const d_week = new Datepicker(document.querySelector('#' + id), {
+            //                 buttonClass: 'btn',
+            //                 format: 'yyyy-mm',
+            //             });
+            //         })();
+
+            //     });
+            // }
+
+        },
+        error: function (data) {
+            data = data.responseJSON;
+            show_toastr('Error', data.error, 'error')
+        }
+    });
+
+});

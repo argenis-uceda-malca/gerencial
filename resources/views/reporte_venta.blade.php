@@ -9,6 +9,7 @@
         <div class="col-xl-12">
             <div class="card mb-4">
                 <!-- Checkboxes and Radios -->
+                {{$reporte_venta}}
                 <form action="{{ route('form.submit') }}" id="myform" method="POST">
                     @csrf
                     <div class="card-body">
@@ -30,7 +31,9 @@
                             </div>
 
                             <div class="col-md">
-                                <label for="exampleFormControlSelect1" class="form-label">Seleccione las Marcas</label>
+                                <div>
+                                    <label for="exampleFormControlSelect1" class="form-label">Seleccione las Marcas</label>
+                                </div>
                                 <select multiple class="form-select" id="exampleFormControlSelect2"
                                     aria-label="Multiple select example" name="marca[]">
                                     {{-- <option selected>Open this select menu</option> --}}
@@ -862,7 +865,7 @@
 
         <!-- Tabla Reporte de Ventas * -->
         <div class="card">
-            <h5 class="card-header">Reporte de Ventas </h5>
+            <h5 class="card-header">{{ $titulo }} <span>{{ $fecha }}</span></h5>
             <div class="table-responsive text-nowrap" style="padding: 10px;">
                 <table class="table row-border order-column" id="reporte_venta">
                     <thead class="table-light">
@@ -897,55 +900,56 @@
                         </tr>
                     </thead>
                     <tbody class="table-border-bottom-0" id="tabla_ventas_body">
+
                         @foreach ($reporte as $item)
                             <tr role="row" class="odd" style="height: 51px;">
                                 <td class=" alert-warning text-left" style="background: white;z-index: 999; ">
                                     {{ $item->nombre }}</td>
-                                <td class=" text-right">{{ $item->importe_total_sum }}</td>
-                                <td class=" text-right cuota">29,240.53</td>
-                                <td class=" text-right totales">79.74</td>
+                                <td class=" text-right">{{ number_format($item->importe_total_sum, 3, '.', '') }}</td>
+                                <td class=" text-right cuota">{{ number_format($item->meta, 3, '.', ',') }}</td>
+                                <td class=" text-right totales">{{ number_format($item->logro, 3, '.', ',') }}</td>
                                 <td class=" text-right subtotales">-9.69</td>
-                                <td class=" text-right">84.76</td>
-                                <td class=" text-right tickets">19,762.82</td>
-                                <td class=" text-right">15,129.92</td>
-                                <td class=" text-right">130.62</td>
-                                <td class=" text-right">34.89</td>
-                                <td class=" text-right">468.00</td>
-                                <td class=" text-right">58.79</td>
-                                <td class=" text-right">198.00</td>
-                                <td class=" text-right">138.95</td>
+                                <td class=" text-right">{{ number_format($item->gm, 3, '.', ',') }}</td>
+                                <td class=" text-right tickets">{{ number_format($item->contribucion, 3, '.', ',') }}</td>
+                                <td class=" text-right">{{ number_format($item->meta_contribucion, 3, '.', ',') }}</td>
+                                <td class=" text-right">{{ number_format($item->logro_c, 3, '.', ',') }}</td>
+                                <td class=" text-right">0.00</td>
+                                <td class=" text-right">{{ number_format($item->unidades, 0, '.', ',') }}</td>
+                                <td class=" text-right">{{ number_format($item->precio_promedio, 3, '.', ',') }}</td>
+                                <td class=" text-right">{{ number_format($item->ticket, 3, '.', ',') }}</td>
+                                <td class=" text-right">{{ number_format($item->ticket_promedio, 3, '.', ',') }}</td>
+                                <td class=" text-right">10.00</td>
                                 <td class=" text-right">2.36</td>
                                 <td class=" text-right">0.00</td>
                                 <td class=" text-right">0.00</td>
-                                <td class=" text-right">0.00</td>
-                                <td class=" text-center"><a class="btn btn-xs btn-danger"
-                                        href="/reporte-por-marca/9?start_day=2023-06-13&amp;end_day=2023-06-13&amp;option=1">Ver
-                                        Mas</a></td>
+                                <td class=" text-center"><a class="btn btn-xs btn-danger ver-mas-btn"
+                                        href="/vermas?id={{ $item->id }}&fecha_inicio={{ $item->fecha_inicio }}&fecha_fin={{ $item->fecha_fin }}&tipo={{ $option }}">Ver
+                                        Mas </a></td>
                             </tr>
                         @endforeach
-                    </tbody>
 
+                    </tbody>
                     <tfoot class="alert alert-success">
                         <tr>
-                            <th class="text-center" id="tfoot_total">Total</th>
-                            <th class="text-right"></th>
-                            <th class="text-right"></th>
-                            <th class="text-right "></th>
-                            <th class="text-right "></th>
-                            <th class="text-right "></th>
-                            <th class="text-right "></th>
-                            <th class="text-right "></th>
-                            <th class="text-right "></th>
-                            <th class="text-right "></th>
-                            <th class="text-right "></th>
-                            <th class="text-right "></th>
-                            <th class="text-right "></th>
-                            <th class="text-right "></th>
-                            <th class="text-right "></th>
-                            <th class="text-right "></th>
-                            <th class="text-right "></th>
-                            <th class="text-right "></th>
-                            <th class="text-right "></th>
+                            <th class="text-center" id="tfoot_total" style="background: #e4ffd6;z-index: 999;">Total</th>
+                            <th class="text-right tfoot tfoot1"></th>
+                            <th class="text-right tfoot tfoot2"></th>
+                            <th class="text-right tfoot tfoot3"></th>
+                            <th class="text-right tfoot tfoot4"></th>
+                            <th class="text-right tfoot tfoot5"></th>
+                            <th class="text-right tfoot tfoot6"></th>
+                            <th class="text-right tfoot tfoot7"></th>
+                            <th class="text-right tfoot tfoot8"></th>
+                            <th class="text-right tfoot tfoot9"></th>
+                            <th class="text-right tfoot tfoot10"></th>
+                            <th class="text-right tfoot tfoot11"></th>
+                            <th class="text-right tfoot tfoot12"></th>
+                            <th class="text-right tfoot tfoot13"></th>
+                            <th class="text-right tfoot tfoot14"></th>
+                            <th class="text-right tfoot tfoot15"></th>
+                            <th class="text-right tfoot tfoot16"></th>
+                            <th class="text-right tfoot tfoot17"></th>
+                            <th class="text-right tfoot tfoot18"></th>
                         </tr>
                     </tfoot>
                 </table>
@@ -1008,7 +1012,7 @@
                             <th>Total</th>
                         </tr>
                     </thead>
-                    <tbody class="table-border-bottom-0">
+                    <tbody class="">
                         @foreach ($datos as $item)
                             <tr>
                                 <td class="text-left" style="background: white;z-index: 999;"><i
@@ -1078,8 +1082,6 @@
 
                 });
 
-
-
                 var table = $('#reporte_venta').DataTable({
                     scrollY: "600px",
                     scrollX: true,
@@ -1103,7 +1105,10 @@
                         button: {
                             className: 'form-control'
                         }
-                    }
+                    },
+                    language: {
+                        url: '//cdn.datatables.net/plug-ins/1.13.5/i18n/es-ES.json',
+                    },
                 });
 
                 var table = $('#mytable2').DataTable({
@@ -1134,7 +1139,14 @@
                 });
 
                 setfecha();
-
+                Obtener_ultimo_radiobtn();
+                obtener_ultima_fecha_inicio();
+                obtener_ultima_fecha_fin();
+                //btnvermas();
+                //bntvermas_option();
+                //obtener_marcas_seleccionadas();
+                //suma();
+                suma_columnas();
             });
 
             function setfecha() {
@@ -1159,10 +1171,277 @@
                     fecha_fin.value = fechaFormateada;
                 }
             }
+
+            function obtener_ultima_fecha_inicio() {
+                // Obtener el elemento del input de fecha
+
+                const fechaInicioInput = document.getElementById('fecha_inicio');
+
+                // Obtener la fecha seleccionada del localStorage
+                const fechainicioSeleccionada = localStorage.getItem('fechainicioSeleccionada');
+
+                // Verificar si hay una fecha seleccionada almacenada en el localStorage
+                if (fechainicioSeleccionada) {
+                    // Establecer la fecha seleccionada en el input
+                    fechaInicioInput.value = fechainicioSeleccionada;
+                }
+
+                // Escuchar el evento de cambio del input de fecha
+                fechaInicioInput.addEventListener('change', function() {
+                    // Obtener la nueva fecha seleccionada
+                    const nuevaFechaSeleccionada = this.value;
+
+                    // Almacenar la nueva fecha seleccionada en el localStorage
+                    localStorage.setItem('fechainicioSeleccionada', nuevaFechaSeleccionada);
+                });
+            }
+
+            function obtener_ultima_fecha_fin() {
+                // Obtener el elemento del input de fecha
+
+                const fechaFinInput = document.getElementById('fecha_fin');
+
+                // Obtener la fecha seleccionada del localStorage
+                const fechaSeleccionada = localStorage.getItem('fechaSeleccionada');
+
+                // Verificar si hay una fecha seleccionada almacenada en el localStorage
+                if (fechaSeleccionada) {
+                    // Establecer la fecha seleccionada en el input
+                    fechaFinInput.value = fechaSeleccionada;
+                }
+
+                // Escuchar el evento de cambio del input de fecha
+                fechaFinInput.addEventListener('change', function() {
+                    // Obtener la nueva fecha seleccionada
+                    const nuevaFechaSeleccionada = this.value;
+
+                    // Almacenar la nueva fecha seleccionada en el localStorage
+                    localStorage.setItem('fechaSeleccionada', nuevaFechaSeleccionada);
+                });
+            }
+
+            function Obtener_ultimo_radiobtn() {
+                // Obtener los elementos de los radio buttons
+                const radioButtons = document.getElementsByName('select_radio');
+
+                // Obtener el valor seleccionado del localStorage
+                const valorSeleccionado = localStorage.getItem('valorSeleccionado');
+
+                // Verificar si hay un valor seleccionado almacenado en el localStorage
+                if (valorSeleccionado) {
+                    // Recorrer los radio buttons y establecer el valor seleccionado
+                    radioButtons.forEach(function(radioButton) {
+                        if (radioButton.value === valorSeleccionado) {
+                            radioButton.checked = true;
+                        }
+                    });
+                }
+
+                // Escuchar el evento de cambio de los radio buttons
+                radioButtons.forEach(function(radioButton) {
+                    radioButton.addEventListener('change', function() {
+                        // Obtener el valor del radio button seleccionado
+                        const valorSeleccionado = this.value;
+
+                        // Almacenar el valor seleccionado en el localStorage
+                        localStorage.setItem('valorSeleccionado', valorSeleccionado);
+                    });
+                });
+            }
+
+            function obtener_marcas_seleccionadas() {
+                // Obtener el elemento del multiselect
+                const multiselect = document.getElementById('exampleFormControlSelect2');
+
+                // Obtener las opciones seleccionadas del localStorage
+                const opcionesSeleccionadas = JSON.parse(localStorage.getItem('opcionesSeleccionadas'));
+
+                // Verificar si hay opciones seleccionadas almacenadas en el localStorage
+                if (opcionesSeleccionadas) {
+                    // Recorrer las opciones del multiselect
+                    Array.from(multiselect.options).forEach(function(option) {
+                        // Establecer la propiedad selected de cada opción según corresponda
+                        option.selected = opcionesSeleccionadas.includes(option.value);
+                    });
+                }
+
+                // Escuchar el evento de cambio del multiselect
+                multiselect.addEventListener('change', function() {
+                    // Obtener las nuevas opciones seleccionadas
+                    const nuevasOpcionesSeleccionadas = Array.from(this.options)
+                        .filter(function(option) {
+                            return option.selected;
+                        })
+                        .map(function(option) {
+                            return option.value;
+                        });
+
+                    // Almacenar las nuevas opciones seleccionadas en el localStorage
+                    localStorage.setItem('opcionesSeleccionadas', JSON.stringify(nuevasOpcionesSeleccionadas));
+                });
+            }
+
+
+            function btnvermas() {
+                var verMasBtns = document.getElementsByClassName('ver-mas-btn');
+
+                for (var i = 0; i < verMasBtns.length; i++) {
+                    verMasBtns[i].addEventListener('click', function(e) {
+                        e.preventDefault();
+                        var fechaInicio = document.getElementById('fecha_inicio').value;
+                        var fechaFin = document.getElementById('fecha_fin').value;
+                        var href = this.getAttribute('href');
+                        href += '&fecha_inicio=' + fechaInicio + '&fecha_fin=' + fechaFin;
+                        window.location.href = href;
+                    });
+                }
+            }
+
+            function bntvermas_option() {
+                var verMasBtns = document.getElementsByClassName('ver-mas-btn');
+                var seleccionarTienda = document.getElementById('defaultRadio2');
+                var seleccionarMarca = document.getElementById('defaultRadio1');
+                for (var i = 0; i < verMasBtns.length; i++) {
+                    verMasBtns[i].addEventListener('click', function(e) {
+                        e.preventDefault();
+                        var href = this.getAttribute('href');
+
+                        if (seleccionarTienda.checked) {
+                            href += '&tipo=tienda';
+                        } else if (seleccionarMarca.checked) {
+                            href += '&tipo=marca';
+                        }
+
+                        window.location.href = href;
+                    });
+                }
+            }
+
+            function suma() {
+
+                // // Obtener el cuerpo de la tabla
+                // var tablaBody = document.getElementById('tabla_ventas_body');
+
+                // // Obtener todas las filas del cuerpo de la tabla
+                // var filas = tablaBody.getElementsByTagName('tr');
+
+                // // Variables para almacenar las sumas de cada columna
+                // var sumasColumnas = Array.from({
+                //     length: filas[0].children.length
+                // }, () => 0);
+
+                // // Recorrer cada fila y sumar los valores de cada columna
+                // for (var i = 0; i < filas.length; i++) {
+                //     var celdas = filas[i].getElementsByTagName('td');
+
+                //     // Sumar los valores de cada columna
+                //     for (var j = 1; j < celdas.length; j++) { // Empezar desde 1 para omitir la primera celda de la fila
+                //         sumasColumnas[j] += parseFloat(celdas[j].textContent.replace(',', ''));
+                //     }
+                // }
+
+                // // Asignar las sumas a las celdas correspondientes en el elemento <tfoot>
+                // var tfoot = document.querySelector('tfoot');
+                // var celdasTfoot = tfoot.getElementsByTagName('th');
+
+                // // Asignar las sumas a las celdas correspondientes en el elemento <tfoot>
+                // for (var k = 1; k < celdasTfoot.length; k++) { // Empezar desde 1 para omitir la primera celda de la fila
+                //     celdasTfoot[k].textContent = sumasColumnas[k].toFixed(3);
+                // }
+
+                // Obtener el cuerpo de la tabla
+                var tablaBody = document.getElementById('tabla_ventas_body');
+
+                // Obtener todas las filas del cuerpo de la tabla
+                var filas = tablaBody.getElementsByTagName('tr');
+
+                // Variables para almacenar las sumas de cada columna
+                var sumasColumnas = Array.from({
+                    length: filas[0].children.length
+                }, () => 0);
+
+                // Recorrer cada fila y sumar los valores de cada columna
+                for (var i = 0; i < filas.length; i++) {
+                    var celdas = filas[i].getElementsByTagName('td');
+
+                    // Sumar los valores de cada columna
+                    for (var j = 1; j < celdas.length; j++) { // Empezar desde 1 para omitir la primera celda de la fila
+                        sumasColumnas[j] += parseFloat(celdas[j].textContent.replace(',', ''));
+                    }
+                }
+
+                // Obtener el elemento <tfoot>
+                var tfoot = document.querySelector('tfoot');
+                var tr = tfoot.querySelector('tr');
+                var celdasTfoot = tr.getElementsByTagName('th');
+
+                // Asignar las sumas a las celdas correspondientes en el elemento <tfoot>
+                for (var k = 1; k < celdasTfoot.length; k++) { // Empezar desde 1 para omitir la primera celda de la fila
+                    //celdasTfoot[k].innerHTML = sumasColumnas[k].toFixed(3);
+                }
+
+                var celdas = document.querySelectorAll('.tfoot');
+
+                // Insertar los valores en las celdas
+                for (var i = 1; i < celdasTfoot.length; i++) {
+                    celdas[i].textContent = 112;
+                }
+
+            }
+
+            function suma_importe() {
+                // Obtener todas las filas de datos en el cuerpo de la tabla
+                var filasDatos = $('#tabla_ventas_body').find('tr');
+
+                // Calcular la suma de los importes
+                var sumaImportes = 0;
+                var meta = 0;
+
+                filasDatos.each(function() {
+                    var importe = $(this).find('.text-right').eq(0).text().replace(',', '');
+                    sumaImportes += parseFloat(importe);
+
+
+                });
+
+                // Insertar la suma en la celda correspondiente en el tfoot
+                $('#tfoot_total').next('.tfoot').text(sumaImportes.toFixed(3));
+                //$('#tfoot_total').next('.tfoot').text(sumaImportes.toFixed(3));
+
+            }
+
+            function suma_columnas() {
+                // Obtener todas las filas de datos en el cuerpo de la tabla
+                var filasDatos = $('#tabla_ventas_body').find('tr');
+
+                // Calcular la suma para cada columna
+                var sumas = Array.from({
+                    length: 18
+                }, () => 0); // Array para almacenar las sumas de cada columna
+
+                filasDatos.each(function() {
+                    var celdas = $(this).find(
+                        '.text-right'); // Obtener todas las celdas con la clase "text-right" en la fila
+                    celdas.each(function(index) {
+                        var valor = $(this).text().replace(',', '');
+                        sumas[index] += parseFloat(valor);
+                    });
+                });
+
+                // Insertar las sumas en las celdas correspondientes en el tfoot
+                $('#tfoot_total').nextAll('.tfoot').each(function(index) {
+                    $(this).text(sumas[index].toFixed(3));
+                });
+
+            }
         </script>
 
-
-
+        <script type="text/javascript">
+            $('#exampleFormControlSelect2').multiselect({
+                includeSelectAllOption: true,
+                allSelectedText: 'Todos seleccionados'
+            });
+        </script>
 
 
     @endsection

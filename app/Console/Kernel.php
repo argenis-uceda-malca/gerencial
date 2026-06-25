@@ -16,6 +16,8 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
+        $schedule->command('tbretail:guardar-conteos')
+             ->dailyAt('02:00');
     }
 
     /**
@@ -25,7 +27,11 @@ class Kernel extends ConsoleKernel
      */
     protected function commands()
     {
+
+        \App\Console\Commands\GuardarConteosTbRetail::class;
+
         $this->load(__DIR__.'/Commands');
+        
 
         require base_path('routes/console.php');
     }

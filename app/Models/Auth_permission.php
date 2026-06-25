@@ -12,7 +12,7 @@ class Auth_permission extends Model
 {
     use HasFactory;
     protected $table = "auth_permission";
-    protected $connection = "pgsql2";
+    protected $connection = "pgsql";
 
     public function get_permisos_id($permisosid)
     {

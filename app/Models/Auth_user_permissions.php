@@ -9,7 +9,7 @@ class Auth_user_permissions extends Model
 {
     use HasFactory;
     protected $table = "auth_user_user_permissions";
-    protected $connection = "pgsql2";
+    protected $connection = "pgsql";
 
     public function validadar_usuario_permiso($iduser)
     {

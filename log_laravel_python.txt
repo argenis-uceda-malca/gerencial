@@ -1,0 +1,87 @@
+
+======= EJECUCIÓN =======
+Fecha: Tue Jul 15 11:58:30 PM -05 2025
+Usuario: duceda
+PWD: /opt/docker/services/movil/movil
+Python path: /usr/bin/python3
+Activando entorno virtual...
+Entorno activado.
+▶️ Ejecutando script Python principal...
+Archivos remotos a descargar: ['Oechsle Stock Dom S28.csv', 'Oechsle Venta Lun Sab S28.csv']
+archivo valido
+archivo valido
+/opt/docker/services/movil/movil/storage/app/public/oechsle/Oechsle Stock Dom S28.csv
+Traceback (most recent call last):
+  File "/opt/docker/services/movil/movil/app/scripts/reporte_txd.py", line 355, in <module>
+    inicio(i)
+  File "/opt/docker/services/movil/movil/app/scripts/reporte_txd.py", line 127, in inicio
+    control_tablas(tipo,conn, cursor, ruta_completa_local)
+  File "/opt/docker/services/movil/movil/app/scripts/reporte_txd.py", line 138, in control_tablas
+    with open(ruta_completa_local, 'rb') as f:
+FileNotFoundError: [Errno 2] No such file or directory: '/opt/docker/services/movil/movil/storage/app/public/oechsle/Oechsle Stock Dom S28.csv'
+✅ Script finalizado correctamente.
+
+======= EJECUCIÓN =======
+Fecha: Wed Jul 16 12:00:48 AM -05 2025
+Usuario: duceda
+PWD: /opt/docker/services/movil/movil
+Python path: /usr/bin/python3
+Activando entorno virtual...
+Entorno activado.
+▶️ Ejecutando script Python principal...
+Archivos remotos a descargar: ['Oechsle Stock Dom S28.csv', 'Oechsle Venta Lun Sab S28.csv']
+archivo valido
+archivo valido
+/opt/docker/services/movil/movil/storage/app/public/reporte_txd/Oechsle/Oechsle Stock Dom S28.csv
+          PERIODO  COD_OECHSLE  ... INVENTARIO_S INVENTARIO_UNID
+0      2025-07-13      2870349  ...          0.0               1
+1      2025-07-13      2236561  ...          0.0               0
+2      2025-07-13      2659253  ...          0.0               0
+3      2025-07-13      2659265  ...          0.0               0
+4      2025-07-13      2012855  ...          0.0               0
+...           ...          ...  ...          ...             ...
+56559  2025-07-13      2328377  ...          0.0               0
+56560  2025-07-13      2537635  ...          0.0               0
+56561  2025-07-13      2537330  ...          0.0               0
+56562  2025-07-13      2400974  ...          0.0               0
+56563  2025-07-13      2320089  ...          0.0               0
+
+[56564 rows x 10 columns]
+archivo valido
+archivo valido
+/opt/docker/services/movil/movil/storage/app/public/reporte_txd/Oechsle/Oechsle Venta Lun Sab S28.csv
+        PERIODO  COD_OECHSLE  ... INVENTARIO_S INVENTARIO_UNID
+0    2025-07-07      1639357  ...         <NA>            <NA>
+1    2025-07-07      2870417  ...         <NA>            <NA>
+2    2025-07-07      2865476  ...         <NA>            <NA>
+3    2025-07-07      2846322  ...         <NA>            <NA>
+4    2025-07-07      2870420  ...         <NA>            <NA>
+..          ...          ...  ...          ...             ...
+380  2025-07-12      2695893  ...         <NA>            <NA>
+381  2025-07-12      2846312  ...         <NA>            <NA>
+382  2025-07-12      2695895  ...         <NA>            <NA>
+383  2025-07-12      2695893  ...         <NA>            <NA>
+384  2025-07-12      2912434  ...         <NA>            <NA>
+
+[385 rows x 10 columns]
+Archivos remotos a descargar: ['Ripley Lun - Dom S28.xlsx']
+archivo valido
+archivo valido
+/opt/docker/services/movil/movil/storage/app/public/reporte_txd/ripley/Ripley Lun - Dom S28.xlsx
+            Fecha               Marca  ... Suma de Stock S/. Suma de Stock Und.
+0      2025-07-07                EXIT  ...            279.27                0.0
+1      2025-07-07                EXIT  ...             93.09                0.0
+2      2025-07-07                EXIT  ...            186.18                0.0
+3      2025-07-07  MENTHA Y CHOCOLATE  ...            197.20                0.0
+4      2025-07-07  MENTHA Y CHOCOLATE  ...              0.00                0.0
+...           ...                 ...  ...               ...                ...
+19428         NaN                 NaN  ...               NaN                NaN
+19429         NaN                 NaN  ...               NaN                NaN
+19430         NaN                 NaN  ...               NaN                NaN
+19431         NaN                 NaN  ...               NaN                NaN
+19432         NaN                 NaN  ...               NaN                NaN
+
+[19433 rows x 15 columns]
+Archivos remotos a descargar: []
+Archivos remotos a descargar: []
+✅ Script finalizado correctamente.

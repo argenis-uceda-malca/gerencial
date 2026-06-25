@@ -26,7 +26,7 @@
     <meta name="description" content="" />
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="../assets/img/favicon/favicon.ico" />
+    <link rel="icon" type="image/x-icon" href="../assets/img/favicon/favicon2.ico" />
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -68,9 +68,16 @@
     {{-- <link href="https://unpkg.com/bootstrap-multiselect@0.9.13/dist/css/bootstrap-multiselect.css" rel="stylesheet"/>
     <script src="https://unpkg.com/bootstrap-multiselect@0.9.13/dist/js/bootstrap-multiselect.js"></script> --}}
 
+    <script src="../assets/vendor/libs/jquery/jquery.js"></script>
+
+    <link rel="stylesheet" href="../assets/vendor/libs/multiselect/prettify.min.css">
+    <script src="../assets/vendor/libs/multiselect/bootstrap.bundle-4.5.2.min.js"></script>
+    <script type="text/javascript" src="../assets/vendor/libs/multiselect/prettify.min.js"></script>
+    <link rel="stylesheet" href="../assets/vendor/libs/multiselect/bootstrap-multiselect.css" type="text/css">
+    <script type="text/javascript" src="../assets/vendor/libs/multiselect/bootstrap-multiselect.js"></script>
     
-    
-    <link rel="stylesheet" href="	https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.15/css/bootstrap-multiselect.css">
+    {{-- Esta fue la unica linea q estaba sin comentar, antes de agreggar los nuevos multiselect --}}
+    {{-- <link rel="stylesheet" href="	https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.15/css/bootstrap-multiselect.css"> --}}
 
     {{-- <!-- Multiselec Tema -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" />
@@ -79,13 +86,127 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.rtl.min.css" />
      --}}
 
+     <style>
+      .custom-select {
+        display: inline-block;
+        width: 100%;
+        height: calc(1.5em + 0.75rem + 2px);
+        padding: 0.375rem 1.75rem 0.375rem 0.75rem;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #495057;
+        vertical-align: middle;
+        background: #fff url(data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='4' height='5' viewBox='0 0 4 5'%3e%3cpath fill='%23343a40' d='M2 0L0 2h4zm0 5L0 3h4z'/%3e%3c/svg%3e) no-repeat right 0.75rem center/8px 10px;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+      }
+      .font-weight-bold{
+        font-weight: bold;
+      }
+      @media only screen and (max-width: 767px) {
+        .dt-buttons {
+          display: flex;
+          justify-content: center;
+          padding-bottom: 10px;
+        }
+        #reporte_venta_filter label{
+          display: grid;
+          justify-content: center;
+          text-align: center;
+        }
+      }
+
+      .paginate_button{
+        cursor: pointer;
+        margin-left: 0.1875rem;
+        border-radius: 10px;
+        padding: 0.375rem 0.375rem;
+      /* font-size: 0.75rem; */
+        position: relative;
+        /* display: block; */
+        color: #697a8d;
+        background-color: #f0f2f4;
+        border: 0px solid #d9dee3;
+        transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+      }
+
+      /* =========================================================
+         Colapso de sidebar en escritorio (custom)
+         ========================================================= */
+      :root {
+        --sb-menu-width: 260px; /* fallback, se sobreescribe por JS con el valor real */
+      }
+
+      @media (min-width: 1200px) {
+        #layout-menu {
+          transition: width 0.25s ease-in-out,
+                      margin-left 0.25s ease-in-out,
+                      opacity 0.2s ease-in-out,
+                      transform 0.25s ease-in-out;
+          overflow: hidden;
+        }
+
+        .layout-page {
+          transition: margin-left 0.25s ease-in-out, width 0.25s ease-in-out;
+        }
+
+        html.layout-menu-fixed .layout-wrapper.sidebar-collapsed #layout-menu {
+          width: 0 !important;
+          min-width: 0 !important;
+          max-width: 0 !important;
+          margin-left: calc(-1 * var(--sb-menu-width)) !important;
+          opacity: 0;
+          pointer-events: none;
+          border: none !important;
+        }
+
+        html.layout-menu-fixed .layout-wrapper.sidebar-collapsed .layout-page {
+          margin-left: 0 !important;
+          width: 100% !important;
+          max-width: 100% !important;
+        }
+
+        /* Cuando NO está colapsado, forzar explícitamente el tamaño normal
+           para que la transición de "regreso" sea simétrica, sin depender
+           de que el navegador adivine el valor "auto" previo */
+        html.layout-menu-fixed .layout-wrapper:not(.sidebar-collapsed) #layout-menu {
+          width: var(--sb-menu-width);
+          min-width: var(--sb-menu-width);
+          margin-left: 0;
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        html.layout-menu-fixed .layout-wrapper:not(.sidebar-collapsed) .layout-page {
+          margin-left: var(--sb-menu-width) !important;
+          width: calc(100% - var(--sb-menu-width)) !important;
+        }
+
+        .layout-wrapper.sidebar-collapsed .layout-menu-toggle i {
+          transform: rotate(180deg);
+          transition: transform 0.25s ease-in-out;
+        }
+
+        .toggle-sidebar-btn i {
+          transition: transform 0.25s ease-in-out;
+        }
+      }
+     </style>
+
  
 
     <!-- Boostrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
-    <!-- Sweet Alert -->  
+    <!-- Sweet Alert -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.12/dist/sweetalert2.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.0/css/toastr.css" integrity="sha512-uHcWLPmWocgP40ZlMSy5VOBbw2QZpYFy5xhPueT/bqlI6G50L8FidgfTAy8v1MoSJS9iIJo3I8d9WVZVZaTQjA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
   </head>
 
   <body>
@@ -96,15 +217,16 @@
 
         <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
           <div class="app-brand demo">
-            <a href="index.html" class="app-brand-link">
+            <a href="{{ route('inicio.index') }}" class="app-brand-link">
               <span class="app-brand-logo demo">
-                <svg
+                <img src="../assets/img/favicon/favicon2.ico" alt="logo">
+                {{-- <svg
                   width="25"
                   viewBox="0 0 25 42"
                   version="1.1"
                   xmlns="http://www.w3.org/2000/svg"
                   xmlns:xlink="http://www.w3.org/1999/xlink"
-                >
+                  >
                   <defs>
                     <path
                       d="M13.7918663,0.358365126 L3.39788168,7.44174259 C0.566865006,9.69408886 -0.379795268,12.4788597 0.557900856,15.7960551 C0.68998853,16.2305145 1.09562888,17.7872135 3.12357076,19.2293357 C3.8146334,19.7207684 5.32369333,20.3834223 7.65075054,21.2172976 L7.59773219,21.2525164 L2.63468769,24.5493413 C0.445452254,26.3002124 0.0884951797,28.5083815 1.56381646,31.1738486 C2.83770406,32.8170431 5.20850219,33.2640127 7.09180128,32.5391577 C8.347334,32.0559211 11.4559176,30.0011079 16.4175519,26.3747182 C18.0338572,24.4997857 18.6973423,22.4544883 18.4080071,20.2388261 C17.963753,17.5346866 16.1776345,15.5799961 13.0496516,14.3747546 L10.9194936,13.4715819 L18.6192054,7.984237 L13.7918663,0.358365126 Z"
@@ -150,9 +272,9 @@
                       </g>
                     </g>
                   </g>
-                </svg>
+                </svg> --}}
               </span>
-              <span class="app-brand-text demo menu-text fw-bolder ms-2">Smart</span>
+              <span class="app-brand-text demo menu-text fw-bolder ms-2" style="text-transform: none;">Smart Sales</span>
             </a>
 
             <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
@@ -164,17 +286,41 @@
 
           <ul class="menu-inner py-1">
             <!-- Dashboard -->
-            @if (in_array('acceso_gerencial', session('permisos')))
-<li class="menu-item active">
-                <a href="{{ route('entradas.index') }}" class="menu-link">
-                  <i class="menu-icon tf-icons bx bx-home-circle"></i>
-                  <div data-i18n="Analytics">Reporte</div>
-                </a>
-              </li>
-@endif
+            @if (in_array('acceso_gerencial', session('permisos')) &&
+                    in_array('acceso_cubicaje', session('permisos')) &&
+                    //in_array('particiopacion_linea_temporal', session('permisos')) ||
+                    in_array('acceso_top_venta', session('permisos')) &&
+                    in_array('acceso_vta_acumulada', session('permisos')) &&
+                    in_array('reporte_vta_mensual', session('permisos')))
+                        <li class="menu-item active">
+                            <a href="{{ route('entradas.index') }}" class="menu-link">
+                              <i class="menu-icon tf-icons bx bx-home-circle"></i>
+                              <div data-i18n="Analytics">Reporte BETA</div>
+                            </a>
+                        </li>
+            @endif
 
-            <!-- Layouts -->
-            {{-- <li class="menu-item">
+            
+
+            @if (in_array('acceso_gerencial', session('permisos')))
+              <li class="menu-item active">
+                  {{-- <a href="{{ route('reportesb.index') }}" class="menu-link"> --}}
+                  <a href="{{ route('tabla') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-home-circle"></i>
+                    <div data-i18n="Analytics">Reporte</div>
+                  </a>
+              </li>
+            @endif
+
+            <li class="menu-item active">
+                <a href="{{ route('reporte_ventas') }}" class="menu-link">
+                  <i class="menu-icon tf-icons bx bx-home-circle"></i>
+                  <div data-i18n="Analytics">Reporte Gerencial</div>
+                </a>
+            </li>
+
+            {{-- <!-- Layouts -->
+            <li class="menu-item">
               <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon tf-icons bx bx-layout"></i>
                 <div data-i18n="Layouts">Layouts</div>
@@ -208,284 +354,124 @@
                 </li>
               </ul>
             </li> --}}
-            @if (in_array('acceso_gerencial', session('permisos')))
-<li class="menu-header small text-uppercase">
-                <span class="menu-header-text"></span>
-              </li>
-@endif
 
-            @if (in_array('acceso_gerencial', session('permisos')))
+
+            @if (in_array('reporte_vta_mensual', session('permisos')) ||
+                    in_array('acceso_cubicaje', session('permisos')) ||
+                    //in_array('particiopacion_linea_temporal', session('permisos')) ||
+                    in_array('acceso_top_venta', session('permisos')) ||
+                    in_array('acceso_vta_acumulada', session('permisos')))
 <li class="menu-item">
                 <a href="javascript:void(0);" class="menu-link menu-toggle">
                   <i class="menu-icon tf-icons bx bx-dock-top"></i>
                   <div data-i18n="Account Settings">Gestión de tiendas</div>
                 </a>
                 <ul class="menu-sub">
-                  <li class="menu-item">
-                    <a href="pages-account-settings-account.html" class="menu-link">
+                  @if (in_array('reporte_vta_mensual', session('permisos')))
+<li class="menu-item">
+                    <a href="" class="menu-link">
                       <div data-i18n="Account">Ventas Mensuales</div>
                     </a>
                   </li>
-                  <li class="menu-item">
-                    <a href="pages-account-settings-notifications.html" class="menu-link">
+@endif
+                  @if (in_array('acceso_cubicaje', session('permisos')))
+<li class="menu-item">
+                    <a href="" class="menu-link">
                       <div data-i18n="Notifications">Cubicaje por Linea/Temporada</div>
                     </a>
                   </li>
-                  <li class="menu-item">
-                    <a href="pages-account-settings-connections.html" class="menu-link">
+@endif
+                  @if (in_array('particiopacion_linea_temporal', session('permisos')))
+<li class="menu-item">
+                    <a href="" class="menu-link">
                       <div data-i18n="Connections">Participación por Linea/Temporada</div>
                     </a>
                   </li>
-                  <li class="menu-item">
-                    <a href="pages-account-settings-connections.html" class="menu-link">
+@endif
+                  @if (in_array('acceso_top_venta', session('permisos')))
+<li class="menu-item">
+                    <a href="" class="menu-link">
                       <div data-i18n="reportes_top">Reportes Top</div>
                     </a>
                   </li>
-                  <li class="menu-item">
+@endif
+                  @if (in_array('acceso_vta_acumulada', session('permisos')))
+<li class="menu-item">
                     <a href="entradas" class="menu-link">
-                      <div data-i18n="venta_acumulada">Reporte de entradas</div>
+                      <div data-i18n="venta_acumulada">Venta Acumulada</div>
                     </a>
                   </li>
+@endif
                 </ul>
               </li>
 @endif
 
-            @if (in_array('acceso_gerencial', session('permisos')))
+@if (in_array('subir_data', session('permisos')) || in_array('acceso_reporte', session('permisos')))
 <li class="menu-item">
                 <a href="javascript:void(0);" class="menu-link menu-toggle">
                   <i class="menu-icon tf-icons bx bx-lock-open-alt"></i>
-                  <div data-i18n="Authentications">Authentications</div>
+                  <div data-i18n="Authentications">Reporte TxD</div>
                 </a>
                 <ul class="menu-sub">
-                  <li class="menu-item">
-                    <a href="auth-login-basic.html" class="menu-link" target="_blank">
-                      <div data-i18n="Basic">Login</div>
-                    </a>
-                  </li>
-                  <li class="menu-item">
-                    <a href="auth-register-basic.html" class="menu-link" target="_blank">
-                      <div data-i18n="Basic">Register</div>
-                    </a>
-                  </li>
-                  <li class="menu-item">
-                    <a href="auth-forgot-password-basic.html" class="menu-link" target="_blank">
-                      <div data-i18n="Basic">Forgot Password</div>
-                    </a>
-                  </li>
-                </ul>
-              </li>
-@endif
-
-            @if (in_array('acceso_gerencial', session('permisos')))
+                  @if (in_array('acceso_reporte', session('permisos')))
 <li class="menu-item">
-                <a href="javascript:void(0);" class="menu-link menu-toggle">
-                  <i class="menu-icon tf-icons bx bx-cube-alt"></i>
-                  <div data-i18n="Misc">Misc</div>
-                </a>
-                <ul class="menu-sub">
-                  <li class="menu-item">
-                    <a href="pages-misc-error.html" class="menu-link">
-                      <div data-i18n="Error">Error</div>
+                    <a href="{{ route('reportetxd') }}" class="menu-link" target="_blank">
+                      <div data-i18n="Basic">Reporte Ventas</div>
                     </a>
                   </li>
-                  <li class="menu-item">
-                    <a href="pages-misc-under-maintenance.html" class="menu-link">
-                      <div data-i18n="Under Maintenance">Under Maintenance</div>
+@endif
+                  @if (in_array('subir_data', session('permisos')))
+<li class="menu-item">
+                    <a href="" class="menu-link" target="_blank">
+                      <div data-i18n="Basic">Cargar Excel</div>
                     </a>
                   </li>
+@endif
                 </ul>
               </li>
 @endif
 
-            
-            {{-- <!-- Components -->
-            <li class="menu-header small text-uppercase"><span class="menu-header-text">Components</span></li>
-            <!-- Cards -->
-            <li class="menu-item">
-              <a href="cards-basic.html" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-collection"></i>
-                <div data-i18n="Basic">Cards</div>
-              </a>
-            </li>
-            <!-- User interface -->
-            <li class="menu-item">
-              <a href="javascript:void(0)" class="menu-link menu-toggle">
-                <i class="menu-icon tf-icons bx bx-box"></i>
-                <div data-i18n="User interface">User interface</div>
-              </a>
-              <ul class="menu-sub">
-                <li class="menu-item">
-                  <a href="ui-accordion.html" class="menu-link">
-                    <div data-i18n="Accordion">Accordion</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="ui-alerts.html" class="menu-link">
-                    <div data-i18n="Alerts">Alerts</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="ui-badges.html" class="menu-link">
-                    <div data-i18n="Badges">Badges</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="ui-buttons.html" class="menu-link">
-                    <div data-i18n="Buttons">Buttons</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="ui-carousel.html" class="menu-link">
-                    <div data-i18n="Carousel">Carousel</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="ui-collapse.html" class="menu-link">
-                    <div data-i18n="Collapse">Collapse</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="ui-dropdowns.html" class="menu-link">
-                    <div data-i18n="Dropdowns">Dropdowns</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="ui-footer.html" class="menu-link">
-                    <div data-i18n="Footer">Footer</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="ui-list-groups.html" class="menu-link">
-                    <div data-i18n="List Groups">List groups</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="ui-modals.html" class="menu-link">
-                    <div data-i18n="Modals">Modals</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="ui-navbar.html" class="menu-link">
-                    <div data-i18n="Navbar">Navbar</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="ui-offcanvas.html" class="menu-link">
-                    <div data-i18n="Offcanvas">Offcanvas</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="ui-pagination-breadcrumbs.html" class="menu-link">
-                    <div data-i18n="Pagination &amp; Breadcrumbs">Pagination &amp; Breadcrumbs</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="ui-progress.html" class="menu-link">
-                    <div data-i18n="Progress">Progress</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="ui-spinners.html" class="menu-link">
-                    <div data-i18n="Spinners">Spinners</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="ui-tabs-pills.html" class="menu-link">
-                    <div data-i18n="Tabs &amp; Pills">Tabs &amp; Pills</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="ui-toasts.html" class="menu-link">
-                    <div data-i18n="Toasts">Toasts</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="ui-tooltips-popovers.html" class="menu-link">
-                    <div data-i18n="Tooltips & Popovers">Tooltips &amp; popovers</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="ui-typography.html" class="menu-link">
-                    <div data-i18n="Typography">Typography</div>
-                  </a>
-                </li>
-              </ul>
-            </li>
-
-            <!-- Extended components -->
-            <li class="menu-item">
-              <a href="javascript:void(0)" class="menu-link menu-toggle">
-                <i class="menu-icon tf-icons bx bx-copy"></i>
-                <div data-i18n="Extended UI">Extended UI</div>
-              </a>
-              <ul class="menu-sub">
-                <li class="menu-item">
-                  <a href="extended-ui-perfect-scrollbar.html" class="menu-link">
-                    <div data-i18n="Perfect Scrollbar">Perfect scrollbar</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="extended-ui-text-divider.html" class="menu-link">
-                    <div data-i18n="Text Divider">Text Divider</div>
-                  </a>
-                </li>
-              </ul>
-            </li>
-
-            <li class="menu-item">
-              <a href="icons-boxicons.html" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-crown"></i>
-                <div data-i18n="Boxicons">Boxicons</div>
-              </a>
-            </li> --}}
-
-            {{-- <!-- Forms & Tables -->
-            <li class="menu-header small text-uppercase"><span class="menu-header-text">Forms &amp; Tables</span></li>
-            <!-- Forms -->
-            <li class="menu-item">
-              <a href="javascript:void(0);" class="menu-link menu-toggle">
-                <i class="menu-icon tf-icons bx bx-detail"></i>
-                <div data-i18n="Form Elements">Form Elements</div>
-              </a>
-              <ul class="menu-sub">
-                <li class="menu-item">
-                  <a href="forms-basic-inputs.html" class="menu-link">
-                    <div data-i18n="Basic Inputs">Basic Inputs</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="forms-input-groups.html" class="menu-link">
-                    <div data-i18n="Input groups">Input groups</div>
-                  </a>
-                </li>
-              </ul>
-            </li>
-            <li class="menu-item">
-              <a href="javascript:void(0);" class="menu-link menu-toggle">
-                <i class="menu-icon tf-icons bx bx-detail"></i>
-                <div data-i18n="Form Layouts">Form Layouts</div>
-              </a>
-              <ul class="menu-sub">
-                <li class="menu-item">
-                  <a href="form-layouts-vertical.html" class="menu-link">
-                    <div data-i18n="Vertical Form">Vertical Form</div>
-                  </a>
-                </li>
-                <li class="menu-item">
-                  <a href="form-layouts-horizontal.html" class="menu-link">
-                    <div data-i18n="Horizontal Form">Horizontal Form</div>
-                  </a>
-                </li>
-              </ul>
-            </li>
-            <!-- Tables -->
-            <li class="menu-item">
-              <a href="tables-basic.html" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-table"></i>
-                <div data-i18n="Tables">Tables</div>
-              </a>
-            </li> --}}
-            <!-- Misc -->
+@if (in_array('acceso_social', session('permisos')))
+<li class="menu-item">
+            <a
+              href=""
+              target="_blank"
+              class="menu-link"
+            >
+              <i class="menu-icon tf-icons bx bx-file"></i>
+              <div data-i18n="Documentation">Social</div>
+            </a>
+          </li>
+@endif
+@if (in_array('acceso_rfm', session('permisos')))
+<li class="menu-item">
+            <a
+              href="{{ route('rfm') }}"
+              target="_blank"
+              class="menu-link"
+            >
+              <i class="menu-icon tf-icons bx bx-dock-top"></i>
+              <div data-i18n="Documentation">Gestion Clientes RFM</div>
+            </a>
+          </li>
+@endif
+@if (in_array('acceso_stock_tiendas', session('permisos')))
+<li class="menu-item">
+            <a
+              href=""
+              target="_blank"
+              class="menu-link"
+            >
+              <i class="menu-icon tf-icons bx bx-dock-top"></i>
+              <div data-i18n="Documentation">Stock Tiendas</div>
+            </a>
+          </li>
+@endif
+@if (in_array('acceso_gerencial', session('permisos')) &&
+        in_array('acceso_top_venta', session('permisos')) &&
+        in_array('acceso_vta_acumulada', session('permisos')) &&
+        in_array('reporte_vta_mensual', session('permisos')))
+<!-- Misc -->
             <li class="menu-header small text-uppercase"><span class="menu-header-text">administracion</span></li>
             <li class="menu-item">
               <a
@@ -503,27 +489,28 @@
                   </a>
                 </li>
                 <li class="menu-item">
-                  <a href="forms-input-groups.html" class="menu-link">
+                  <a href="" class="menu-link">
                     <div data-i18n="Input groups">Franquisiadores</div>
                   </a>
                 </li>
                 <li class="menu-item">
-                  <a href="forms-input-groups.html" class="menu-link">
+                  <a href="" class="menu-link">
                     <div data-i18n="Input groups">Consignatario</div>
                   </a>
                 </li>
               </ul>
             </li>
-            <li class="menu-item">
+            {{-- <li class="menu-item">
               <a
-                href="https://themeselection.com/demo/sneat-bootstrap-html-admin-template/documentation/"
+                href=""
                 target="_blank"
                 class="menu-link"
               >
                 <i class="menu-icon tf-icons bx bx-file"></i>
                 <div data-i18n="Documentation">Documentation</div>
               </a>
-            </li>
+            </li> --}}
+@endif
           </ul>
         </aside>
         <!-- / Menu -->
@@ -533,9 +520,14 @@
           <!-- Navbar -->
 
           <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme" id="layout-navbar">
-            <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 ">
+            {{-- <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 ">
               <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
                 <i class="bx bx-menu bx-sm"></i>
+              </a>
+            </div> --}}
+            <div class="navbar-nav align-items-xl-center me-3 me-xl-0">
+              <a class="nav-item nav-link px-0 me-xl-4 toggle-sidebar-btn" href="javascript:void(0)" onclick="toggleSidebar()">
+                  <i class="bx bx-menu bx-sm"></i>
               </a>
             </div>
 
@@ -561,7 +553,7 @@
                 <li class="nav-item navbar-dropdown dropdown-user dropdown">
                   <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
                     <div class="avatar avatar-online">
-                      <img src="../assets/img/avatars/1.png" alt class="w-px-40 h-auto rounded-circle" />
+                      <img src="../assets/img/avatars/user.png" alt class="w-px-40 h-auto rounded-circle" />
                     </div>
                   </a>
                   <ul class="dropdown-menu dropdown-menu-end">
@@ -570,47 +562,47 @@
                         <div class="d-flex">
                           <div class="flex-shrink-0 me-3">
                             <div class="avatar avatar-online">
-                              <img src="../assets/img/avatars/1.png" alt class="w-px-40 h-auto rounded-circle" />
+                              <img src="../assets/img/avatars/user.png" alt class="w-px-40 h-auto rounded-circle" />
                             </div>
                           </div>
                           <div class="flex-grow-1">
-                            <span class="fw-semibold d-block">John Doe</span>
-                            <small class="text-muted">Admin</small>
+                            <span class="fw-semibold d-block">{{ session('first_name') }} {{ session('last_name') }}</span>
+                            {{-- <small class="text-muted">Admin</small> --}}
                           </div>
                         </div>
                       </a>
                     </li>
+                    {{-- <li>
+                        <div class="dropdown-divider"></div>
+                      </li> --}}
+                      {{-- <li>
+                        <a class="dropdown-item" href="#">
+                          <i class="bx bx-user me-2"></i>
+                          <span class="align-middle">My Profile</span>
+                        </a>
+                      </li> --}}
+                      {{-- <li>
+                        <a class="dropdown-item" href="#">
+                          <i class="bx bx-cog me-2"></i>
+                          <span class="align-middle">Settings</span>
+                        </a>
+                      </li> --}}
+                      {{-- <li>
+                        <a class="dropdown-item" href="#">
+                          <span class="d-flex align-items-center align-middle">
+                            <i class="flex-shrink-0 bx bx-credit-card me-2"></i>
+                            <span class="flex-grow-1 align-middle">Billing</span>
+                            <span class="flex-shrink-0 badge badge-center rounded-pill bg-danger w-px-20 h-px-20">4</span>
+                          </span>
+                        </a>
+                    </li> --}}
                     <li>
                       <div class="dropdown-divider"></div>
                     </li>
                     <li>
-                      <a class="dropdown-item" href="#">
-                        <i class="bx bx-user me-2"></i>
-                        <span class="align-middle">My Profile</span>
-                      </a>
-                    </li>
-                    <li>
-                      <a class="dropdown-item" href="#">
-                        <i class="bx bx-cog me-2"></i>
-                        <span class="align-middle">Settings</span>
-                      </a>
-                    </li>
-                    <li>
-                      <a class="dropdown-item" href="#">
-                        <span class="d-flex align-items-center align-middle">
-                          <i class="flex-shrink-0 bx bx-credit-card me-2"></i>
-                          <span class="flex-grow-1 align-middle">Billing</span>
-                          <span class="flex-shrink-0 badge badge-center rounded-pill bg-danger w-px-20 h-px-20">4</span>
-                        </span>
-                      </a>
-                    </li>
-                    <li>
-                      <div class="dropdown-divider"></div>
-                    </li>
-                    <li>
-                      <a class="dropdown-item" href="auth-login-basic.html">
+                      <a class="dropdown-item" id="botonCerrar" href="{{ route('cerrar') }}">
                         <i class="bx bx-power-off me-2"></i>
-                        <span class="align-middle">Log Out</span>
+                        <span class="align-middle">Salir</span>
                       </a>
                     </li>
                   </ul>
@@ -639,22 +631,22 @@
                   <a href="#" target="_blank" class="footer-link fw-bolder">Smart Brands</a>
                 </div>
                 <div>
-                  {{-- <a href="https://themeselection.com/license/" class="footer-link me-4" target="_blank">License</a>
-                  <a href="https://themeselection.com/" target="_blank" class="footer-link me-4">More Themes</a>
+                  {{-- <a href="" class="footer-link me-4" target="_blank">License</a>
+                  <a href="" target="_blank" class="footer-link me-4">More Themes</a>
 
                   <a
-                    href="https://themeselection.com/demo/sneat-bootstrap-html-admin-template/documentation/"
+                    href=""
                     target="_blank"
                     class="footer-link me-4"
                     >Documentation</a
                   > --}}
 
-                  <a
-                    href="https://github.com/themeselection/sneat-html-admin-template-free/issues"
+                  {{-- <a
+                    href=""
                     target="_blank"
                     class="footer-link me-4"
                     >Support</a
-                  >
+                  > --}}
                 </div>
               </div>
             </footer>
@@ -672,18 +664,18 @@
     </div>
     <!-- / Layout wrapper -->
 
-    <div class="buy-now">
+    {{-- <div class="buy-now">
       <a
-        href="https://themeselection.com/products/sneat-bootstrap-html-admin-template/"
+        href=""
         target="_blank"
         class="btn btn-danger btn-buy-now"
         ><i class="bi bi-gear"></i> Soporte SB</a
       >
-    </div>
+    </div> --}}
 
     <!-- Core JS -->
     <!-- build:js assets/vendor/js/core.js -->
-    <script src="../assets/vendor/libs/jquery/jquery.js"></script>
+    
     <script src="../assets/vendor/libs/popper/popper.js"></script>
     <script src="../assets/vendor/js/bootstrap.js"></script>
     <script src="../assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
@@ -698,7 +690,7 @@
     <script src="../assets/js/main.js"></script>
 
     <!-- Page JS -->
-    <script src="../assets/js/dashboards-analytics.js"></script>
+    <script src="../assets/js/dashboards-analytics.js?v1.0"></script>
 
     <!-- Place this tag in your head or just before your close body tag. -->
     <script async defer src="https://buttons.github.io/buttons.js"></script>
@@ -708,6 +700,127 @@
     <script src="https://cdn.datatables.net/fixedcolumns/4.2.2/js/dataTables.fixedColumns.min.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.12/dist/sweetalert2.all.min.js"></script>
+
+    <script>
+        // =========================================================
+        // Toggle de sidebar (responsive: móvil usa el comportamiento
+        // original de Sneat, escritorio colapsa el ancho del menú)
+        // =========================================================
+        (function () {
+            const DESKTOP_BREAKPOINT = 1200; // coincide con el media query xl
+            const STORAGE_KEY = 'sidebarCollapsed';
+            const layoutWrapper = document.querySelector('.layout-wrapper');
+            const layoutMenu = document.getElementById('layout-menu');
+
+            function isDesktop() {
+                return window.innerWidth >= DESKTOP_BREAKPOINT;
+            }
+
+            function captureMenuWidth() {
+                if (!layoutMenu || !layoutWrapper) return;
+                // Solo medir si el menú está actualmente expandido (visible),
+                // para no capturar un 0 accidental.
+                if (!layoutWrapper.classList.contains('sidebar-collapsed')) {
+                    const widthPx = layoutMenu.getBoundingClientRect().width;
+                    if (widthPx > 0) {
+                        document.documentElement.style.setProperty('--sb-menu-width', widthPx + 'px');
+                    }
+                }
+            }
+
+            function applyStoredState() {
+                if (!layoutWrapper || !isDesktop()) return;
+                captureMenuWidth();
+                const collapsed = localStorage.getItem(STORAGE_KEY) === '1';
+                layoutWrapper.classList.toggle('sidebar-collapsed', collapsed);
+            }
+
+            window.toggleSidebar = function () {
+                if (!layoutWrapper) return;
+
+                if (isDesktop()) {
+                    // Escritorio: colapsar/expandir el ancho del sidebar
+                    const willCollapse = !layoutWrapper.classList.contains('sidebar-collapsed');
+                    if (willCollapse) {
+                        // Capturar el ancho real justo antes de colapsar
+                        captureMenuWidth();
+                    }
+                    layoutWrapper.classList.toggle('sidebar-collapsed', willCollapse);
+                    localStorage.setItem(STORAGE_KEY, willCollapse ? '1' : '0');
+                } else {
+                    // Móvil/tablet: mantener el comportamiento original (overlay)
+                    layoutWrapper.classList.toggle('layout-menu-expanded');
+                }
+            };
+
+            // Restaurar el estado guardado al cargar (solo en escritorio)
+            document.addEventListener('DOMContentLoaded', applyStoredState);
+            window.addEventListener('load', captureMenuWidth);
+
+            // Si el usuario cambia de tamaño de ventana, limpiar estados
+            // inconsistentes entre vista móvil y escritorio
+            window.addEventListener('resize', function () {
+                if (!layoutWrapper) return;
+                if (!isDesktop()) {
+                    layoutWrapper.classList.remove('sidebar-collapsed');
+                } else {
+                    layoutWrapper.classList.remove('layout-menu-expanded');
+                    applyStoredState();
+                }
+            });
+        })();
+
+        // Eliminar variables al dar click en cerrar
+        // Obtén una referencia al botón de cerrar
+        const botonCerrar = document.getElementById('botonCerrar');
+        // Agrega un evento de clic al botón
+        botonCerrar.addEventListener('click', function() {
+            // Elimina la fecha seleccionada del localStorage
+            // localStorage.removeItem('fechainicioSeleccionada');
+            // localStorage.removeItem('fechaSeleccionada');
+            // localStorage.removeItem('valorSeleccionado');
+            console.log("cerrar");
+            localStorage.clear();
+        });
+
+        // // Eliminar variables al cerrar pestaña
+        // window.addEventListener('unload', function() {
+        //     // Elimina la fecha seleccionada del localStorage
+        //     localStorage.removeItem('fechainicioSeleccionada');
+        // });
+    </script>
+
     @yield('footer')
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.0/js/toastr.js" integrity="sha512-7jcpjqSVjhATgn0Xkmzyxc4emfAYP81qnhsL9rxaSlqI+m3Yw/feChvPXfeiVI/K+Ji93wvAtSxCRhmAoOvdww==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <div class="modal fade" id="commonModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="body">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="commonModalOver" tabindex="-1" role="dialog"
+            aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                    </div>
+                </div>
+            </div>
+        </div>
   </body>
 </html>

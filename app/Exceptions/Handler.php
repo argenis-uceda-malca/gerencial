@@ -34,8 +34,21 @@ class Handler extends ExceptionHandler
      */
     public function register()
     {
+
         $this->reportable(function (Throwable $e) {
             //
         });
+    }
+
+    public function render($request, Throwable $exception)
+    {
+        if (
+            $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpException &&
+            ($exception->getStatusCode() == 500 || $exception->getStatusCode() == 504 || $exception->getStatusCode() == 503)
+        ) {
+            return redirect()->route('/');
+        }
+
+        return parent::render($request, $exception);
     }
 }

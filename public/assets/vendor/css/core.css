@@ -42,7 +42,7 @@
   --bs-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0));
   --bs-root-font-size: 16px;
   --bs-body-font-family: var(--bs-font-sans-serif);
-  --bs-body-font-size: 0.9375rem;
+  --bs-body-font-size: 0.85rem;
   --bs-body-font-weight: 400;
   --bs-body-line-height: 1.53;
   --bs-body-color: #697a8d;
@@ -3116,6 +3116,7 @@ textarea.form-control-lg {
 
 .dropdown-menu.show {
   display: block;
+  z-index: 99999;
 }
 
 .dropdown-header {
@@ -15406,7 +15407,7 @@ html:not(.layout-menu-fixed) .menu-inner-shadow {
 
   .layout-menu-fixed:not(.layout-menu-collapsed) .layout-page,
 .layout-menu-fixed-offcanvas:not(.layout-menu-collapsed) .layout-page {
-    padding-left: 16.25rem;
+    /* padding-left: 16.25rem; */
   }
 }
 html:not(.layout-navbar-fixed):not(.layout-menu-fixed):not(.layout-menu-fixed-offcanvas) .layout-page,

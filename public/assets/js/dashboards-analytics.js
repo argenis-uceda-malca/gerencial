@@ -14,36 +14,67 @@
 
   // Total Revenue Report Chart - Bar Chart
   // --------------------------------------------------------------------
+  //tengo este array const importess_anterior = ["4446596.80706900","4860109.44460900"] quiero concatenarle mas valores "0" para q en total sean 6 valores dentro de ese array
+  function abreviarNumero(numero) {
+    if (numero >= 1000000) {
+        return (numero / 1000000).toFixed(1) + 'M';
+    } else if (numero >= 1000) {
+        return (numero / 1000).toFixed(1) + 'k';
+    } else {
+        return numero.toString();
+    }
+  }
+  
+  const importess_original = [...importess]; 
+
+  while(importess.length < 6) {
+    importess.push("0.1");
+  }
+  const impoertes2 = importess_anterior;
+  console.log(impoertes2);
+  const importes_negativos = impoertes2.map(num => -Math.abs(num));
+  //console.log(importes_negativos);
+
   const totalRevenueChartEl = document.querySelector('#totalRevenueChart'),
     totalRevenueChartOptions = {
       series: [
         {
-          name: '2021',
-          data: [18, 7, 15, 29, 18, 12, 9]
+          name: '2025',
+          data: importess_anterior
         },
         {
-          name: '2020',
-          data: [-13, -18, -9, -14, -5, -17, -15]
+          name: '2026',
+          data: importess
         }
       ],
       chart: {
         height: 300,
-        stacked: true,
+        //stacked: true,
         type: 'bar',
         toolbar: { show: false }
       },
       plotOptions: {
         bar: {
           horizontal: false,
-          columnWidth: '33%',
+          columnWidth: '50%',
           borderRadius: 12,
           startingShape: 'rounded',
-          endingShape: 'rounded'
+          endingShape: 'rounded',
+          dataLabels: {
+            position: 'top',
+          },
         }
       },
       colors: [config.colors.primary, config.colors.info],
       dataLabels: {
-        enabled: false
+        formatter: function(val) {
+            return abreviarNumero(val);
+        },
+        position: 'top',
+        style: {
+            colors: ['#454545'] // Color negro
+        },
+        enabled: true
       },
       stroke: {
         curve: 'smooth',
@@ -62,7 +93,8 @@
           offsetX: -3
         },
         labels: {
-          colors: axisColor
+          colors: axisColor,
+          
         },
         itemMargin: {
           horizontal: 10
@@ -78,7 +110,7 @@
         }
       },
       xaxis: {
-        categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+        categories: ['Ene', 'Feb', 'Mar', 'Abr', 'May','Jun'],
         labels: {
           style: {
             fontSize: '13px',
@@ -97,6 +129,22 @@
           style: {
             fontSize: '13px',
             colors: axisColor
+          },
+          formatter: function (val) {
+            // Personalizar el formateo para mostrar 'M' para millones
+            if (val >= 1000000) {
+              return (val / 1000000).toFixed(1) + 'M';
+            }
+            if (val >= 1000) {
+              return (val / 1000).toFixed(1) + 'K';
+            }
+            if (val <= -1000000) {
+              return (val / 1000000).toFixed(1) + 'M';
+            }
+            if (val <= -1000) {
+              return (val / 1000).toFixed(1) + 'K';
+            }
+            return val;
           }
         }
       },
@@ -107,7 +155,18 @@
             plotOptions: {
               bar: {
                 borderRadius: 10,
-                columnWidth: '32%'
+                columnWidth: '35%'
+              }
+            }
+          }
+        },
+        {
+          breakpoint: 1700,
+          options: {
+            plotOptions: {
+              bar: {
+                borderRadius: 10,
+                columnWidth: '45%'
               }
             }
           }
@@ -239,7 +298,7 @@
             plotOptions: {
               bar: {
                 borderRadius: 10,
-                columnWidth: '52%'
+                columnWidth: '90%'
               }
             }
           }
@@ -276,10 +335,22 @@
 
   // Growth Chart - Radial Bar Chart
   // --------------------------------------------------------------------
+
+  // Obtener los dos últimos valores de importeTotalSumData
+  const ultimosDosValores = importess_original.slice(-2);
+  console.log("importes org");
+  console.log(importess_original);
+  // Ahora, puedes utilizar ultimosDosValores para lo que necesites, por ejemplo, mostrarlos en la consola:
+  const mes_anterior = ultimosDosValores[0];
+  const mes_actual = ultimosDosValores[1];
+
+
+  const crecimiento = (mes_actual*100)/mes_anterior;
+
   const growthChartEl = document.querySelector('#growthChart'),
     growthChartOptions = {
-      series: [78],
-      labels: ['Growth'],
+      series: [crecimiento.toFixed(2)],
+      labels: ['Crecimiento'],
       chart: {
         height: 240,
         type: 'radialBar'
@@ -490,11 +561,31 @@
 
   // Income Chart - Area chart
   // --------------------------------------------------------------------
+
+  //Array para almacenar los importes y los nombres(categorias) de la tabla
+  const table = document.querySelector('#reporte_venta');
+  const rows = table.querySelectorAll('tbody tr');
+  const datos = Array.from(rows).map(row => {
+    const nombre = row.querySelector('td:nth-child(1)').textContent.trim();
+    const importe = parseFloat(row.querySelector('td:nth-child(2)').textContent.trim().replace(',', ''));
+    return { nombre, importe };
+  });
+
+  // Obtener las categorías y los valores de importe
+  const categorias = datos.map(item => item.nombre);
+  categorias.unshift('');
+  const valoresImporte = datos.map(item => item.importe);
+  valoresImporte.unshift(0);
+  const valoryMaximo = Math.max(...valoresImporte);
+
+
+  //console.log(valoresImporte);
+
   const incomeChartEl = document.querySelector('#incomeChart'),
     incomeChartConfig = {
       series: [
         {
-          data: [24, 21, 30, 22, 42, 26, 35, 40, 15, 50, 15, 25, 10]
+          data: valoresImporte
         }
       ],
       chart: {
@@ -558,7 +649,7 @@
         }
       },
       xaxis: {
-        categories: ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dic'],
+        categories: categorias,
         axisBorder: {
           show: false
         },
@@ -578,7 +669,7 @@
           show: false
         },
         min: 10,
-        max: 50,
+        max: valoryMaximo,
         tickAmount: 4
       }
     };
@@ -589,9 +680,10 @@
 
   // Expenses Mini Chart - Radial Chart
   // --------------------------------------------------------------------
+
   const weeklyExpensesEl = document.querySelector('#expensesOfWeek'),
     weeklyExpensesConfig = {
-      series: [65],
+      series: [95],
       chart: {
         width: 60,
         height: 60,
@@ -617,7 +709,7 @@
             },
             value: {
               formatter: function (val) {
-                return '$' + parseInt(val);
+                return parseInt(val) + '%';
               },
               offsetY: 5,
               color: '#697a8d',

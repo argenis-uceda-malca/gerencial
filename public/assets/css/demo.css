@@ -117,3 +117,7 @@
 
 
 /* Fin de estilos para fijar columna */
+
+.table td {
+  font-size: 12px;
+}
