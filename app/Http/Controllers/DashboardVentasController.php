@@ -8,6 +8,15 @@ use Carbon\Carbon;
 
 class DashboardVentasController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (!in_array('acceso_administrador', session('permisos', []))) {
+                return redirect('/')->with('error', 'No tienes permiso para acceder.');
+            }
+            return $next($request);
+        });
+    }
     private $marcaLabel = [
         'MENTHA & CHOCOLATE' => 'MCH',
         'BLUES BY MILK'      => 'BBM',
@@ -84,10 +93,13 @@ class DashboardVentasController extends Controller
             ->get()
             ->keyBy(fn($r) => $r->fecha . '|' . $r->marca . '|' . $this->canonicalCanal($r->sucursal_3));
 
+        // Marcar metas ya usadas; las sobrantes (días sin ventas) se agregan como filas venta=0
+        $usedMetaKeys = [];
         $rows = [];
         foreach ($ventas as $r) {
             $canal = $this->canonicalCanal($r->sucursal_3);
             $key   = $r->fecha . '|' . $r->marca . '|' . $canal;
+            $usedMetaKeys[$key] = true;
             $venta = (float) $r->venta;
             $util  = (float) $r->util;
             $meta  = (float) ($metas[$key]->meta ?? 0);
@@ -102,6 +114,27 @@ class DashboardVentasController extends Controller
                 'venta'  => round($venta, 2),
                 'util'   => round($util, 2),
                 'meta'   => round($meta, 2),
+            ];
+        }
+
+        // Agregar metas huérfanas (días con meta pero sin ventas) para no perder esos montos
+        foreach ($metas as $key => $m) {
+            if (isset($usedMetaKeys[$key])) continue;
+            [$fecha, $marca, $canal] = explode('|', $key, 3);
+            // Necesitamos mes/mes_n: buscamos en ventas del mismo mes o calculamos desde la fecha
+            $dt = \Carbon\Carbon::parse($fecha);
+            $mesNombres = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                           'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+            $rows[] = [
+                'fecha'  => $fecha,
+                'dia_eq' => (int) $dt->day,
+                'mes'    => $mesNombres[$dt->month],
+                'mes_n'  => $dt->month,
+                'marca'  => $this->marcaLabel[$marca] ?? $marca,
+                'canal'  => $canal,
+                'venta'  => 0.0,
+                'util'   => 0.0,
+                'meta'   => round((float) $m->meta, 2),
             ];
         }
 
@@ -138,7 +171,6 @@ class DashboardVentasController extends Controller
         if ($dias)      $vQuery->whereRaw('dia_equivalente::int IN (' . implode(',', $dias) . ')');
 
         $ventas = $vQuery->groupBy('sucursal', 'sucursal_3', 'marca')
-            ->having(DB::raw('SUM(importe_subtotal)'), '>', 0)
             ->orderByDesc(DB::raw('SUM(importe_subtotal)'))
             ->get();
 
@@ -189,7 +221,6 @@ class DashboardVentasController extends Controller
             ->where('tipo_fila', 'ventas_act')
             ->whereBetween('fecha_documento', [$ini, $fin])
             ->groupBy('sucursal', 'sucursal_3', 'marca')
-            ->having(DB::raw('SUM(importe_subtotal)'), '>', 0)
             ->orderByDesc(DB::raw('SUM(importe_subtotal)'))
             ->get();
 

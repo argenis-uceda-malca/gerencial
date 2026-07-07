@@ -489,24 +489,24 @@
 
           <ul class="menu-inner py-1">
             <!-- Dashboard -->
-            @if (in_array('acceso_gerencial', session('permisos')) &&
+            <!-- @if (in_array('acceso_gerencial', session('permisos')) &&
                     in_array('acceso_cubicaje', session('permisos')) &&
                     //in_array('particiopacion_linea_temporal', session('permisos')) ||
                     in_array('acceso_top_venta', session('permisos')) &&
                     in_array('acceso_vta_acumulada', session('permisos')) &&
                     in_array('reporte_vta_mensual', session('permisos')))
-                        <li class="menu-item active">
+                        <li class="menu-item{{ request()->routeIs('entradas.index') ? ' active' : '' }}">
                             <a href="{{ route('entradas.index') }}" class="menu-link">
                               <i class="menu-icon tf-icons bx bx-home-circle"></i>
                               <div data-i18n="Analytics">Reporte BETA</div>
                             </a>
                         </li>
-            @endif
+            @endif -->
 
             
 
             @if (in_array('acceso_gerencial', session('permisos')))
-              <li class="menu-item active">
+              <li class="menu-item{{ request()->routeIs('tabla') ? ' active' : '' }}">
                   {{-- <a href="{{ route('reportesb.index') }}" class="menu-link"> --}}
                   <a href="{{ route('tabla') }}" class="menu-link">
                     <i class="menu-icon tf-icons bx bx-home-circle"></i>
@@ -515,33 +515,35 @@
               </li>
             @endif
 
-            <li class="menu-item active">
+            <li class="menu-item{{ request()->routeIs('reporte_ventas') ? ' active' : '' }}">
                 <a href="{{ route('reporte_ventas') }}" class="menu-link">
                   <i class="menu-icon tf-icons bx bx-home-circle"></i>
                   <div data-i18n="Analytics">Reporte Gerencial</div>
                 </a>
             </li>
 
-            <li class="menu-item">
+            @if (in_array('acceso_administrador', session('permisos', [])))
+            <li class="menu-item{{ request()->routeIs('dashboard.ventas') ? ' active' : '' }}">
                 <a href="{{ route('dashboard.ventas') }}" class="menu-link">
                   <i class="menu-icon tf-icons bx bx-bar-chart-alt-2"></i>
                   <div>Dashboard Ventas</div>
                 </a>
             </li>
 
-            <li class="menu-item">
+            <li class="menu-item{{ request()->routeIs('dashboard.reporte') ? ' active' : '' }}">
                 <a href="{{ route('dashboard.reporte') }}" class="menu-link">
                   <i class="menu-icon tf-icons bx bx-spreadsheet"></i>
                   <div>Reporte Ventas</div>
                 </a>
             </li>
 
-            <li class="menu-item">
+            <li class="menu-item{{ request()->routeIs('dashboard.ffto') ? ' active' : '' }}">
                 <a href="{{ route('dashboard.ffto') }}" class="menu-link">
                   <i class="menu-icon tf-icons bx bx-walk"></i>
                   <div>Follow-up FF vs TO</div>
                 </a>
             </li>
+            @endif
 
             {{-- <!-- Layouts -->
             <li class="menu-item">
@@ -580,7 +582,7 @@
             </li> --}}
 
 
-            @if (in_array('reporte_vta_mensual', session('permisos')) ||
+            <!-- @if (in_array('reporte_vta_mensual', session('permisos')) ||
                     in_array('acceso_cubicaje', session('permisos')) ||
                     //in_array('particiopacion_linea_temporal', session('permisos')) ||
                     in_array('acceso_top_venta', session('permisos')) ||
@@ -628,7 +630,7 @@
 @endif
                 </ul>
               </li>
-@endif
+@endif -->
 
 @if (in_array('subir_data', session('permisos')) || in_array('acceso_reporte', session('permisos')))
 <li class="menu-item">
@@ -655,7 +657,7 @@
               </li>
 @endif
 
-@if (in_array('acceso_social', session('permisos')))
+<!-- @if (in_array('acceso_social', session('permisos')))
 <li class="menu-item">
             <a
               href=""
@@ -666,7 +668,7 @@
               <div data-i18n="Documentation">Social</div>
             </a>
           </li>
-@endif
+@endif -->
 @if (in_array('acceso_rfm', session('permisos')))
 <li class="menu-item">
             <a
@@ -679,7 +681,7 @@
             </a>
           </li>
 @endif
-@if (in_array('acceso_stock_tiendas', session('permisos')))
+<!-- @if (in_array('acceso_stock_tiendas', session('permisos')))
 <li class="menu-item">
             <a
               href=""
@@ -690,7 +692,7 @@
               <div data-i18n="Documentation">Stock Tiendas</div>
             </a>
           </li>
-@endif
+@endif -->
 @if (in_array('acceso_gerencial', session('permisos')) &&
         in_array('acceso_top_venta', session('permisos')) &&
         in_array('acceso_vta_acumulada', session('permisos')) &&
@@ -771,6 +773,14 @@
               <!-- /Search -->
 
               <ul class="navbar-nav flex-row align-items-center ms-auto">
+                <!-- Fullscreen Toggle -->
+                <li class="nav-item" style="margin-right:4px;">
+                  <button class="theme-toggle-btn" id="fs-toggle" title="Pantalla completa">
+                    <i class="bx bx-expand" id="fs-icon-enter"></i>
+                    <i class="bx bx-collapse" id="fs-icon-exit" style="display:none"></i>
+                  </button>
+                </li>
+
                 <!-- Dark Mode Toggle -->
                 <li class="nav-item" style="margin-right:4px;">
                   <button class="theme-toggle-btn" id="theme-toggle" title="Cambiar tema">
@@ -998,6 +1008,46 @@
                     applyStoredState();
                 }
             });
+        })();
+
+        // ══════════════════════════════════════════════════════════
+        // FULLSCREEN TOGGLE
+        // ══════════════════════════════════════════════════════════
+        (function () {
+          const btn = document.getElementById('fs-toggle');
+          const iconEnter = document.getElementById('fs-icon-enter');
+          const iconExit = document.getElementById('fs-icon-exit');
+
+          function updateFSIcon() {
+            const fs = document.fullscreenElement || document.webkitFullscreenElement;
+            if (fs) {
+              if (iconEnter) iconEnter.style.display = 'none';
+              if (iconExit) iconExit.style.display = 'inline-block';
+            } else {
+              if (iconEnter) iconEnter.style.display = 'inline-block';
+              if (iconExit) iconExit.style.display = 'none';
+            }
+          }
+
+          function toggleFS() {
+            const fs = document.fullscreenElement || document.webkitFullscreenElement;
+            if (fs) {
+              if (document.exitFullscreen) document.exitFullscreen();
+              else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            } else {
+              const el = document.documentElement;
+              if (el.requestFullscreen) el.requestFullscreen();
+              else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+            }
+          }
+
+          if (btn) {
+            btn.addEventListener('click', toggleFS);
+          }
+
+          document.addEventListener('fullscreenchange', updateFSIcon);
+          document.addEventListener('webkitfullscreenchange', updateFSIcon);
+          updateFSIcon();
         })();
 
         // ══════════════════════════════════════════════════════════

@@ -8,6 +8,15 @@ use Carbon\Carbon;
 
 class DashboardReporteController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (!in_array('acceso_administrador', session('permisos', []))) {
+                return redirect('/')->with('error', 'No tienes permiso para acceder.');
+            }
+            return $next($request);
+        });
+    }
     private array $dayOrder = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
 
     private function dayKey(string $dia): string
@@ -95,14 +104,28 @@ class DashboardReporteController extends Controller
                 dia_semana,
                 sucursal_3_1 AS canal, sucursal_2_1 AS subcanal,
                 sucursal AS tienda, marca, categoria, localidad,
-                SUM(importe_subtotal)                    AS vta25,
-                SUM(importe_subtotal - costo_venta_neta) AS gm25,
-                SUM(unidades)                            AS unds25
+                SUM(importe_subtotal_hst_1)                          AS vta25,
+                SUM(importe_subtotal_hst_1 - costo_venta_neta_hst_1) AS gm25,
+                SUM(unidades_hst_1)                                  AS unds25
             ")
-            ->where('tipo_fila', 'ventas_act')
+            ->where('tipo_fila', 'ventas_hst')
             ->whereBetween('fecha_documento', [$iniAnt, $finAnt])
             ->groupBy(DB::raw("mes, semana, dia_semana, sucursal_3_1, sucursal_2_1, sucursal,
                 marca, categoria, localidad"))
+            ->get();
+
+        $metas = $db->table('automatizacion_pla_reporte_ventas')
+            ->selectRaw("
+                mes, semana::text AS semana,
+                dia_semana,
+                sucursal_3_1 AS canal, sucursal_2_1 AS subcanal,
+                sucursal AS tienda, marca, categoria, filtro_sss, localidad,
+                SUM(meta_venta) AS meta_vta
+            ")
+            ->where('tipo_fila', 'metas_std')
+            ->whereBetween('fecha_documento', [$ini, $fin])
+            ->groupBy(DB::raw("mes, semana, dia_semana, sucursal_3_1, sucursal_2_1, sucursal,
+                marca, categoria, filtro_sss, localidad"))
             ->get();
 
         $ml = $this->marcaLabel;
@@ -140,7 +163,21 @@ class DashboardReporteController extends Controller
             'unds25'    => (int)$r->unds25,
         ])->values()->all();
 
-        return response()->json(['act' => $actRows, 'hst' => $hstRows]);
+        $metasRows = $metas->map(fn($r) => [
+            'Mes'       => $r->mes        ?? '',
+            'Semana'    => $r->semana     ?? '',
+            'Día'       => $r->dia_semana ?? '',
+            'Canal'     => $r->canal      ?? '',
+            'Subcanal'  => $r->subcanal   ?? '',
+            'Tienda'    => $r->tienda     ?? '',
+            'Marca'     => $ml[$r->marca] ?? $r->marca ?? '',
+            'Categoría' => $r->categoria  ?? '',
+            'SSS'       => $r->filtro_sss ?? '',
+            'Localidad' => $r->localidad  ?? '',
+            'meta_vta'  => round((float)$r->meta_vta, 2),
+        ])->values()->all();
+
+        return response()->json(['act' => $actRows, 'hst' => $hstRows, 'metas' => $metasRows]);
     }
 
     private array $marcaLabel = [
@@ -190,10 +227,10 @@ class DashboardReporteController extends Controller
         $hQuery = $db->table('automatizacion_pla_reporte_ventas')
             ->selectRaw("
                 sucursal_3_1, sucursal_2_1, dia_semana,
-                SUM(importe_subtotal)     AS vta25,
-                SUM(costo_venta_neta)     AS costo25
+                SUM(importe_subtotal_hst_1)     AS vta25,
+                SUM(costo_venta_neta_hst_1)     AS costo25
             ")
-            ->where('tipo_fila', 'ventas_act')
+            ->where('tipo_fila', 'ventas_hst')
             ->whereBetween('fecha_documento', [$iniAnt, $finAnt]);
 
         if ($canales) $hQuery->whereIn('sucursal_3_1', $canales);
@@ -394,15 +431,15 @@ class DashboardReporteController extends Controller
             ->get()
             ->keyBy('sucursal_2_1');
 
-        // 2025: mismas filas ventas_act un año atrás
+        // 2025: filas ventas_hst (generadas por el SP al correr con rango 2026)
         $hQuery = $db->table('automatizacion_pla_reporte_ventas')
             ->selectRaw("
                 sucursal_3_1, sucursal_2_1,
-                SUM(importe_subtotal)  AS vta25,
-                SUM(costo_venta_neta)  AS costo25,
-                SUM(unidades)          AS unds25
+                SUM(importe_subtotal_hst_1)  AS vta25,
+                SUM(costo_venta_neta_hst_1)  AS costo25,
+                SUM(unidades_hst_1)          AS unds25
             ")
-            ->where('tipo_fila', 'ventas_act')
+            ->where('tipo_fila', 'ventas_hst')
             ->whereBetween('fecha_documento', [$iniAnt, $finAnt]);
 
         $applyDimFiltersHst($hQuery);

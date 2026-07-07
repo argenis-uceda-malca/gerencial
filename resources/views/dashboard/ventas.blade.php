@@ -3,39 +3,63 @@
 
 @section('contenido')
 <style>
+/* ══════════════════════════════════════════════════════════
+   PALETA PASTEL NEUTRAL
+   ══════════════════════════════════════════════════════════ */
+:root {
+  --vp-primary:       #7C83FF;
+  --vp-primary-light: #EEECFF;
+  --vp-primary-soft:  #F5F3FF;
+  --vp-green:         #81C784;
+  --vp-green-bg:      #E8F5E9;
+  --vp-green-tx:      #388E3C;
+  --vp-amber:         #FFB74D;
+  --vp-amber-bg:      #FFF3E0;
+  --vp-red:           #E57373;
+  --vp-red-bg:        #FFEBEE;
+  --vp-red-tx:        #C62828;
+  --vp-teal:          #4DB6AC;
+  --vp-teal-bg:       #E0F2F1;
+  --vp-ink:           #2C3E50;
+  --vp-muted:         #78909C;
+  --vp-border:        #E8ECF5;
+  --vp-shadow:        0 2px 14px rgba(44,62,80,.06);
+  --vp-shadow-md:     0 8px 24px rgba(44,62,80,.08);
+}
 /* ── KPI Cards ── */
-.kpi-card { border:none; box-shadow:0 2px 14px rgba(105,108,255,.1); transition:transform .2s,box-shadow .2s; }
-.kpi-card:hover { transform:translateY(-4px); box-shadow:0 8px 24px rgba(105,108,255,.18); }
-.kpi-lbl { font-size:.7rem; text-transform:uppercase; letter-spacing:.6px; color:#697a8d; margin-bottom:.2rem; }
+.kpi-card { border:1px solid var(--vp-border); box-shadow:var(--vp-shadow); transition:transform .2s,box-shadow .2s; border-radius:14px; }
+.kpi-card:hover { transform:translateY(-3px); box-shadow:var(--vp-shadow-md); }
+.kpi-lbl { font-size:.7rem; text-transform:uppercase; letter-spacing:.6px; color:var(--vp-muted); margin-bottom:.2rem; }
 .kpi-val { font-size:1.55rem; font-weight:700; line-height:1.1; }
 .kpi-sub { font-size:.75rem; margin-top:.15rem; }
 
 /* ── Filters (sticky) ── */
 .filter-card {
-  background:linear-gradient(135deg,#f8f7ff 0%,#fff 100%);
-  border:1px solid #e6e4ff;
+  background:var(--vp-primary-soft);
+  border:1px solid var(--vp-border);
   position:sticky;
   top:0;
   z-index:1000;
-  box-shadow:0 4px 16px rgba(105,108,255,.12);
+  box-shadow:var(--vp-shadow);
 }
 .btn-canal { border-radius:20px !important; padding:.25rem .85rem !important; font-size:.8rem !important; }
-.btn-canal.active { box-shadow:0 4px 10px rgba(105,108,255,.35); }
+.btn-canal.active { box-shadow:0 4px 10px rgba(124,131,255,.2); }
+.btn-dark.btn-canal { background:var(--vp-ink) !important; border-color:var(--vp-ink) !important; }
 
 /* ── Multi-select dropdown ── */
 .ms-toggle-btn { min-width:150px; text-align:left; white-space:nowrap;
   overflow:hidden; text-overflow:ellipsis; max-width:200px; }
-.ms-dropdown-menu { min-width:210px; box-shadow:0 6px 20px rgba(0,0,0,.12); }
+.ms-dropdown-menu { min-width:210px; box-shadow:0 6px 20px rgba(0,0,0,.08); }
 .ms-list { max-height:200px; overflow-y:auto; }
 .ms-list-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:2px; max-height:170px; }
 .ms-item { display:flex; align-items:center; padding:.3rem .4rem; border-radius:5px;
   cursor:pointer; font-size:.83rem; white-space:nowrap; }
-.ms-item:hover { background:#f0efff; }
+.ms-item:hover { background:var(--vp-primary-soft); }
 .ms-item.hidden { display:none; }
 .ms-ctrl-btn { font-size:.72rem; padding:.1rem .5rem; }
 
 /* ── Chart range label ── */
-.chart-range { font-size:.72rem; color:#697a8d; margin-top:.1rem; }
+.chart-range { font-size:.72rem; color:var(--vp-muted); margin-top:.1rem; }
 
 /* ── Section badges ── */
 .section-badge { font-size:.72rem; padding:.3rem .75rem; border-radius:20px; }
@@ -44,15 +68,24 @@
 .ag-theme-quartz {
   --ag-font-family: 'Public Sans', system-ui, sans-serif;
   --ag-font-size: 13px;
-  --ag-header-background-color: #f5f5f9;
-  --ag-row-hover-color: #f0efff;
-  --ag-selected-row-background-color: #e7e7ff;
-  --ag-border-color: #e7e7e7;
+  --ag-background-color: #FFFFFF;
+  --ag-header-background-color: #F8F9FE;
+  --ag-odd-row-background-color: #FAFAFE;
+  --ag-row-hover-color: var(--vp-primary-soft);
+  --ag-selected-row-background-color: var(--vp-primary-light);
+  --ag-border-color: var(--vp-border);
+  --ag-row-border-color: #F0F2F8;
 }
 .pct-bar-wrap { display:flex; align-items:center; gap:7px; height:100%; }
-.pct-bar-bg { width:55px; height:5px; background:#e8e8e8; border-radius:4px; overflow:hidden; flex-shrink:0; }
+.pct-bar-bg { width:55px; height:5px; background:#E8ECF5; border-radius:4px; overflow:hidden; flex-shrink:0; }
 .pct-bar-fill { height:100%; border-radius:4px; }
 .var-chip { font-size:.72rem; font-weight:600; padding:.1rem .45rem; border-radius:10px; }
+
+/* ── KPI pastel overrides ── */
+.kpi-card .text-primary { color:var(--vp-primary) !important; }
+.kpi-card .text-warning { color:var(--vp-amber) !important; }
+.kpi-card .text-success { color:var(--vp-green-tx) !important; }
+.kpi-card .text-info    { color:var(--vp-teal) !important; }
 
 /* ── Chart container min heights ── */
 #chart-trend, #chart-meses { min-height:280px; }
@@ -72,6 +105,10 @@
 [data-theme="dark"] .chart-range {
   color:var(--dm-muted);
 }
+[data-theme="dark"] .kpi-card {
+  background:var(--dm-surface) !important;
+  border-color:var(--dm-border) !important;
+}
 [data-theme="dark"] .filter-card {
   background:var(--dm-card-bg) !important;
   border-color:var(--dm-border) !important;
@@ -83,15 +120,15 @@
   background:var(--dm-card-bg) !important;
 }
 [data-theme="dark"] .btn-canal:hover {
-  border-color:var(--dm-primary,#696cff) !important;
-  color:var(--dm-primary,#696cff) !important;
-  background:rgba(105,108,255,.08) !important;
+  border-color:var(--vp-primary) !important;
+  color:var(--vp-primary) !important;
+  background:rgba(124,131,255,.10) !important;
 }
 [data-theme="dark"] .btn-canal.active {
-  border-color:var(--dm-primary,#696cff) !important;
-  background:var(--dm-primary,#696cff) !important;
+  border-color:var(--vp-primary) !important;
+  background:var(--vp-primary) !important;
   color:#fff !important;
-  box-shadow:0 4px 10px rgba(139,131,255,.25) !important;
+  box-shadow:0 4px 10px rgba(124,131,255,.25) !important;
 }
 [data-theme="dark"] .ms-toggle-btn {
   background:var(--dm-input-bg) !important;
@@ -116,8 +153,8 @@
   --ag-background-color: var(--dm-surface);
   --ag-header-background-color: var(--dm-surface-alt);
   --ag-odd-row-background-color: #1C2135;
-  --ag-row-hover-color: rgba(139,131,255,.08);
-  --ag-selected-row-background-color: rgba(139,131,255,.15);
+  --ag-row-hover-color: rgba(124,131,255,.08);
+  --ag-selected-row-background-color: rgba(124,131,255,.14);
   --ag-border-color: var(--dm-border);
   --ag-foreground-color: var(--dm-ink);
   --ag-data-color: var(--dm-ink);
@@ -448,8 +485,8 @@ const fmtFull = v => {
   const s = v < 0 ? '-' : '';
   return `${s}S/ ${Math.abs(v).toLocaleString('es-PE',{minimumFractionDigits:0,maximumFractionDigits:0})}`;
 };
-const pctColor = v => v >= 100 ? '#71dd37' : v >= 80 ? '#ffab00' : '#ff3e1d';
-const pctBgCls = v => v >= 100 ? '#d5f5d0' : v >= 80 ? '#fff3cd' : '#ffd5d0';
+const pctColor = v => v >= 100 ? '#81C784' : v >= 80 ? '#FFB74D' : '#E57373';
+const pctBgCls = v => v >= 100 ? '#E8F5E9' : v >= 80 ? '#FFF3E0' : '#FFEBEE';
 
 // ════════════════════════════════════════════════════════
 //  DATE RANGE BY PERIOD
@@ -565,7 +602,7 @@ function updateKPIs(rows) {
   const ffA = FF.act, ffV = FF.var;
   document.getElementById('kpi-ff').textContent = ffA > 0 ? (ffA/1000).toFixed(1)+'K' : 'N/D';
   document.getElementById('kpi-ff2').innerHTML  = ffA > 0
-    ? `<span style="color:${ffV>=0?'#71dd37':'#ff3e1d'}">${ffV>=0?'↑':'↓'} ${Math.abs(ffV).toFixed(1)}% vs año ant.</span>`
+    ? `<span style="color:${ffV>=0?'#81C784':'#E57373'}">${ffV>=0?'↑':'↓'} ${Math.abs(ffV).toFixed(1)}% vs año ant.</span>`
     : '<span class="text-muted">Sin dato anterior</span>';
 
   // Badge período
@@ -578,7 +615,7 @@ function updateKPIs(rows) {
 //  APEX CHART CONFIGS (shared)
 // ════════════════════════════════════════════════════════
 const ANIM = { enabled: true, easing: 'easeinout', speed: 600 };
-const GRID_OPT = { borderColor: '#f0efff', strokeDashArray: 4 };
+const GRID_OPT = { borderColor: '#E8ECF5', strokeDashArray: 4 };
 const TOOLBAR = { show: false };
 const FONT = 'Public Sans, system-ui, sans-serif';
 
@@ -604,11 +641,11 @@ function initChartTrend(rows) {
       { name:'Venta Real', data: venta, type:'area' },
       { name:'Meta',       data: meta,  type:'line' },
     ],
-    colors: ['#696cff','#ff3e1d'],
+    colors: ['#7C83FF','#FF8A80'],
     fill: {
       type: ['gradient','solid'],
       gradient: { shade:'dark', type:'vertical', shadeIntensity:.4,
-        gradientToColors:['#a5a8fe'], opacityFrom:.65, opacityTo:.05, stops:[0,100] },
+        gradientToColors:['#9DA3FF'], opacityFrom:.65, opacityTo:.05, stops:[0,100] },
     },
     stroke: { curve:'smooth', width:[2,2], dashArray:[0,5] },
     markers: { size:0 },
@@ -644,10 +681,10 @@ function initChartRadial(rows) {
     chart: { type:'radialBar', height:270, animations:ANIM, fontFamily:FONT, toolbar:TOOLBAR },
     series: vals,
     labels,
-    colors: ['#696cff','#ffab00','#71dd37'],
+    colors: ['#7C83FF','#FFB74D','#81C784'],
     plotOptions: { radialBar: {
       hollow: { size:'28%', background:'transparent' },
-      track:  { background:'#f0efff', strokeWidth:'90%' },
+      track:  { background:'#E8ECF5', strokeWidth:'90%' },
       dataLabels: {
         name:  { fontSize:'12px', fontWeight:600 },
         value: { fontSize:'14px', fontWeight:700, formatter: v => v+'%' },
@@ -680,7 +717,7 @@ function initChartTreemap(rows) {
   const opts = {
     chart: { type:'treemap', height:280, animations:ANIM, fontFamily:FONT, toolbar:TOOLBAR },
     series: [{ data }],
-    colors: ['#696cff','#03c3ec','#ffab00','#71dd37','#ff3e1d','#8592a3','#ff69b4'],
+    colors: ['#7C83FF','#4DB6AC','#FFB74D','#81C784','#E57373','#B39DDB','#FF8A80'],
     plotOptions: { treemap: { distributed:true, enableShades:false } },
     dataLabels: {
       enabled:true, style:{ fontSize:'13px', fontWeight:700 },
@@ -709,7 +746,7 @@ function initChartMeses(rows) {
       { name:'Venta Real', data: mes.map(m => Math.round(m.venta)) },
       { name:'Meta',       data: mes.map(m => Math.round(m.meta))  },
     ],
-    colors: ['#696cff','#ff3e1d'],
+    colors: ['#7C83FF','#FF8A80'],
     xaxis: { categories: mes.map(m => m.nom?.substring(0,3) || ''),
       labels:{ style:{ fontSize:'12px' } }, axisBorder:{show:false} },
     yaxis: { labels:{ formatter: v => fmtS(v) } },
@@ -758,7 +795,7 @@ function calcTotals(data, labelField) {
 
 const totalRowStyle = params =>
   params.node.rowPinned === 'bottom'
-    ? { fontWeight:'700', background:'var(--dm-surface-alt)', borderTop:'2px solid var(--dm-primary,#696cff)' }
+    ? { fontWeight:'700', background:'var(--dm-surface-alt)', borderTop:'2px solid var(--vp-primary)' }
     : null;
 
 // ════════════════════════════════════════════════════════
@@ -781,14 +818,14 @@ function pctRenderer(p) {
 
 function varRenderer(p) {
   const v = p.value || 0;
-  const col = v >= 0 ? '#71dd37' : '#ff3e1d';
-  const bg  = v >= 0 ? '#d5f5d0' : '#ffd5d0';
+  const col = v >= 0 ? '#81C784' : '#E57373';
+  const bg  = v >= 0 ? '#E8F5E9' : '#FFEBEE';
   return `<span class="var-chip" style="color:${col};background:${bg}">${v>=0?'+':''}${v.toFixed(1)}%</span>`;
 }
 
 function gmRenderer(p) {
   const v = p.value || 0;
-  const col = v >= 30 ? '#71dd37' : v >= 20 ? '#ffab00' : '#ff3e1d';
+  const col = v >= 30 ? '#81C784' : v >= 20 ? '#FFB74D' : '#E57373';
   return `<span style="color:${col};font-weight:600">${v.toFixed(1)}%</span>`;
 }
 

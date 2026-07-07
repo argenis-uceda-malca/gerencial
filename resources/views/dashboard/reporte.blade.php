@@ -82,10 +82,12 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
   background:linear-gradient(135deg,var(--sb-primary-soft) 0%,var(--sb-surface) 100%);
   border-bottom:1px solid var(--sb-border);
   padding:14px 20px;
+}
+.filter-card .card-header .header-top {
   display:flex;
   align-items:center;
-  flex-wrap:wrap;
   gap:10px;
+  margin-bottom:10px;
 }
 .filter-card .card-header .header-icon {
   width:36px;height:36px;
@@ -93,7 +95,7 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
   border-radius:var(--sb-radius-sm);
   display:flex;align-items:center;justify-content:center;
   color:var(--sb-primary);
-  font-size:1.15rem;
+  font-size:1.15rem;flex-shrink:0;
 }
 .filter-card .card-header h5 {
   font-weight:700;font-size:.92rem;color:var(--sb-ink);margin:0;
@@ -130,6 +132,7 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
   align-items:center;
   gap:12px;
   margin-left:auto;
+  flex-shrink:0;
 }
 
 .live-toggle {
@@ -343,8 +346,7 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
 }
 .pool-col  { display:flex;flex-direction:row;gap:10px;flex:0 0 auto; }
 .zones-col { display:flex;flex-direction:row;gap:10px;flex:1 1 auto;flex-wrap:nowrap;min-width:0; }
-.zones-col .pv-box { flex:1 1 120px;min-width:110px; }
-.zones-col .zone-values { flex:1.6 1 170px; }
+.zones-col .pv-box { flex:1 1 0;min-width:0; }
 
 .pv-box {
   background:var(--sb-surface);
@@ -415,8 +417,7 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
 #btn-reset {
   font-size:.7rem;border:1.5px solid var(--sb-border);
   color:var(--sb-muted);border-radius:var(--sb-radius-sm);
-  white-space:nowrap;align-self:flex-start;
-  padding:6px 14px;background:var(--sb-surface);
+  white-space:nowrap;padding:6px 14px;background:var(--sb-surface);
   transition:all .18s var(--sb-ease);
   display:inline-flex;align-items:center;gap:5px;
 }
@@ -549,7 +550,7 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
   .pool-col { flex-direction:row;width:100%; }
   .pool-dims,.pool-measures { flex:1 1 0;width:auto; }
   .zones-col { min-width:0; }
-  #btn-reset { align-self:stretch;text-align:center; }
+  .pivot-config-footer { justify-content:center; }
   .header-controls { margin-left:0;width:100%;justify-content:flex-end; }
 }
 
@@ -572,7 +573,8 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
   .pool-col { flex-direction:column; }
   .pool-dims,.pool-measures { width:100%; }
   .zones-col { flex-direction:column; }
-  .zones-col .pv-box,.zones-col .zone-values { flex:1 1 auto;min-width:0; }
+  .zones-col .pv-box { flex:1 1 auto;min-width:0; }
+  .pivot-config-footer { justify-content:center !important; }
 
   #grid-detalle { height:55vh;min-height:300px; }
 }
@@ -743,6 +745,10 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
   background: var(--sb-surface-alt);
   border-color: var(--sb-border);
 }
+[data-theme="dark"] .pivot-config-footer {
+  background: var(--sb-surface-alt);
+  border-color: var(--sb-border);
+}
 [data-theme="dark"] .pv-box {
   background: var(--sb-surface);
   border-color: var(--sb-border);
@@ -855,9 +861,25 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
   {{-- ══ CARD PRINCIPAL ── FILTROS ══ --}}
   <div class="card filter-card mb-4">
     <div class="card-header">
-      <div class="header-icon"><i class="bx bx-line-chart"></i></div>
-      <div>
-        <h5>Reporte de Ventas</h5>
+      <div class="header-top">
+        <div class="header-icon"><i class="bx bx-line-chart"></i></div>
+        <div>
+          <h5>Reporte de Ventas</h5>
+        </div>
+        <div class="header-controls">
+          <span id="lbl-filas" class="badge-info"></span>
+          <span id="lbl-rango" class="text-muted" style="font-size:.73rem;font-weight:500;white-space:nowrap"></span>
+          <div class="live-toggle" title="Actualización automática">
+            <span class="live-dot" id="live-dot"></span>
+            <select id="sel-live">
+              <option value="0">Manual</option>
+              <option value="30000">30s</option>
+              <option value="60000">1 min</option>
+              <option value="300000">5 min</option>
+            </select>
+          </div>
+          <button id="btn-excel"><i class="bx bx-file"></i>Excel</button>
+        </div>
       </div>
 
       <div class="periodo-group">
@@ -873,21 +895,6 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
         <button class="periodo-pill"
                 data-ini="{{ \Carbon\Carbon::today()->startOfYear()->toDateString() }}"
                 data-fin="{{ $today }}">Acumulado</button>
-      </div>
-
-      <div class="header-controls">
-        <span id="lbl-filas" class="badge-info"></span>
-        <span id="lbl-rango" class="text-muted" style="font-size:.73rem;font-weight:500;white-space:nowrap"></span>
-        <div class="live-toggle" title="Actualización automática">
-          <span class="live-dot" id="live-dot"></span>
-          <select id="sel-live">
-            <option value="0">Manual</option>
-            <option value="30000">30s</option>
-            <option value="60000">1 min</option>
-            <option value="300000">5 min</option>
-          </select>
-        </div>
-        <button id="btn-excel"><i class="bx bx-file"></i>Excel</button>
       </div>
     </div>
 
@@ -961,6 +968,8 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
                   <div class="zone-body" id="zone-values"></div>
                 </div>
               </div>
+            </div>
+            <div class="pivot-config-footer" style="display:flex;justify-content:flex-end;padding:8px 14px 14px;background:var(--sb-surface-warm);border-top:1px solid var(--sb-border)">
               <button id="btn-reset"><i class="bx bx-reset"></i> Restablecer</button>
             </div>
           </div>
@@ -999,6 +1008,7 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
    ══════════════════════════════════════════════════════════ */
 var ALL_DATA    = [];
 var HST_DATA    = [];
+var METAS_DATA  = [];
 var MERGED_DATA = [];
 var activeIni   = '{{ $mesIni }}';
 var activeFin   = '{{ $today }}';
@@ -1007,7 +1017,7 @@ var gridDetalle = null;
 var detLoaded   = false;
 var collapsed   = new Set();
 var sortables   = [];
-var LS_KEY      = 'pivot_reporte_cfg_v3';
+var LS_KEY      = 'pivot_reporte_cfg_v4';
 
 var DIMENSIONS  = ['Mes','Semana','Día #','Día','Canal','Subcanal','Tienda','Marca','Categoría','SSS','Localidad'];
 var MEASURE_KEYS = Object.keys(PivotEngine.MEASURES);
@@ -1025,8 +1035,8 @@ var DEFAULT_CFG = {
   values: [
     { key:'vta26',       aggFn:'sum' },
     { key:'var_pct',     aggFn:'sum' },
+    { key:'cumpl_pct',   aggFn:'sum' },
     { key:'gm26_pct',    aggFn:'sum' },
-    { key:'gm25_pct',    aggFn:'sum' },
     { key:'ticket_prom', aggFn:'sum' },
   ],
 };
@@ -1490,14 +1500,15 @@ async function loadPivotData(){
   try {
     var r    = await fetch('/dashboard/reporte/pivot?'+new URLSearchParams({ini:activeIni,fin:activeFin}));
     var payload = await r.json();
-    ALL_DATA = payload.act;
-    HST_DATA = payload.hst;
+    ALL_DATA   = payload.act;
+    HST_DATA   = payload.hst;
+    METAS_DATA = payload.metas || [];
 
     var semMes = {};
     ALL_DATA.forEach(function(row){ if(row['Semana'] && row['Mes']) semMes[row['Semana']] = row['Mes']; });
 
     var actMerged = ALL_DATA.map(function(row){
-      return Object.assign({}, row, {vta25:0, gm25:0, unds25:0});
+      return Object.assign({}, row, {vta25:0, gm25:0, unds25:0, meta_vta:0});
     });
     var hstMerged = HST_DATA.map(function(row){
       return {
@@ -1514,10 +1525,29 @@ async function loadPivotData(){
         'Localidad':row['Localidad'],
         'vta26': 0, 'gm26': 0, 'unds26': 0, 'tickets26': 0,
         'vta25': row['vta25'], 'gm25': row['gm25'], 'unds25': row['unds25'],
+        'meta_vta': 0,
         '_isHst': true
       };
     });
-    MERGED_DATA = actMerged.concat(hstMerged);
+    var metasMerged = METAS_DATA.map(function(row){
+      return {
+        'Mes':      row['Mes'],
+        'Semana':   row['Semana'],
+        'Día #':    '',
+        'Día':      row['Día'],
+        'Canal':    row['Canal'],
+        'Subcanal': row['Subcanal'],
+        'Tienda':   row['Tienda'],
+        'Marca':    row['Marca'],
+        'Categoría':row['Categoría'],
+        'SSS':      row['SSS'],
+        'Localidad':row['Localidad'],
+        'vta26': 0, 'gm26': 0, 'unds26': 0, 'tickets26': 0,
+        'vta25': 0, 'gm25': 0, 'unds25': 0,
+        'meta_vta': row['meta_vta']
+      };
+    });
+    MERGED_DATA = actMerged.concat(hstMerged).concat(metasMerged);
 
     buildFilterOptions();
     buildFilterBar();
