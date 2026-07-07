@@ -7,45 +7,59 @@
 (function () {
   let cardColor, headingColor, axisColor, shadeColor, borderColor;
 
-  cardColor = config.colors.white;
-  headingColor = config.colors.headingColor;
-  axisColor = config.colors.axisColor;
-  borderColor = config.colors.borderColor;
+  function readCSSVar(name, fallback) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+  }
+
+  function readChartColors() {
+    cardColor   = readCSSVar('--chart-bar-stroke',   config.colors.white);
+    headingColor = readCSSVar('--chart-label-color',  config.colors.headingColor);
+    axisColor    = readCSSVar('--chart-axis-color',   config.colors.axisColor);
+    borderColor  = readCSSVar('--chart-border-color', config.colors.borderColor);
+  }
+  readChartColors();
+
+  window._chartDataLabelsFmt = function(v) { return Number(v).toFixed(1) + 'M'; };
+  window._chartYaxisFmt      = function(v) { return Number(v).toFixed(1) + 'M'; };
+
+  window.updateChartTheme = function () {
+    if (!window.totalRevenueChart) return;
+    readChartColors();
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    window.totalRevenueChart.updateOptions({
+      chart: { background: 'transparent' },
+      theme: { mode: isDark ? 'dark' : 'light' },
+      colors: [config.colors.primary, config.colors.info],
+      dataLabels: { style: { colors: [headingColor] },
+        formatter: window._chartDataLabelsFmt },
+      stroke: { colors: [isDark ? 'transparent' : '#fff'] },
+      grid: { borderColor: borderColor },
+      yaxis: { labels: { style: { colors: axisColor },
+        formatter: window._chartYaxisFmt } },
+      xaxis: { labels: { style: { colors: axisColor } } },
+      legend: { labels: { colors: axisColor } },
+    }, false, true);
+  };
 
   // Total Revenue Report Chart - Bar Chart
   // --------------------------------------------------------------------
   //tengo este array const importess_anterior = ["4446596.80706900","4860109.44460900"] quiero concatenarle mas valores "0" para q en total sean 6 valores dentro de ese array
-  function abreviarNumero(numero) {
-    if (numero >= 1000000) {
-        return (numero / 1000000).toFixed(1) + 'M';
-    } else if (numero >= 1000) {
-        return (numero / 1000).toFixed(1) + 'k';
-    } else {
-        return numero.toString();
-    }
-  }
+  function abreviarNumero(v) { return Number(v).toFixed(1) + 'M'; }
   
   const importess_original = [...importess]; 
 
-  while(importess.length < 6) {
-    importess.push("0.1");
-  }
-  const impoertes2 = importess_anterior;
-  console.log(impoertes2);
-  const importes_negativos = impoertes2.map(num => -Math.abs(num));
-  //console.log(importes_negativos);
+  while(importess.length < 6) { importess.push("0.1"); }
+
+  // Convertir a números y dividir entre 1M para mostrar en millones
+  const toM = a => a.map(v => parseFloat(v) / 1e6);
+  const importess_anterior_m = toM(importess_anterior);
+  const importess_actual_m   = toM(importess);
 
   const totalRevenueChartEl = document.querySelector('#totalRevenueChart'),
     totalRevenueChartOptions = {
       series: [
-        {
-          name: '2025',
-          data: importess_anterior
-        },
-        {
-          name: '2026',
-          data: importess
-        }
+        { name: '2025', data: importess_anterior_m },
+        { name: '2026', data: importess_actual_m }
       ],
       chart: {
         height: 300,
@@ -67,12 +81,10 @@
       },
       colors: [config.colors.primary, config.colors.info],
       dataLabels: {
-        formatter: function(val) {
-            return abreviarNumero(val);
-        },
+        formatter: window._chartDataLabelsFmt,
         position: 'top',
         style: {
-            colors: ['#454545'] // Color negro
+            colors: ['#454545']
         },
         enabled: true
       },
@@ -130,22 +142,7 @@
             fontSize: '13px',
             colors: axisColor
           },
-          formatter: function (val) {
-            // Personalizar el formateo para mostrar 'M' para millones
-            if (val >= 1000000) {
-              return (val / 1000000).toFixed(1) + 'M';
-            }
-            if (val >= 1000) {
-              return (val / 1000).toFixed(1) + 'K';
-            }
-            if (val <= -1000000) {
-              return (val / 1000000).toFixed(1) + 'M';
-            }
-            if (val <= -1000) {
-              return (val / 1000).toFixed(1) + 'K';
-            }
-            return val;
-          }
+          formatter: window._chartYaxisFmt
         }
       },
       responsive: [
@@ -329,8 +326,8 @@
       }
     };
   if (typeof totalRevenueChartEl !== undefined && totalRevenueChartEl !== null) {
-    const totalRevenueChart = new ApexCharts(totalRevenueChartEl, totalRevenueChartOptions);
-    totalRevenueChart.render();
+    window.totalRevenueChart = new ApexCharts(totalRevenueChartEl, totalRevenueChartOptions);
+    window.totalRevenueChart.render();
   }
 
   // Growth Chart - Radial Bar Chart

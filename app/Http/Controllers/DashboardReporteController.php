@@ -79,6 +79,7 @@ class DashboardReporteController extends Controller
                 dia_equivalente::text AS dia, dia_semana,
                 sucursal_3_1 AS canal, sucursal_2_1 AS subcanal,
                 sucursal AS tienda, marca, categoria, filtro_sss, localidad,
+                linea, temporada,
                 SUM(importe_subtotal)              AS vta26,
                 SUM(importe_subtotal - costo_venta_neta) AS gm26,
                 SUM(unidades)                      AS unds26,
@@ -88,7 +89,7 @@ class DashboardReporteController extends Controller
             ->whereBetween('fecha_documento', [$ini, $fin])
             ->groupBy(DB::raw("mes, semana, dia_equivalente, dia_semana,
                 sucursal_3_1, sucursal_2_1, sucursal,
-                marca, categoria, filtro_sss, localidad"))
+                marca, categoria, filtro_sss, localidad, linea, temporada"))
             ->get();
 
         // 2025: usamos el mismo rango de fechas calendarios, un año atrás.
@@ -104,6 +105,7 @@ class DashboardReporteController extends Controller
                 dia_equivalente::text AS dia, dia_semana,
                 sucursal_3_1 AS canal, sucursal_2_1 AS subcanal,
                 sucursal AS tienda, marca, categoria, localidad,
+                linea, temporada,
                 SUM(importe_subtotal_hst_1)                          AS vta25,
                 SUM(importe_subtotal_hst_1 - costo_venta_neta_hst_1) AS gm25,
                 SUM(unidades_hst_1)                                  AS unds25
@@ -111,7 +113,7 @@ class DashboardReporteController extends Controller
             ->where('tipo_fila', 'ventas_hst')
             ->whereBetween('fecha_documento', [$iniAnt, $finAnt])
             ->groupBy(DB::raw("mes, semana, dia_equivalente, dia_semana, sucursal_3_1, sucursal_2_1, sucursal,
-                marca, categoria, localidad"))
+                marca, categoria, localidad, linea, temporada"))
             ->get();
 
         $metas = $db->table('automatizacion_pla_reporte_ventas')
@@ -120,12 +122,13 @@ class DashboardReporteController extends Controller
                 dia_equivalente::text AS dia, dia_semana,
                 sucursal_3_1 AS canal, sucursal_2_1 AS subcanal,
                 sucursal AS tienda, marca, categoria, filtro_sss, localidad,
+                linea, temporada,
                 SUM(meta_venta) AS meta_vta
             ")
             ->where('tipo_fila', 'metas_std')
             ->whereBetween('fecha_documento', [$ini, $fin])
             ->groupBy(DB::raw("mes, semana, dia_equivalente, dia_semana, sucursal_3_1, sucursal_2_1, sucursal,
-                marca, categoria, filtro_sss, localidad"))
+                marca, categoria, filtro_sss, localidad, linea, temporada"))
             ->get();
 
         $ml = $this->marcaLabel;
@@ -142,6 +145,8 @@ class DashboardReporteController extends Controller
             'Categoría' => $r->categoria  ?? '',
             'SSS'       => $r->filtro_sss ?? '',
             'Localidad' => $r->localidad  ?? '',
+            'Lineas'    => $r->linea      ?? '',
+            'Temporada' => $r->temporada  ?? '',
             'vta26'     => round((float)$r->vta26, 2),
             'gm26'      => round((float)$r->gm26,  2),
             'unds26'    => (int)$r->unds26,
@@ -159,6 +164,8 @@ class DashboardReporteController extends Controller
             'Marca'     => $ml[$r->marca] ?? $r->marca ?? '',
             'Categoría' => $r->categoria  ?? '',
             'Localidad' => $r->localidad  ?? '',
+            'Lineas'    => $r->linea      ?? '',
+            'Temporada' => $r->temporada  ?? '',
             'vta25'     => round((float)$r->vta25, 2),
             'gm25'      => round((float)$r->gm25,  2),
             'unds25'    => (int)$r->unds25,
@@ -176,6 +183,8 @@ class DashboardReporteController extends Controller
             'Categoría' => $r->categoria  ?? '',
             'SSS'       => $r->filtro_sss ?? '',
             'Localidad' => $r->localidad  ?? '',
+            'Lineas'    => $r->linea      ?? '',
+            'Temporada' => $r->temporada  ?? '',
             'meta_vta'  => round((float)$r->meta_vta, 2),
         ])->values()->all();
 

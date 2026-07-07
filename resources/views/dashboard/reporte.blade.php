@@ -367,11 +367,10 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
 }
 .pv-box .pv-head i { font-size:.85rem; }
 .pv-box .zone-body {
-  min-height:38px;padding:7px 8px;display:flex;flex-wrap:wrap;
-  align-content:flex-start;gap:5px;
+  flex:1;min-height:38px;padding:7px 8px;display:flex;flex-wrap:wrap;
+  align-content:flex-start;gap:5px;overflow-y:auto;
   transition:background .2s var(--sb-ease);
 }
-.pool-dims .zone-body, .pool-measures .zone-body { max-height:120px;overflow-y:auto; }
 
 .zone-rows   .pv-head { background:#FFF5E6; color:#D4942B; }
 .zone-cols   .pv-head { background:#E6F7F5; color:#3AB09A; }
@@ -1020,7 +1019,7 @@ var sortables   = [];
 var LS_KEY      = 'pivot_reporte_cfg_v4';
 var MARCA_TEMPORADA = ['FINA','EXIT','KORDA','MILK','MCH','BBM'];
 
-var DIMENSIONS  = ['Mes','Semana','Día #','Día','Canal','Subcanal','Tienda','Marca','Marca Temporada','Categoría','SSS','Localidad'];
+var DIMENSIONS  = ['Mes','Semana','Día #','Día','Canal','Subcanal','Tienda','Marca','Marca Temporada','Categoría','SSS','Localidad','Lineas','Temporada'];
 var MEASURE_KEYS = Object.keys(PivotEngine.MEASURES);
 
 var ORDER_MAP = {
@@ -1524,7 +1523,7 @@ async function loadPivotData(){
       return {
         'Mes':      row['Mes'] || semMes[row['Semana']] || '',
         'Semana':   row['Semana'],
-        'Día #':    row['Día #'] || '',
+        'Día #':    row['Día #'] ?? '',
         'Día':      row['Día'],
         'Canal':    row['Canal'],
         'Subcanal': row['Subcanal'],
@@ -1534,6 +1533,8 @@ async function loadPivotData(){
         'Categoría':row['Categoría'],
         'SSS':      '',
         'Localidad':row['Localidad'],
+        'Lineas':   row['Lineas'] ?? '',
+        'Temporada':row['Temporada'] ?? '',
         'vta26': 0, 'gm26': 0, 'unds26': 0, 'tickets26': 0,
         'vta25': row['vta25'], 'gm25': row['gm25'], 'unds25': row['unds25'],
         'meta_vta': 0,
@@ -1544,7 +1545,7 @@ async function loadPivotData(){
       return {
         'Mes':      row['Mes'],
         'Semana':   row['Semana'],
-        'Día #':    row['Día #'] || '',
+        'Día #':    row['Día #'] ?? '',
         'Día':      row['Día'],
         'Canal':    row['Canal'],
         'Subcanal': row['Subcanal'],
@@ -1554,6 +1555,8 @@ async function loadPivotData(){
         'Categoría':row['Categoría'],
         'SSS':      row['SSS'],
         'Localidad':row['Localidad'],
+        'Lineas':   row['Lineas'] ?? '',
+        'Temporada':row['Temporada'] ?? '',
         'vta26': 0, 'gm26': 0, 'unds26': 0, 'tickets26': 0,
         'vta25': 0, 'gm25': 0, 'unds25': 0,
         'meta_vta': row['meta_vta']

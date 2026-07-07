@@ -103,6 +103,10 @@
         --dm-navbar-bg:    #FFFFFF;
         --dm-card-bg:      #FFFFFF;
         --dm-input-bg:     #FFFFFF;
+        --chart-bar-stroke:   #FFFFFF;
+        --chart-label-color:  #454545;
+        --chart-axis-color:   #A1ACB8;
+        --chart-border-color: #ECEEF1;
       }
 
       [data-theme="dark"] {
@@ -117,6 +121,10 @@
         --dm-navbar-bg:    #1A1F33;
         --dm-card-bg:      #1F2438;
         --dm-input-bg:     #282E44;
+        --chart-bar-stroke:   transparent;
+        --chart-label-color:  #D1D5E0;
+        --chart-axis-color:   #8B90A8;
+        --chart-border-color: #2E3450;
       }
 
       /* Dark mode global overrides */
@@ -930,7 +938,7 @@
     <script src="../assets/js/main.js"></script>
 
     <!-- Page JS -->
-    <script src="../assets/js/dashboards-analytics.js?v1.0"></script>
+    <script src="../assets/js/dashboards-analytics.js?v1.2"></script>
 
     <!-- Place this tag in your head or just before your close body tag. -->
     <script async defer src="https://buttons.github.io/buttons.js"></script>
@@ -1071,6 +1079,7 @@
                     if (iconSun) iconSun.style.display = 'none';
                 }
                 try { localStorage.setItem(STORAGE_KEY, dark ? 'dark' : 'light'); } catch (e) {}
+                if (typeof window.updateChartTheme === 'function') window.updateChartTheme();
             }
 
             // Apply saved preference
