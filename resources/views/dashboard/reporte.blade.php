@@ -1055,6 +1055,8 @@ var FILTER_DIMS = [
   { key:'Categoría', param:'categorias',  label:'Categoría' },
   { key:'SSS',       param:'sss',         label:'SSS' },
   { key:'Localidad', param:'localidades', label:'Localidad' },
+  { key:'Lineas',    param:'lineas',      label:'Líneas' },
+  { key:'Temporada', param:'temporadas',  label:'Temporada' },
 ];
 var FILTERS = {};
 FILTER_DIMS.forEach(function(f){ FILTERS[f.key] = new Set(); });
