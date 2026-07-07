@@ -470,6 +470,7 @@ let activeDias     = [];   // empty = all days
 let trendView      = '30';
 let chartTrend, chartRadial, chartTreemap, chartMeses;
 let gridResumen, gridTiendas;
+const MARCA_TEMPORADA = ['FINA','EXIT','KORDA','MILK','MCH','BBM'];
 
 // ════════════════════════════════════════════════════════
 //  FORMAT HELPERS
@@ -870,7 +871,7 @@ function initGridResumen(data) {
 }
 
 function updateGridResumen(rows) {
-  const data = aggByKey(rows);
+  const data = aggByKey(rows.filter(r => MARCA_TEMPORADA.includes(r.marca)));
   if (!gridResumen) return;
   gridResumen.setGridOption('rowData', data);
   gridResumen.setGridOption('pinnedBottomRowData', calcTotals(data, 'canal'));
@@ -989,7 +990,7 @@ function applyFilters(init = false) {
     initChartRadial(rows);
     initChartTreemap(rows);
     initChartMeses(rows);
-    initGridResumen(aggByKey(rows));
+    initGridResumen(aggByKey(rows.filter(r => MARCA_TEMPORADA.includes(r.marca))));
     initGridTiendas();
   } else {
     updateChartTrend(rows);

@@ -1018,15 +1018,17 @@ var detLoaded   = false;
 var collapsed   = new Set();
 var sortables   = [];
 var LS_KEY      = 'pivot_reporte_cfg_v4';
+var MARCA_TEMPORADA = ['FINA','EXIT','KORDA','MILK','MCH','BBM'];
 
-var DIMENSIONS  = ['Mes','Semana','Día #','Día','Canal','Subcanal','Tienda','Marca','Categoría','SSS','Localidad'];
+var DIMENSIONS  = ['Mes','Semana','Día #','Día','Canal','Subcanal','Tienda','Marca','Marca Temporada','Categoría','SSS','Localidad'];
 var MEASURE_KEYS = Object.keys(PivotEngine.MEASURES);
 
 var ORDER_MAP = {
   'Día'  : ['lunes','martes','miércoles','jueves','viernes','sábado','domingo'],
   'Mes'  : ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
   'Canal': ['BOUTIQUES','OUTLETS','WEB'],
-  'Marca': ['MCH','EXIT','MILK','BBM','FINA','KORDA','JOIN','S/M'],
+  'Marca': ['MCH','EXIT','MILK','BBM','FINA','KORDA'],
+  'Marca Temporada': ['MCH','EXIT','MILK','BBM','FINA','KORDA'],
 };
 
 var DEFAULT_CFG = {
@@ -1046,8 +1048,9 @@ var DEFAULT_CFG = {
    ══════════════════════════════════════════════════════════ */
 var FILTER_DIMS = [
   { key:'Canal',     param:'canales',     label:'Canal' },
-  { key:'Marca',     param:'marcas',      label:'Marca' },
-  { key:'Semana',    param:'semanas',     label:'Semana' },
+  { key:'Marca',             param:'marcas',             label:'Marca' },
+  { key:'Marca Temporada',   param:'marca_temporada',    label:'Marca Temporada' },
+  { key:'Semana',            param:'semanas',             label:'Semana' },
   { key:'Día',       param:'dias',        label:'Día' },
   { key:'Tienda',    param:'tiendas',     label:'Tienda' },
   { key:'Categoría', param:'categorias',  label:'Categoría' },
@@ -1069,6 +1072,7 @@ function buildFilterOptions(){
       if(order){ var ia=order.indexOf(a), ib=order.indexOf(b); if(ia<0)ia=999; if(ib<0)ib=999; if(ia!==ib) return ia-ib; }
       return a.localeCompare(b,'es');
     });
+    if(f.key === 'Marca Temporada') arr = MARCA_TEMPORADA.slice();
     FILTER_OPTIONS[f.key] = arr;
   });
 }
@@ -1469,6 +1473,7 @@ var DET_COLS = [
 function filterParams(){
   var p = new URLSearchParams({ini:activeIni,fin:activeFin});
   FILTER_DIMS.forEach(function(f){
+    if(f.key === 'Marca Temporada') return;
     FILTERS[f.key].forEach(function(v){ p.append(f.param+'[]', v); });
   });
   return p;
@@ -1478,6 +1483,9 @@ async function loadDetalle(){
   try {
     var r    = await fetch('/dashboard/reporte/detalle?'+filterParams());
     var data = await r.json();
+    if(FILTERS['Marca Temporada'].size > 0){
+      data = data.filter(function(row){ return FILTERS['Marca Temporada'].has(row['Marca']); });
+    }
     if(!gridDetalle){
       gridDetalle = agGrid.createGrid(document.getElementById('grid-detalle'), {
         columnDefs:DET_COLS, rowData:data,
@@ -1504,6 +1512,8 @@ async function loadPivotData(){
     HST_DATA   = payload.hst;
     METAS_DATA = payload.metas || [];
 
+    ALL_DATA.forEach(function(r){ r['Marca Temporada'] = MARCA_TEMPORADA.includes(r.Marca) ? r.Marca : ''; });
+
     var semMes = {};
     ALL_DATA.forEach(function(row){ if(row['Semana'] && row['Mes']) semMes[row['Semana']] = row['Mes']; });
 
@@ -1514,12 +1524,13 @@ async function loadPivotData(){
       return {
         'Mes':      row['Mes'] || semMes[row['Semana']] || '',
         'Semana':   row['Semana'],
-        'Día #':    '',
+        'Día #':    row['Día #'] || '',
         'Día':      row['Día'],
         'Canal':    row['Canal'],
         'Subcanal': row['Subcanal'],
         'Tienda':   row['Tienda'],
         'Marca':    row['Marca'],
+        'Marca Temporada': MARCA_TEMPORADA.includes(row['Marca']) ? row['Marca'] : '',
         'Categoría':row['Categoría'],
         'SSS':      '',
         'Localidad':row['Localidad'],
@@ -1533,12 +1544,13 @@ async function loadPivotData(){
       return {
         'Mes':      row['Mes'],
         'Semana':   row['Semana'],
-        'Día #':    '',
+        'Día #':    row['Día #'] || '',
         'Día':      row['Día'],
         'Canal':    row['Canal'],
         'Subcanal': row['Subcanal'],
         'Tienda':   row['Tienda'],
         'Marca':    row['Marca'],
+        'Marca Temporada': MARCA_TEMPORADA.includes(row['Marca']) ? row['Marca'] : '',
         'Categoría':row['Categoría'],
         'SSS':      row['SSS'],
         'Localidad':row['Localidad'],
