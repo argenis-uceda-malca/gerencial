@@ -1,0 +1,248 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+
+class DashboardVentasController extends Controller
+{
+    private $marcaLabel = [
+        'MENTHA & CHOCOLATE' => 'MCH',
+        'BLUES BY MILK'      => 'BBM',
+        'EXIT'               => 'EXIT',
+        'MILK'               => 'MILK',
+        'FINA'               => 'FINA',
+        'KORDA'              => 'KORDA',
+        'JOIN'               => 'JOIN',
+        'SIN MARCA'          => 'S/M',
+    ];
+
+    private function canonicalCanal(string $s3): string
+    {
+        return in_array($s3, ['WEB', 'ECOMMERCE OFF']) ? 'WEB' : $s3;
+    }
+
+    public function index(Request $request)
+    {
+        $today  = Carbon::today();
+        $ini    = $today->copy()->startOfYear()->toDateString();
+        $mesIni = $today->copy()->startOfMonth()->toDateString();
+        $mesFin = $today->copy()->endOfMonth()->toDateString();
+
+        $rows    = $this->buildFlatRows($ini, $today->toDateString());
+        $tiendas = $this->buildTiendas($mesIni, $mesFin);
+        $ff      = $this->buildFF($mesIni, $mesFin);
+
+        $meses = collect($rows)
+            ->groupBy('mes_n')
+            ->map(fn($g) => ['n' => $g[0]['mes_n'], 'nom' => $g[0]['mes']])
+            ->sortBy('n')
+            ->values()
+            ->all();
+
+        return view('dashboard.ventas', [
+            'rows'     => $rows,
+            'tiendas'  => $tiendas,
+            'meses'    => $meses,
+            'ff'       => $ff,
+            'today'    => $today->toDateString(),
+            'iniAnual' => $ini,
+            'mesIni'   => $mesIni,
+        ]);
+    }
+
+    private function buildFlatRows(string $ini, string $fin): array
+    {
+        $db = DB::connection('pgsql');
+
+        $ventas = $db->table('automatizacion_pla_reporte_ventas')
+            ->selectRaw("
+                fecha_documento::date                        AS fecha,
+                dia_equivalente::int                         AS dia_eq,
+                mes,
+                EXTRACT(MONTH FROM fecha_documento)::int     AS mes_n,
+                marca,
+                sucursal_3,
+                SUM(importe_subtotal)                        AS venta,
+                SUM(importe_subtotal - costo_venta_neta)     AS util
+            ")
+            ->where('tipo_fila', 'ventas_act')
+            ->whereBetween('fecha_documento', [$ini, $fin])
+            ->groupBy(DB::raw("
+                fecha_documento::date, dia_equivalente, mes,
+                EXTRACT(MONTH FROM fecha_documento), marca, sucursal_3
+            "))
+            ->get();
+
+        $metas = $db->table('automatizacion_pla_reporte_ventas')
+            ->selectRaw("fecha_documento::date AS fecha, marca, sucursal_3, SUM(meta_venta) AS meta")
+            ->where('tipo_fila', 'metas_std')
+            ->whereBetween('fecha_documento', [$ini, $fin])
+            ->groupBy(DB::raw("fecha_documento::date, marca, sucursal_3"))
+            ->get()
+            ->keyBy(fn($r) => $r->fecha . '|' . $r->marca . '|' . $this->canonicalCanal($r->sucursal_3));
+
+        $rows = [];
+        foreach ($ventas as $r) {
+            $canal = $this->canonicalCanal($r->sucursal_3);
+            $key   = $r->fecha . '|' . $r->marca . '|' . $canal;
+            $venta = (float) $r->venta;
+            $util  = (float) $r->util;
+            $meta  = (float) ($metas[$key]->meta ?? 0);
+
+            $rows[] = [
+                'fecha'  => $r->fecha,
+                'dia_eq' => (int) $r->dia_eq,
+                'mes'    => $r->mes,
+                'mes_n'  => (int) $r->mes_n,
+                'marca'  => $this->marcaLabel[$r->marca] ?? $r->marca,
+                'canal'  => $canal,
+                'venta'  => round($venta, 2),
+                'util'   => round($util, 2),
+                'meta'   => round($meta, 2),
+            ];
+        }
+
+        usort($rows, fn($a, $b) => strcmp($a['fecha'], $b['fecha']));
+        return $rows;
+    }
+
+    public function tiendas(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $ini     = $request->input('ini', Carbon::today()->startOfMonth()->toDateString());
+        $fin     = $request->input('fin', Carbon::today()->toDateString());
+        $canales = $request->input('canales', []);
+        $meses   = array_map('intval', $request->input('meses', []));
+        $dias    = array_map('intval', $request->input('dias', []));
+
+        $db = DB::connection('pgsql');
+
+        // Expandir canal WEB → incluye ECOMMERCE OFF en DB
+        $dbCanales = [];
+        foreach ($canales as $c) {
+            if ($c === 'WEB') { $dbCanales[] = 'WEB'; $dbCanales[] = 'ECOMMERCE OFF'; }
+            else $dbCanales[] = $c;
+        }
+
+        $vQuery = $db->table('automatizacion_pla_reporte_ventas')
+            ->selectRaw("sucursal, sucursal_3, marca,
+                SUM(importe_subtotal)                    AS venta,
+                SUM(importe_subtotal - costo_venta_neta) AS util")
+            ->where('tipo_fila', 'ventas_act')
+            ->whereBetween('fecha_documento', [$ini, $fin]);
+
+        if ($dbCanales) $vQuery->whereIn('sucursal_3', $dbCanales);
+        if ($meses)     $vQuery->whereRaw('EXTRACT(MONTH FROM fecha_documento)::int IN (' . implode(',', $meses) . ')');
+        if ($dias)      $vQuery->whereRaw('dia_equivalente::int IN (' . implode(',', $dias) . ')');
+
+        $ventas = $vQuery->groupBy('sucursal', 'sucursal_3', 'marca')
+            ->having(DB::raw('SUM(importe_subtotal)'), '>', 0)
+            ->orderByDesc(DB::raw('SUM(importe_subtotal)'))
+            ->get();
+
+        $mQuery = $db->table('automatizacion_pla_reporte_ventas')
+            ->selectRaw("sucursal, SUM(meta_venta) AS meta")
+            ->where('tipo_fila', 'metas_std')
+            ->whereBetween('fecha_documento', [$ini, $fin]);
+
+        if ($meses) $mQuery->whereRaw('EXTRACT(MONTH FROM fecha_documento)::int IN (' . implode(',', $meses) . ')');
+        if ($dias)  $mQuery->whereRaw('dia_equivalente::int IN (' . implode(',', $dias) . ')');
+
+        $metas = $mQuery->groupBy('sucursal')->pluck('meta', 'sucursal');
+
+        $rows = [];
+        foreach ($ventas as $r) {
+            $canal = $this->canonicalCanal($r->sucursal_3);
+            $venta = (float) $r->venta;
+            $util  = (float) $r->util;
+            $meta  = (float) ($metas[$r->sucursal] ?? 0);
+            $pct   = $meta > 0 ? round($venta / $meta * 100, 1) : 0;
+            $gm    = $venta > 0 ? round($util / $venta * 100, 1) : 0;
+            $var   = $meta > 0 ? round(($venta - $meta) / $meta * 100, 1) : 0;
+
+            $rows[] = [
+                'sucursal' => $r->sucursal,
+                'canal'    => $canal,
+                'marca'    => $this->marcaLabel[$r->marca] ?? $r->marca,
+                'venta'    => round($venta, 2),
+                'meta'     => round($meta, 2),
+                'pct'      => $pct,
+                'util'     => round($util, 2),
+                'gm'       => $gm,
+                'var'      => $var,
+            ];
+        }
+
+        return response()->json($rows);
+    }
+
+    private function buildTiendas(string $ini, string $fin): array
+    {
+        $db = DB::connection('pgsql');
+
+        $ventas = $db->table('automatizacion_pla_reporte_ventas')
+            ->selectRaw("sucursal, sucursal_3, marca,
+                SUM(importe_subtotal)                    AS venta,
+                SUM(importe_subtotal - costo_venta_neta) AS util")
+            ->where('tipo_fila', 'ventas_act')
+            ->whereBetween('fecha_documento', [$ini, $fin])
+            ->groupBy('sucursal', 'sucursal_3', 'marca')
+            ->having(DB::raw('SUM(importe_subtotal)'), '>', 0)
+            ->orderByDesc(DB::raw('SUM(importe_subtotal)'))
+            ->get();
+
+        $metas = $db->table('automatizacion_pla_reporte_ventas')
+            ->selectRaw("sucursal, SUM(meta_venta) AS meta")
+            ->where('tipo_fila', 'metas_std')
+            ->whereBetween('fecha_documento', [$ini, $fin])
+            ->groupBy('sucursal')
+            ->pluck('meta', 'sucursal');
+
+        $rows = [];
+        foreach ($ventas as $r) {
+            $canal = $this->canonicalCanal($r->sucursal_3);
+            $venta = (float) $r->venta;
+            $util  = (float) $r->util;
+            $meta  = (float) ($metas[$r->sucursal] ?? 0);
+            $pct   = $meta > 0 ? round($venta / $meta * 100, 1) : 0;
+            $gm    = $venta > 0 ? round($util / $venta * 100, 1) : 0;
+            $var   = $meta > 0 ? round(($venta - $meta) / $meta * 100, 1) : 0;
+
+            $rows[] = [
+                'sucursal' => $r->sucursal,
+                'canal'    => $canal,
+                'marca'    => $this->marcaLabel[$r->marca] ?? $r->marca,
+                'venta'    => round($venta, 2),
+                'meta'     => round($meta, 2),
+                'pct'      => $pct,
+                'util'     => round($util, 2),
+                'gm'       => $gm,
+                'var'      => $var,
+            ];
+        }
+        return $rows;
+    }
+
+    private function buildFF(string $ini, string $fin): array
+    {
+        $db   = DB::connection('pgsql');
+        $act  = (float) $db->table('automatizacion_pla_reporte_ventas')
+            ->where('tipo_fila', 'poken_act')
+            ->whereBetween('fecha_documento', [$ini, $fin])
+            ->sum('conteo');
+        $iniH = Carbon::parse($ini)->subYear()->toDateString();
+        $finH = Carbon::parse($fin)->subYear()->toDateString();
+        $hst  = (float) $db->table('automatizacion_pla_reporte_ventas')
+            ->where('tipo_fila', 'poken_hst')
+            ->whereBetween('fecha_documento', [$iniH, $finH])
+            ->sum('conteo_hst');
+
+        return [
+            'act' => (int) $act,
+            'hst' => (int) $hst,
+            'var' => $hst > 0 ? round(($act - $hst) / $hst * 100, 1) : 0,
+        ];
+    }
+}

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Laravel Gerencial",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["-S", "gerencial.test:80", "-t", "public"],
+      "port": 80
+    }
+  ]
+}

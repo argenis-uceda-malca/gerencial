@@ -1,0 +1,9 @@
+pandas
+paramiko
+psycopg2-binary
+mysql-connector-python
+requests
+chardet
+cryptography
+pyodbc
+openpyxl
