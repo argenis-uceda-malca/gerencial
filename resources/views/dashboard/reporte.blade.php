@@ -568,8 +568,9 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
   .nav-tabs { flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch; }
   .nav-tabs .nav-link { white-space:nowrap;padding:10px 16px;font-size:.78rem; }
 
-  .pivot-config { padding:10px;gap:8px; }
-  .pool-col { flex-direction:column; }
+  .pv-panel .pivot-config { max-height:none;overflow:visible;padding:10px;gap:8px; }
+  .pool-col { display:block; }
+  .pool-col .pv-box { width:100%!important;margin-bottom:8px; }
   .pool-dims,.pool-measures { width:100%; }
   .zones-col { flex-direction:column; }
   .zones-col .pv-box { flex:1 1 auto;min-width:0; }

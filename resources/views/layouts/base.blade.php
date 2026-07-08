@@ -996,8 +996,9 @@
                     layoutWrapper.classList.toggle('sidebar-collapsed', willCollapse);
                     localStorage.setItem(STORAGE_KEY, willCollapse ? '1' : '0');
                 } else {
-                    // Móvil/tablet: mantener el comportamiento original (overlay)
-                    layoutWrapper.classList.toggle('layout-menu-expanded');
+                    // Móvil/tablet: usar Helpers de Sneat para consistencia
+                    // con el overlay y botón X (trabajan sobre <html>)
+                    window.Helpers.toggleCollapsed();
                 }
             };
 
@@ -1012,6 +1013,9 @@
                 if (!isDesktop()) {
                     layoutWrapper.classList.remove('sidebar-collapsed');
                 } else {
+                    // Limpiar layout-menu-expanded de ambos elementos por si
+                    // se usó el toggle en mobile (Helpers -> <html>)
+                    document.documentElement.classList.remove('layout-menu-expanded');
                     layoutWrapper.classList.remove('layout-menu-expanded');
                     applyStoredState();
                 }
