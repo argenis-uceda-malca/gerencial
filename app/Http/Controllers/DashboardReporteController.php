@@ -72,8 +72,10 @@ class DashboardReporteController extends Controller
 
         $db = DB::connection('pgsql');
 
-        // ventas_act (2026)
-        $act = $db->table('automatizacion_pla_reporte_ventas')
+        $ml = $this->marcaLabel;
+
+        $actRows = [];
+        foreach ($db->table('automatizacion_pla_reporte_ventas')
             ->selectRaw("
                 mes, semana::text AS semana,
                 dia_equivalente::text AS dia, dia_semana,
@@ -90,33 +92,70 @@ class DashboardReporteController extends Controller
             ->groupBy(DB::raw("mes, semana, dia_equivalente, dia_semana,
                 sucursal_3_1, sucursal_2_1, sucursal,
                 marca, categoria, filtro_sss, localidad, linea, temporada"))
-            ->get();
+            ->cursor() as $r) {
+            $actRows[] = [
+                'Mes'       => $r->mes        ?? '',
+                'Semana'    => $r->semana     ?? '',
+                'Día #'     => $r->dia        ?? '',
+                'Día'       => $r->dia_semana ?? '',
+                'Canal'     => $r->canal      ?? '',
+                'Subcanal'  => $r->subcanal   ?? '',
+                'Tienda'    => $r->tienda     ?? '',
+                'Marca'     => $ml[$r->marca] ?? $r->marca ?? '',
+                'Categoría' => $r->categoria  ?? '',
+                'SSS'       => $r->filtro_sss ?? '',
+                'Localidad' => $r->localidad  ?? '',
+                'Lineas'    => $r->linea      ?? '',
+                'Temporada' => $r->temporada  ?? '',
+                'vta26'     => round((float)$r->vta26, 2),
+                'gm26'      => round((float)$r->gm26,  2),
+                'unds26'    => (int)$r->unds26,
+                'tickets26' => (int)$r->tickets26,
+            ];
+        }
 
-        // 2025: usamos el mismo rango de fechas calendarios, un año atrás.
-        // Esto garantiza que los meses de 2025 coincidan exactamente con los del Excel
-        // (el enfoque anterior con semana IN (actSemanas) causaba inflación porque
-        // las semanas no se alinean 1:1 con los meses calendario entre años).
-        $iniAnt = Carbon::parse($ini)->subYear()->toDateString();
-        $finAnt = Carbon::parse($fin)->subYear()->toDateString();
-
-        $hst = $db->table('automatizacion_pla_reporte_ventas')
+        $hstRows = [];
+        foreach ($db->table('automatizacion_pla_reporte_ventas')
             ->selectRaw("
                 mes, semana::text AS semana,
                 dia_equivalente::text AS dia, dia_semana,
                 sucursal_3_1 AS canal, sucursal_2_1 AS subcanal,
-                sucursal AS tienda, marca, categoria, localidad,
+                sucursal AS tienda, marca, categoria, filtro_sss, localidad,
                 linea, temporada,
                 SUM(importe_subtotal_hst_1)                          AS vta25,
                 SUM(importe_subtotal_hst_1 - costo_venta_neta_hst_1) AS gm25,
                 SUM(unidades_hst_1)                                  AS unds25
             ")
             ->where('tipo_fila', 'ventas_hst')
-            ->whereBetween('fecha_documento', [$iniAnt, $finAnt])
+            ->whereIn('fecha_documento', function ($q) use ($ini, $fin) {
+                $q->select('fecha')->from('pla_fechas_equivalentes')
+                  ->whereBetween('fecha_equivalente', [$ini, $fin]);
+            })
             ->groupBy(DB::raw("mes, semana, dia_equivalente, dia_semana, sucursal_3_1, sucursal_2_1, sucursal,
-                marca, categoria, localidad, linea, temporada"))
-            ->get();
+                marca, categoria, filtro_sss, localidad, linea, temporada"))
+            ->cursor() as $r) {
+            $hstRows[] = [
+                'Mes'       => $r->mes        ?? '',
+                'Semana'    => $r->semana     ?? '',
+                'Día #'     => $r->dia        ?? '',
+                'Día'       => $r->dia_semana ?? '',
+                'Canal'     => $r->canal      ?? '',
+                'Subcanal'  => $r->subcanal   ?? '',
+                'Tienda'    => $r->tienda     ?? '',
+                'Marca'     => $ml[$r->marca] ?? $r->marca ?? '',
+                'Categoría' => $r->categoria  ?? '',
+                'SSS'       => $r->filtro_sss ?? '',
+                'Localidad' => $r->localidad  ?? '',
+                'Lineas'    => $r->linea      ?? '',
+                'Temporada' => $r->temporada  ?? '',
+                'vta25'     => round((float)$r->vta25, 2),
+                'gm25'      => round((float)$r->gm25,  2),
+                'unds25'    => (int)$r->unds25,
+            ];
+        }
 
-        $metas = $db->table('automatizacion_pla_reporte_ventas')
+        $metasRows = [];
+        foreach ($db->table('automatizacion_pla_reporte_ventas')
             ->selectRaw("
                 mes, semana::text AS semana,
                 dia_equivalente::text AS dia, dia_semana,
@@ -129,64 +168,24 @@ class DashboardReporteController extends Controller
             ->whereBetween('fecha_documento', [$ini, $fin])
             ->groupBy(DB::raw("mes, semana, dia_equivalente, dia_semana, sucursal_3_1, sucursal_2_1, sucursal,
                 marca, categoria, filtro_sss, localidad, linea, temporada"))
-            ->get();
-
-        $ml = $this->marcaLabel;
-
-        $actRows = $act->map(fn($r) => [
-            'Mes'       => $r->mes        ?? '',
-            'Semana'    => $r->semana     ?? '',
-            'Día #'     => $r->dia        ?? '',
-            'Día'       => $r->dia_semana ?? '',
-            'Canal'     => $r->canal      ?? '',
-            'Subcanal'  => $r->subcanal   ?? '',
-            'Tienda'    => $r->tienda     ?? '',
-            'Marca'     => $ml[$r->marca] ?? $r->marca ?? '',
-            'Categoría' => $r->categoria  ?? '',
-            'SSS'       => $r->filtro_sss ?? '',
-            'Localidad' => $r->localidad  ?? '',
-            'Lineas'    => $r->linea      ?? '',
-            'Temporada' => $r->temporada  ?? '',
-            'vta26'     => round((float)$r->vta26, 2),
-            'gm26'      => round((float)$r->gm26,  2),
-            'unds26'    => (int)$r->unds26,
-            'tickets26' => (int)$r->tickets26,
-        ])->values()->all();
-
-        $hstRows = $hst->map(fn($r) => [
-            'Mes'       => $r->mes        ?? '',
-            'Semana'    => $r->semana     ?? '',
-            'Día #'     => $r->dia        ?? '',
-            'Día'       => $r->dia_semana ?? '',
-            'Canal'     => $r->canal      ?? '',
-            'Subcanal'  => $r->subcanal   ?? '',
-            'Tienda'    => $r->tienda     ?? '',
-            'Marca'     => $ml[$r->marca] ?? $r->marca ?? '',
-            'Categoría' => $r->categoria  ?? '',
-            'Localidad' => $r->localidad  ?? '',
-            'Lineas'    => $r->linea      ?? '',
-            'Temporada' => $r->temporada  ?? '',
-            'vta25'     => round((float)$r->vta25, 2),
-            'gm25'      => round((float)$r->gm25,  2),
-            'unds25'    => (int)$r->unds25,
-        ])->values()->all();
-
-        $metasRows = $metas->map(fn($r) => [
-            'Mes'       => $r->mes        ?? '',
-            'Semana'    => $r->semana     ?? '',
-            'Día #'     => $r->dia        ?? '',
-            'Día'       => $r->dia_semana ?? '',
-            'Canal'     => $r->canal      ?? '',
-            'Subcanal'  => $r->subcanal   ?? '',
-            'Tienda'    => $r->tienda     ?? '',
-            'Marca'     => $ml[$r->marca] ?? $r->marca ?? '',
-            'Categoría' => $r->categoria  ?? '',
-            'SSS'       => $r->filtro_sss ?? '',
-            'Localidad' => $r->localidad  ?? '',
-            'Lineas'    => $r->linea      ?? '',
-            'Temporada' => $r->temporada  ?? '',
-            'meta_vta'  => round((float)$r->meta_vta, 2),
-        ])->values()->all();
+            ->cursor() as $r) {
+            $metasRows[] = [
+                'Mes'       => $r->mes        ?? '',
+                'Semana'    => $r->semana     ?? '',
+                'Día #'     => $r->dia        ?? '',
+                'Día'       => $r->dia_semana ?? '',
+                'Canal'     => $r->canal      ?? '',
+                'Subcanal'  => $r->subcanal   ?? '',
+                'Tienda'    => $r->tienda     ?? '',
+                'Marca'     => $ml[$r->marca] ?? $r->marca ?? '',
+                'Categoría' => $r->categoria  ?? '',
+                'SSS'       => $r->filtro_sss ?? '',
+                'Localidad' => $r->localidad  ?? '',
+                'Lineas'    => $r->linea      ?? '',
+                'Temporada' => $r->temporada  ?? '',
+                'meta_vta'  => round((float)$r->meta_vta, 2),
+            ];
+        }
 
         return response()->json(['act' => $actRows, 'hst' => $hstRows, 'metas' => $metasRows]);
     }
@@ -228,13 +227,9 @@ class DashboardReporteController extends Controller
 
         $ventas = $vQuery
             ->groupBy('sucursal_3_1', 'sucursal_2_1', 'dia_semana')
-            ->get();
+            ->cursor();
 
-        // 2025: mismo período calendario un año atrás (subYear preserva el mes completo,
-        // incluye domingos de inicio de mes que subDays(364) perdería).
-        $iniAnt = Carbon::parse($ini)->subYear()->toDateString();
-        $finAnt = Carbon::parse($fin)->subYear()->toDateString();
-
+        $hst = [];
         $hQuery = $db->table('automatizacion_pla_reporte_ventas')
             ->selectRaw("
                 sucursal_3_1, sucursal_2_1, dia_semana,
@@ -242,16 +237,19 @@ class DashboardReporteController extends Controller
                 SUM(costo_venta_neta_hst_1)     AS costo25
             ")
             ->where('tipo_fila', 'ventas_hst')
-            ->whereBetween('fecha_documento', [$iniAnt, $finAnt]);
+            ->whereIn('fecha_documento', function ($q) use ($ini, $fin) {
+                $q->select('fecha')->from('pla_fechas_equivalentes')
+                  ->whereBetween('fecha_equivalente', [$ini, $fin]);
+            });
 
         if ($canales) $hQuery->whereIn('sucursal_3_1', $canales);
         if ($marcas)  $hQuery->whereIn('marca', $marcas);
 
-        $hst = $hQuery
-            ->groupBy('sucursal_3_1', 'sucursal_2_1', 'dia_semana')
-            ->get()
-            ->keyBy(fn($r) => $r->sucursal_2_1 . '|' . $this->dayKey($r->dia_semana ?? ''));
+        foreach ($hQuery->groupBy('sucursal_3_1', 'sucursal_2_1', 'dia_semana')->cursor() as $r) {
+            $hst[$r->sucursal_2_1 . '|' . $this->dayKey($r->dia_semana ?? '')] = $r;
+        }
 
+        $metas = [];
         $mQuery = $db->table('automatizacion_pla_reporte_ventas')
             ->selectRaw("sucursal_2_1, SUM(meta_venta) AS meta_vta, SUM(meta_contribucion) AS meta_contri")
             ->where('tipo_fila', 'metas_std')
@@ -260,7 +258,9 @@ class DashboardReporteController extends Controller
         if ($canales) $mQuery->whereIn('sucursal_3_1', $canales);
         if ($marcas)  $mQuery->whereIn('marca', $marcas);
 
-        $metas = $mQuery->groupBy('sucursal_2_1')->get()->keyBy('sucursal_2_1');
+        foreach ($mQuery->groupBy('sucursal_2_1', 'sucursal_3_1')->cursor() as $r) {
+            $metas[$r->sucursal_2_1] = $r;
+        }
 
         // Build nested structure: data[s3][s2][dKey] = [vta26, vta25, costo26, costo25]
         $data        = [];
@@ -421,10 +421,7 @@ class DashboardReporteController extends Controller
             return $q;
         };
 
-        // subYear: mismo período calendario un año atrás (incluye domingos de inicio de mes)
-        $iniAnt = Carbon::parse($ini)->subYear()->toDateString();
-        $finAnt = Carbon::parse($fin)->subYear()->toDateString();
-
+        $ventas = [];
         $vQuery = $db->table('automatizacion_pla_reporte_ventas')
             ->selectRaw("
                 sucursal_3_1, sucursal_2_1,
@@ -438,11 +435,11 @@ class DashboardReporteController extends Controller
 
         $applyDimFilters($vQuery);
 
-        $ventas = $vQuery->groupBy('sucursal_3_1', 'sucursal_2_1')
-            ->get()
-            ->keyBy('sucursal_2_1');
+        foreach ($vQuery->groupBy('sucursal_3_1', 'sucursal_2_1')->cursor() as $r) {
+            $ventas[$r->sucursal_2_1] = $r;
+        }
 
-        // 2025: filas ventas_hst (generadas por el SP al correr con rango 2026)
+        $ventasHst = [];
         $hQuery = $db->table('automatizacion_pla_reporte_ventas')
             ->selectRaw("
                 sucursal_3_1, sucursal_2_1,
@@ -451,14 +448,18 @@ class DashboardReporteController extends Controller
                 SUM(unidades_hst_1)          AS unds25
             ")
             ->where('tipo_fila', 'ventas_hst')
-            ->whereBetween('fecha_documento', [$iniAnt, $finAnt]);
+            ->whereIn('fecha_documento', function ($q) use ($ini, $fin) {
+                $q->select('fecha')->from('pla_fechas_equivalentes')
+                  ->whereBetween('fecha_equivalente', [$ini, $fin]);
+            });
 
         $applyDimFiltersHst($hQuery);
 
-        $ventasHst = $hQuery->groupBy('sucursal_3_1', 'sucursal_2_1')
-            ->get()
-            ->keyBy('sucursal_2_1');
+        foreach ($hQuery->groupBy('sucursal_3_1', 'sucursal_2_1')->cursor() as $r) {
+            $ventasHst[$r->sucursal_2_1] = $r;
+        }
 
+        $metas = [];
         $mQuery = $db->table('automatizacion_pla_reporte_ventas')
             ->selectRaw("sucursal_2_1, sucursal_3_1, SUM(meta_venta) AS meta_vta, SUM(meta_contribucion) AS meta_contri")
             ->where('tipo_fila', 'metas_std')
@@ -466,12 +467,14 @@ class DashboardReporteController extends Controller
 
         $applyDimFilters($mQuery);
 
-        $metas = $mQuery->groupBy('sucursal_2_1', 'sucursal_3_1')->get()->keyBy('sucursal_2_1');
+        foreach ($mQuery->groupBy('sucursal_2_1', 'sucursal_3_1')->cursor() as $r) {
+            $metas[$r->sucursal_2_1] = $r;
+        }
 
-        $totalVta26 = $ventas->sum('vta26');
-        $totalVta25 = $ventasHst->sum('vta25');
+        $totalVta26 = array_sum(array_column($ventas, 'vta26'));
+        $totalVta25 = array_sum(array_column($ventasHst, 'vta25'));
 
-        $allS2 = collect(array_keys($ventas->toArray()) + array_keys($metas->toArray()))->unique()->all();
+        $allS2 = array_unique(array_merge(array_keys($ventas), array_keys($metas)));
 
         $s3Order = ['BOUTIQUES' => 0, 'OUTLETS' => 1, 'WEB' => 2];
         $byS3    = [];

@@ -1383,10 +1383,8 @@ function loadSaved(){
 function getMergedFiltered(){
   var activeDims = FILTER_DIMS.filter(function(f){ return FILTERS[f.key].size > 0; });
   if(!activeDims.length) return MERGED_DATA;
-  var nonSssDims = activeDims.filter(function(f){ return f.key !== 'SSS'; });
   return MERGED_DATA.filter(function(r){
-    var dims = r._isHst ? nonSssDims : activeDims;
-    return dims.every(function(f){ return FILTERS[f.key].has(String(r[f.key])); });
+    return activeDims.every(function(f){ return FILTERS[f.key].has(String(r[f.key])); });
   });
 }
 
@@ -1534,7 +1532,7 @@ async function loadPivotData(){
         'Marca':    row['Marca'],
         'Marca Temporada': MARCA_TEMPORADA.includes(row['Marca']) ? row['Marca'] : '',
         'Categoría':row['Categoría'],
-        'SSS':      '',
+        'SSS':      row['SSS'] ?? '',
         'Localidad':row['Localidad'],
         'Lineas':   row['Lineas'] ?? '',
         'Temporada':row['Temporada'] ?? '',

@@ -58,8 +58,13 @@ class DashboardFfToController extends Controller
         $ini = $request->input('ini', Carbon::today()->startOfMonth()->toDateString());
         $fin = $request->input('fin', Carbon::today()->toDateString());
 
-        $iniAnt = Carbon::parse($ini)->subYear()->toDateString();
-        $finAnt = Carbon::parse($fin)->subYear()->toDateString();
+        $equiv = DB::connection('pgsql')
+            ->table('pla_fechas_equivalentes')
+            ->whereBetween('fecha_equivalente', [$ini, $fin])
+            ->selectRaw('MIN(fecha) AS ini_ant, MAX(fecha) AS fin_ant')
+            ->first();
+        $iniAnt = $equiv->ini_ant ?? Carbon::parse($ini)->subYear()->toDateString();
+        $finAnt = $equiv->fin_ant ?? Carbon::parse($fin)->subYear()->toDateString();
 
         // El período actual puede incluir días muy recientes que el ETL/tbretail
         // todavía no tiene cargados. Los completamos en vivo contra la API,

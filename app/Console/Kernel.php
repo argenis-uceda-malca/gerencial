@@ -22,12 +22,12 @@ class Kernel extends ConsoleKernel
         // Actualiza ventas cada 10 min (ventas_diarias + reporte_ventas, ultimos 3 dias)
         $schedule->command('etl:refrescar-ultimos-dias')
              ->everyTenMinutes()
-             ->withoutOverlapping(5);
+             ->withoutOverlapping(1);
 
         // Clasificacion SSS/NUEVO/CIERRE: una vez al dia (suficiente)
-        $schedule->command('etl:refrescar-filtro-sss')
-             ->dailyAt('04:00')
-             ->withoutOverlapping(10);
+        // $schedule->command('etl:refrescar-filtro-sss')
+        //      ->dailyAt('04:00')
+        //      ->withoutOverlapping(10);
     }
 
     /**

@@ -339,6 +339,19 @@
                     });
                 }
             });
+
+            // Recalcular suma de tráfico y actualizar fila Suma Total
+            let nuevaSuma = 0;
+            gridApi.forEachNode(node => {
+                if (node.data.nombre !== 'Suma Total:') {
+                    nuevaSuma += parseFloat(node.data.total || 0);
+                }
+            });
+            gridApi.forEachNode(node => {
+                if (node.data.nombre === 'Suma Total:') {
+                    node.setDataValue('vistas', nuevaSuma);
+                }
+            });
         })
         .catch(error => console.error('Error en updateTotal:', error));
     };
@@ -920,7 +933,7 @@
             anteriorSum += parseFloat(node.data.anterior || 0);
             unidadesSum += parseFloat(node.data.unidades || 0);
             ticketSum += parseFloat(node.data.ticket || 0);
-            visitantesSum += parseFloat(node.data.vistas || 0);
+            visitantesSum += parseFloat(node.data.total || 0);
             costoVentaNeta += parseFloat(node.data.costo_venta_neta || 0);
         });
 
@@ -956,7 +969,7 @@
                 anterior: anteriorSum,
                 unidades: unidadesSum,
                 ticket: ticketSum,
-                vistas: visitantesSum,
+                total: visitantesSum,
                 costo_venta_neta: costoVentaNeta,
                 logro: metaSum > 0 ? (totalSum / metaSum) * 100 : 0,
             }]
@@ -995,7 +1008,7 @@
             metaSum += parseFloat(node.data.meta || 0);
             unidadesSum += parseFloat(node.data.unidades || 0);
             ticketSum += parseFloat(node.data.ticket || 0);
-            visitantesSum += parseFloat(node.data.vistas || 0);
+            visitantesSum += parseFloat(node.data.total || 0);
         });
 
         api.applyTransaction({
@@ -1005,7 +1018,7 @@
                 meta: metaSum,
                 unidades: unidadesSum,
                 ticket: ticketSum,
-                vistas: visitantesSum,
+                total: visitantesSum,
             }]
         });
     }

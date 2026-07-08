@@ -263,8 +263,13 @@ class DashboardVentasController extends Controller
             ->where('tipo_fila', 'poken_act')
             ->whereBetween('fecha_documento', [$ini, $fin])
             ->sum('conteo');
-        $iniH = Carbon::parse($ini)->subYear()->toDateString();
-        $finH = Carbon::parse($fin)->subYear()->toDateString();
+        $equiv = DB::connection('pgsql')
+            ->table('pla_fechas_equivalentes')
+            ->whereBetween('fecha_equivalente', [$ini, $fin])
+            ->selectRaw('MIN(fecha) AS ini_ant, MAX(fecha) AS fin_ant')
+            ->first();
+        $iniH = $equiv->ini_ant ?? Carbon::parse($ini)->subYear()->toDateString();
+        $finH = $equiv->fin_ant ?? Carbon::parse($fin)->subYear()->toDateString();
         $hst  = (float) $db->table('automatizacion_pla_reporte_ventas')
             ->where('tipo_fila', 'poken_hst')
             ->whereBetween('fecha_documento', [$iniH, $finH])
