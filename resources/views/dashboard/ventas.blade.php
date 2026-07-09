@@ -171,6 +171,33 @@
   background:var(--dm-surface-alt);
   color:var(--dm-ink);
 }
+
+.live-toggle {
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:.72rem;color:var(--vp-muted);
+  background:#F0F2F8;padding:4px 10px;border-radius:8px;
+}
+.live-dot {
+  width:7px;height:7px;border-radius:50%;
+  background:#D1D5E0;transition:background .3s;
+}
+.live-dot.on {
+  background:#81C784;
+  box-shadow:0 0 0 3px rgba(129,199,132,.2);
+  animation:pulse 1.8s ease-in-out infinite;
+}
+#sel-live {
+  font-size:.7rem;border:1px solid var(--vp-border);
+  border-radius:6px;padding:2px 6px;
+  color:var(--vp-muted);background:#fff;
+  cursor:pointer;outline:none;
+}
+[data-theme="dark"] .live-toggle {
+  background:var(--dm-surface-alt);color:var(--dm-muted);
+}
+[data-theme="dark"] #sel-live {
+  background:var(--dm-card-bg);border-color:var(--dm-border);color:var(--dm-ink);
+}
 </style>
 
 <div class="container-xxl flex-grow-1 container-p-y">
@@ -180,9 +207,21 @@
     <div>
       <h4 class="mb-0 fw-bold">Dashboard <span class="text-muted fw-light">/ Ventas</span></h4>
       <small class="text-muted">Smart Brands S.A.C. · Actualizado: {{ now()->format('d M Y H:i') }}</small>
-    </div>
-    <span id="badge-periodo" class="badge bg-label-primary section-badge">—</span>
   </div>
+  <div class="d-flex align-items-center gap-2">
+    <span id="badge-periodo" class="badge bg-label-primary section-badge">—</span>
+    <div class="live-toggle" title="Actualización automática">
+      <span class="live-dot" id="live-dot"></span>
+      <select id="sel-live">
+        <option value="0">Manual</option>
+        <option value="10000">10s</option>
+        <option value="30000">30s</option>
+        <option value="60000">1 min</option>
+        <option value="300000">5 min</option>
+      </select>
+    </div>
+  </div>
+</div>
 
   {{-- ── FILTROS ── --}}
   <div class="card filter-card mb-4">
@@ -887,7 +926,7 @@ function initGridResumen(data) {
     columnDefs: colDefs,
     rowData: data,
     pinnedBottomRowData: calcTotals(data, 'canal'),
-    defaultColDef:{ resizable:true, sortable:true },
+    defaultColDef:{ resizable:true, sortable:true, enableCellChangeFlash:true },
     animateRows:true,
     rowHeight:42,
     headerHeight:44,
@@ -933,7 +972,7 @@ function initGridTiendas() {
     columnDefs: colDefs,
     rowData: [],
     pinnedBottomRowData: [],
-    defaultColDef:{ resizable:true, sortable:true },
+    defaultColDef:{ resizable:true, sortable:true, enableCellChangeFlash:true },
     animateRows:true,
     rowHeight:42,
     headerHeight:44,
@@ -993,7 +1032,7 @@ function initGridTopProductos() {
   gridTopProductos = agGrid.createGrid(document.getElementById('grid-top-productos'), {
     columnDefs,
     rowData: [],
-    defaultColDef:{ resizable:true, sortable:true },
+    defaultColDef:{ resizable:true, sortable:true, enableCellChangeFlash:true },
     animateRows:true,
     rowHeight:36,
     headerHeight:40,
@@ -1197,6 +1236,45 @@ function setTrendView(v, btn) {
 }
 
 // ════════════════════════════════════════════════════════
+//  AUTO-REFRESH
+// ════════════════════════════════════════════════════════
+const LS_LIVE_KEY = 'ventas_live_ms';
+let liveTimer = null;
+
+function setLiveDot(on){ document.getElementById('live-dot').classList.toggle('on', on); }
+
+function stopLiveRefresh(){
+  if(liveTimer){ clearInterval(liveTimer); liveTimer = null; }
+  setLiveDot(false);
+}
+
+function startLiveRefresh(ms){
+  stopLiveRefresh();
+  if(!ms) return;
+  setLiveDot(true);
+  liveTimer = setInterval(function(){ refreshData(); }, ms);
+}
+
+async function refreshData(){
+  const { ini, fin } = getDateRange();
+  console.log('[auto-refresh] fetching data…', ini, fin, new Date().toLocaleTimeString());
+  try {
+    const resp = await fetch(`/dashboard/ventas/rows?ini=${ini}&fin=${fin}`);
+    const payload = await resp.json();
+    ALL_ROWS.length = 0;
+    ALL_ROWS.push(...payload.rows);
+    Object.assign(FF, payload.ff);
+    applyFilters(false);
+    setTimeout(function(){ gridResumen.refreshCells({force: true}); if(gridTiendas) gridTiendas.refreshCells({force: true}); if(gridTopProductos) gridTopProductos.refreshCells({force: true}); }, 50);
+    fetchTiendas();
+    fetchTopProductos();
+    console.log('[auto-refresh] grids updated ✓', new Date().toLocaleTimeString());
+  } catch(e){
+    console.error('auto-refresh:', e);
+  }
+}
+
+// ════════════════════════════════════════════════════════
 //  THEME SWITCH (called from base.blade.php toggle)
 // ════════════════════════════════════════════════════════
 window.updateChartTheme = function() {
@@ -1229,6 +1307,21 @@ window.updateChartTheme = function() {
 document.addEventListener('DOMContentLoaded', () => {
   initDiaList();
   applyFilters(true);
+
+  // Live refresh persisted
+  try {
+    var savedMs = parseInt(localStorage.getItem(LS_LIVE_KEY), 10) || 0;
+    if(savedMs){
+      document.getElementById('sel-live').value = String(savedMs);
+      startLiveRefresh(savedMs);
+    }
+  } catch(e){}
+
+  document.getElementById('sel-live').addEventListener('change', function(){
+    var ms = parseInt(this.value, 10) || 0;
+    try { localStorage.setItem(LS_LIVE_KEY, String(ms)); } catch(e){}
+    startLiveRefresh(ms);
+  });
 });
 </script>
 @endsection

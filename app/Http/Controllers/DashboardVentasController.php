@@ -248,6 +248,17 @@ class DashboardVentasController extends Controller
         return response()->json($result);
     }
 
+    public function rows(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $ini = $request->input('ini', Carbon::today()->startOfYear()->toDateString());
+        $fin = $request->input('fin', Carbon::today()->toDateString());
+
+        $rows = $this->buildFlatRows($ini, $fin);
+        $ff   = $this->buildFF(Carbon::today()->startOfMonth()->toDateString(), $fin);
+
+        return response()->json(['rows' => $rows, 'ff' => $ff]);
+    }
+
     private function buildTiendas(string $ini, string $fin): array
     {
         $db = DB::connection('pgsql');
