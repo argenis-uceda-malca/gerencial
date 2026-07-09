@@ -873,6 +873,7 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
             <span class="live-dot" id="live-dot"></span>
             <select id="sel-live">
               <option value="0">Manual</option>
+              <option value="10000">10s</option>
               <option value="30000">30s</option>
               <option value="60000">1 min</option>
               <option value="300000">5 min</option>
@@ -1489,7 +1490,7 @@ async function loadDetalle(){
     if(!gridDetalle){
       gridDetalle = agGrid.createGrid(document.getElementById('grid-detalle'), {
         columnDefs:DET_COLS, rowData:data,
-        defaultColDef:{resizable:true,sortable:true,cellStyle:{fontSize:'12px'}},
+        defaultColDef:{resizable:true,sortable:true,cellStyle:{fontSize:'12px'},enableCellChangeFlash:true},
         getRowStyle:rowStyleFn, suppressCellFocus:true, animateRows:false,
       });
     } else {
@@ -1499,7 +1500,65 @@ async function loadDetalle(){
 }
 
 /* ══════════════════════════════════════════════════════════
-   CARGA DE DATOS
+   MERGE DE DATOS (compartido)
+   ══════════════════════════════════════════════════════════ */
+function buildMergedData(act, hst, metas){
+  act.forEach(function(r){ r['Marca Temporada'] = MARCA_TEMPORADA.includes(r.Marca) ? r.Marca : ''; });
+
+  var semMes = {};
+  act.forEach(function(row){ if(row['Semana'] && row['Mes']) semMes[row['Semana']] = row['Mes']; });
+
+  var actMerged = act.map(function(row){
+    return Object.assign({}, row, {vta25:0, gm25:0, unds25:0, meta_vta:0});
+  });
+  var hstMerged = hst.map(function(row){
+    return {
+      'Mes':      row['Mes'] || semMes[row['Semana']] || '',
+      'Semana':   row['Semana'],
+      'Día #':    row['Día #'] ?? '',
+      'Día':      row['Día'],
+      'Canal':    row['Canal'],
+      'Subcanal': row['Subcanal'],
+      'Tienda':   row['Tienda'],
+      'Marca':    row['Marca'],
+      'Marca Temporada': MARCA_TEMPORADA.includes(row['Marca']) ? row['Marca'] : '',
+      'Categoría':row['Categoría'],
+      'SSS':      row['SSS'] ?? '',
+      'Localidad':row['Localidad'],
+      'Lineas':   row['Lineas'] ?? '',
+      'Temporada':row['Temporada'] ?? '',
+      'vta26': 0, 'gm26': 0, 'unds26': 0, 'tickets26': 0,
+      'vta25': row['vta25'], 'gm25': row['gm25'], 'unds25': row['unds25'],
+      'meta_vta': 0,
+      '_isHst': true
+    };
+  });
+  var metasMerged = metas.map(function(row){
+    return {
+      'Mes':      row['Mes'],
+      'Semana':   row['Semana'],
+      'Día #':    row['Día #'] ?? '',
+      'Día':      row['Día'],
+      'Canal':    row['Canal'],
+      'Subcanal': row['Subcanal'],
+      'Tienda':   row['Tienda'],
+      'Marca':    row['Marca'],
+      'Marca Temporada': MARCA_TEMPORADA.includes(row['Marca']) ? row['Marca'] : '',
+      'Categoría':row['Categoría'],
+      'SSS':      row['SSS'],
+      'Localidad':row['Localidad'],
+      'Lineas':   row['Lineas'] ?? '',
+      'Temporada':row['Temporada'] ?? '',
+      'vta26': 0, 'gm26': 0, 'unds26': 0, 'tickets26': 0,
+      'vta25': 0, 'gm25': 0, 'unds25': 0,
+      'meta_vta': row['meta_vta']
+    };
+  });
+  return actMerged.concat(hstMerged).concat(metasMerged);
+}
+
+/* ══════════════════════════════════════════════════════════
+   CARGA DE DATOS (completa — incluye UI)
    ══════════════════════════════════════════════════════════ */
 async function loadPivotData(){
   document.getElementById('pivot-loader').classList.add('show');
@@ -1511,59 +1570,7 @@ async function loadPivotData(){
     ALL_DATA   = payload.act;
     HST_DATA   = payload.hst;
     METAS_DATA = payload.metas || [];
-
-    ALL_DATA.forEach(function(r){ r['Marca Temporada'] = MARCA_TEMPORADA.includes(r.Marca) ? r.Marca : ''; });
-
-    var semMes = {};
-    ALL_DATA.forEach(function(row){ if(row['Semana'] && row['Mes']) semMes[row['Semana']] = row['Mes']; });
-
-    var actMerged = ALL_DATA.map(function(row){
-      return Object.assign({}, row, {vta25:0, gm25:0, unds25:0, meta_vta:0});
-    });
-    var hstMerged = HST_DATA.map(function(row){
-      return {
-        'Mes':      row['Mes'] || semMes[row['Semana']] || '',
-        'Semana':   row['Semana'],
-        'Día #':    row['Día #'] ?? '',
-        'Día':      row['Día'],
-        'Canal':    row['Canal'],
-        'Subcanal': row['Subcanal'],
-        'Tienda':   row['Tienda'],
-        'Marca':    row['Marca'],
-        'Marca Temporada': MARCA_TEMPORADA.includes(row['Marca']) ? row['Marca'] : '',
-        'Categoría':row['Categoría'],
-        'SSS':      row['SSS'] ?? '',
-        'Localidad':row['Localidad'],
-        'Lineas':   row['Lineas'] ?? '',
-        'Temporada':row['Temporada'] ?? '',
-        'vta26': 0, 'gm26': 0, 'unds26': 0, 'tickets26': 0,
-        'vta25': row['vta25'], 'gm25': row['gm25'], 'unds25': row['unds25'],
-        'meta_vta': 0,
-        '_isHst': true
-      };
-    });
-    var metasMerged = METAS_DATA.map(function(row){
-      return {
-        'Mes':      row['Mes'],
-        'Semana':   row['Semana'],
-        'Día #':    row['Día #'] ?? '',
-        'Día':      row['Día'],
-        'Canal':    row['Canal'],
-        'Subcanal': row['Subcanal'],
-        'Tienda':   row['Tienda'],
-        'Marca':    row['Marca'],
-        'Marca Temporada': MARCA_TEMPORADA.includes(row['Marca']) ? row['Marca'] : '',
-        'Categoría':row['Categoría'],
-        'SSS':      row['SSS'],
-        'Localidad':row['Localidad'],
-        'Lineas':   row['Lineas'] ?? '',
-        'Temporada':row['Temporada'] ?? '',
-        'vta26': 0, 'gm26': 0, 'unds26': 0, 'tickets26': 0,
-        'vta25': 0, 'gm25': 0, 'unds25': 0,
-        'meta_vta': row['meta_vta']
-      };
-    });
-    MERGED_DATA = actMerged.concat(hstMerged).concat(metasMerged);
+    MERGED_DATA = buildMergedData(ALL_DATA, HST_DATA, METAS_DATA);
 
     buildFilterOptions();
     buildFilterBar();
@@ -1571,6 +1578,27 @@ async function loadPivotData(){
   } catch(e){
     console.error(e);
     document.getElementById('pivot-loader').classList.remove('show');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   REFRESCO LIGERO (sin reconstruir UI)
+   ══════════════════════════════════════════════════════════ */
+async function refreshData(){
+  console.log('[auto-refresh] fetching data…', new Date().toLocaleTimeString());
+  try {
+    var r    = await fetch('/dashboard/reporte/pivot?'+new URLSearchParams({ini:activeIni,fin:activeFin}));
+    var payload = await r.json();
+    ALL_DATA   = payload.act;
+    HST_DATA   = payload.hst;
+    METAS_DATA = payload.metas || [];
+    MERGED_DATA = buildMergedData(ALL_DATA, HST_DATA, METAS_DATA);
+    applyPivot();
+    setTimeout(function(){ gridPivot.refreshCells({force: true}); }, 50);
+    if(detLoaded){ loadDetalle(); }
+    console.log('[auto-refresh] grid updated ✓', new Date().toLocaleTimeString());
+  } catch(e){
+    console.error('auto-refresh:', e);
   }
 }
 
@@ -1667,10 +1695,7 @@ function startLiveRefresh(ms){
   stopLiveRefresh();
   if(!ms) return;
   setLiveDot(true);
-  liveTimer = setInterval(function(){
-    loadPivotData();
-    if(detLoaded) loadDetalle();
-  }, ms);
+  liveTimer = setInterval(function(){ refreshData(); }, ms);
 }
 
 document.getElementById('sel-live').addEventListener('change', function(){
@@ -1689,7 +1714,7 @@ document.addEventListener('DOMContentLoaded', function(){
   gridPivot = agGrid.createGrid(document.getElementById('grid-pivot'), {
     columnDefs: [{field:'_label',headerName:'',pinned:'left',width:240}],
     rowData: [],
-    defaultColDef:{ resizable:true, sortable:false, cellStyle:{fontSize:'12px'} },
+    defaultColDef:{ resizable:true, sortable:false, cellStyle:{fontSize:'12px'}, enableCellChangeFlash:true },
     domLayout: 'autoHeight',
     getRowStyle: rowStyleFn,
     suppressCellFocus: true,

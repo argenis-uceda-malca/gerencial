@@ -401,19 +401,34 @@
     </div>
   </div>
 
-  {{-- ── AG Grid Resumen ── --}}
-  <div class="card mb-4">
-    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-      <div>
-        <h5 class="mb-0">Resumen por Canal / Marca</h5>
-        <div class="chart-range" id="range-resumen"></div>
+  {{-- ── Grids row (Resumen + Top 10) ── --}}
+  <div class="row g-4 mb-4">
+    <div class="col-lg-8">
+      <div class="card h-100">
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div>
+            <h5 class="mb-0">Resumen por Canal / Marca</h5>
+            <div class="chart-range" id="range-resumen"></div>
+          </div>
+          <input type="text" class="form-control form-control-sm"
+            placeholder="🔍 Buscar..." style="max-width:200px"
+            oninput="if(gridResumen) gridResumen.setGridOption('quickFilterText', this.value)">
+        </div>
+        <div class="card-body p-0">
+          <div id="grid-resumen" class="ag-theme-quartz" style="height:300px;width:100%"></div>
+        </div>
       </div>
-      <input type="text" class="form-control form-control-sm"
-        placeholder="🔍 Buscar..." style="max-width:200px"
-        oninput="if(gridResumen) gridResumen.setGridOption('quickFilterText', this.value)">
     </div>
-    <div class="card-body p-0">
-      <div id="grid-resumen" class="ag-theme-quartz" style="height:300px;width:100%"></div>
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header">
+          <h5 class="mb-0">Top 10 Productos</h5>
+          <div class="chart-range" id="range-top-productos"></div>
+        </div>
+        <div class="card-body p-0">
+          <div id="grid-top-productos" class="ag-theme-quartz" style="height:300px;width:100%"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -469,8 +484,8 @@ let activeMeses    = [];   // empty = all months
 let activeDias     = [];   // empty = all days
 let trendView      = '30';
 let chartTrend, chartRadial, chartTreemap, chartMeses;
-let gridResumen, gridTiendas;
-const MARCA_TEMPORADA = ['FINA','EXIT','KORDA','MILK','MCH','BBM'];
+let gridResumen, gridTiendas, gridTopProductos;
+
 
 // ════════════════════════════════════════════════════════
 //  FORMAT HELPERS
@@ -616,9 +631,18 @@ function updateKPIs(rows) {
 //  APEX CHART CONFIGS (shared)
 // ════════════════════════════════════════════════════════
 const ANIM = { enabled: true, easing: 'easeinout', speed: 600 };
-const GRID_OPT = { borderColor: '#E8ECF5', strokeDashArray: 4 };
 const TOOLBAR = { show: false };
 const FONT = 'Public Sans, system-ui, sans-serif';
+
+function getChartAxisColor() {
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? '#B0B8C8' : '#64748B';
+}
+function getChartGridColor() {
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? '#2E3450' : '#E8ECF5';
+}
+function gridOpts() {
+  return { borderColor: getChartGridColor(), strokeDashArray: 4 };
+}
 
 // ════════════════════════════════════════════════════════
 //  CHART: TREND (area + line)
@@ -650,13 +674,14 @@ function initChartTrend(rows) {
     },
     stroke: { curve:'smooth', width:[2,2], dashArray:[0,5] },
     markers: { size:0 },
-    xaxis: { categories:cats, labels:{ rotate:-30, style:{ fontSize:'11px' },
+    xaxis: { categories:cats, labels:{ rotate:-30, style:{ fontSize:'11px', colors: getChartAxisColor() },
       formatter: v => v ? v.slice(5) : v }, axisBorder:{show:false} },
-    yaxis: { labels:{ formatter: v => fmtS(v) } },
-    grid: GRID_OPT,
+    yaxis: { labels:{ style:{ colors: getChartAxisColor() }, formatter: v => fmtS(v) } },
+    grid: gridOpts(),
     tooltip: { shared:true, intersect:false,
       y:{ formatter: v => fmtFull(v) } },
-    legend: { show:true, position:'top' },
+    legend: { show:true, position:'top',
+      labels: { colors: getChartAxisColor() } },
     dataLabels: { enabled:false },
   };
   chartTrend = new ApexCharts(document.getElementById('chart-trend'), opts);
@@ -685,17 +710,18 @@ function initChartRadial(rows) {
     colors: ['#7C83FF','#FFB74D','#81C784'],
     plotOptions: { radialBar: {
       hollow: { size:'28%', background:'transparent' },
-      track:  { background:'#E8ECF5', strokeWidth:'90%' },
+      track:  { background: getChartGridColor(), strokeWidth:'90%' },
       dataLabels: {
-        name:  { fontSize:'12px', fontWeight:600 },
-        value: { fontSize:'14px', fontWeight:700, formatter: v => v+'%' },
-        total: { show:true, label:'Promedio',
+        name:  { fontSize:'12px', fontWeight:600, color: getChartAxisColor() },
+        value: { fontSize:'14px', fontWeight:700, color: getChartAxisColor(), formatter: v => v+'%' },
+        total: { show:true, label:'Promedio', color: getChartAxisColor(),
           formatter: () => (vals.reduce((a,b)=>a+b,0)/vals.filter(v=>v>0).length).toFixed(1)+'%' }
       },
       startAngle:-135, endAngle:135,
     }},
     stroke: { lineCap:'round' },
-    legend: { show:true, position:'bottom', fontSize:'12px' },
+    legend: { show:true, position:'bottom', fontSize:'12px',
+      labels: { colors: getChartAxisColor() } },
     tooltip: { y:{ formatter: v => v+'%' } },
   };
   chartRadial = new ApexCharts(document.getElementById('chart-radial'), opts);
@@ -749,9 +775,9 @@ function initChartMeses(rows) {
     ],
     colors: ['#7C83FF','#FF8A80'],
     xaxis: { categories: mes.map(m => m.nom?.substring(0,3) || ''),
-      labels:{ style:{ fontSize:'12px' } }, axisBorder:{show:false} },
-    yaxis: { labels:{ formatter: v => fmtS(v) } },
-    grid: GRID_OPT,
+      labels:{ style:{ fontSize:'12px', colors: getChartAxisColor() } }, axisBorder:{show:false} },
+    yaxis: { labels:{ style:{ colors: getChartAxisColor() }, formatter: v => fmtS(v) } },
+    grid: gridOpts(),
     plotOptions: { bar: { columnWidth:'55%', borderRadius:4, borderRadiusApplication:'end' } },
     dataLabels: { enabled:false },
     stroke: { show:true, width:0 },
@@ -761,7 +787,8 @@ function initChartMeses(rows) {
         opacityFrom:.9, opacityTo:.75 }
     },
     tooltip: { shared:true, intersect:false, y:{ formatter: v => fmtFull(v) } },
-    legend: { show:true, position:'top' },
+    legend: { show:true, position:'top',
+      labels: { colors: getChartAxisColor() } },
   };
   chartMeses = new ApexCharts(document.getElementById('chart-meses'), opts);
   chartMeses.render();
@@ -871,7 +898,7 @@ function initGridResumen(data) {
 }
 
 function updateGridResumen(rows) {
-  const data = aggByKey(rows.filter(r => MARCA_TEMPORADA.includes(r.marca)));
+  const data = aggByKey(rows);
   if (!gridResumen) return;
   gridResumen.setGridOption('rowData', data);
   gridResumen.setGridOption('pinnedBottomRowData', calcTotals(data, 'canal'));
@@ -947,6 +974,59 @@ function fetchTiendas() {
 }
 
 // ════════════════════════════════════════════════════════
+//  AG GRID — TOP 10 PRODUCTOS (AJAX)
+// ════════════════════════════════════════════════════════
+let topProductosDebounce = null;
+
+function initGridTopProductos() {
+  const columnDefs = [
+    { field:'rank', headerName:'#', width:45, sortable:false, filter:false,
+      valueGetter: p => (p.node?.rowIndex ?? 0) + 1 },
+    { field:'codigo_padre', headerName:'Código', width:110, sortable:true, filter:true,
+      cellStyle:{ fontWeight:600, fontFamily:'monospace', fontSize:'12px' } },
+    { field:'descripcion_padre', headerName:'Producto', flex:1, sortable:true, filter:true,
+      cellStyle:{ fontSize:'12px' },
+      valueFormatter: p => p.value?.length > 40 ? p.value.substring(0,40) + '...' : p.value },
+    { field:'total_venta', headerName:'Venta', width:120, sortable:true,
+      cellRenderer:moneyRenderer, type:'numericColumn' },
+  ];
+  gridTopProductos = agGrid.createGrid(document.getElementById('grid-top-productos'), {
+    columnDefs,
+    rowData: [],
+    defaultColDef:{ resizable:true, sortable:true },
+    animateRows:true,
+    rowHeight:36,
+    headerHeight:40,
+    suppressCellFocus:true,
+    overlayLoadingTemplate: '<span class="text-muted">Cargando top productos...</span>',
+    overlayNoRowsTemplate:  '<span class="text-muted">Sin datos para el filtro seleccionado</span>',
+  });
+}
+
+function fetchTopProductos() {
+  clearTimeout(topProductosDebounce);
+  topProductosDebounce = setTimeout(async () => {
+    if (!gridTopProductos) return;
+    gridTopProductos.showLoadingOverlay();
+
+    const { ini, fin } = getDateRange();
+    const params = new URLSearchParams({ ini, fin });
+    activeCanales.forEach(c => params.append('canales[]', c));
+    activeMeses.forEach(m  => params.append('meses[]', m));
+    activeDias.forEach(d   => params.append('dias[]', d));
+
+    try {
+      const resp = await fetch(`/dashboard/ventas/top-productos?${params}`);
+      const data = await resp.json();
+      gridTopProductos.setGridOption('rowData', data);
+    } catch(e) {
+      console.error('fetchTopProductos:', e);
+      gridTopProductos.showNoRowsOverlay();
+    }
+  }, 350);
+}
+
+// ════════════════════════════════════════════════════════
 //  RANGE LABELS EN CADA GRÁFICO
 // ════════════════════════════════════════════════════════
 function updateRangeLabels(rows) {
@@ -970,7 +1050,7 @@ function updateRangeLabels(rows) {
       parts.push(activeDias.length <= 5 ? `días: ${activeDias.join(',')}` : `${activeDias.length} días`);
     }
     const lbl = parts.join(' · ');
-    ['trend','radial','treemap','meses','resumen'].forEach(id => {
+    ['trend','radial','treemap','meses','resumen','top-productos'].forEach(id => {
       const el = document.getElementById('range-' + id);
       if (el) el.textContent = lbl;
     });
@@ -990,8 +1070,9 @@ function applyFilters(init = false) {
     initChartRadial(rows);
     initChartTreemap(rows);
     initChartMeses(rows);
-    initGridResumen(aggByKey(rows.filter(r => MARCA_TEMPORADA.includes(r.marca))));
+    initGridResumen(aggByKey(rows));
     initGridTiendas();
+    initGridTopProductos();
   } else {
     updateChartTrend(rows);
     updateChartRadial(rows);
@@ -1001,6 +1082,7 @@ function applyFilters(init = false) {
   }
 
   fetchTiendas();
+  fetchTopProductos();
 
   // Mostrar filtros de mes/día solo en período Anual
   const isAnual = activePeriod === 'anual';
@@ -1113,6 +1195,33 @@ function setTrendView(v, btn) {
   });
   updateChartTrend(getFilteredRows());
 }
+
+// ════════════════════════════════════════════════════════
+//  THEME SWITCH (called from base.blade.php toggle)
+// ════════════════════════════════════════════════════════
+window.updateChartTheme = function() {
+  const axisColor = getChartAxisColor();
+  const gridColor = getChartGridColor();
+  const opts = {
+    grid: { borderColor: gridColor, strokeDashArray: 4 },
+    xaxis: { labels: { style: { colors: axisColor } } },
+    yaxis: { labels: { style: { colors: axisColor } } },
+    legend: { labels: { colors: axisColor } },
+  };
+  if (chartTrend)  chartTrend.updateOptions(opts, false, true);
+  if (chartMeses)  chartMeses.updateOptions(opts, false, true);
+  if (chartRadial) chartRadial.updateOptions({
+    legend: { labels: { colors: axisColor } },
+    plotOptions: { radialBar: {
+      track: { background: gridColor },
+      dataLabels: {
+        name:  { color: axisColor },
+        value: { color: axisColor },
+        total: { color: axisColor },
+      },
+    }},
+  }, false, true);
+};
 
 // ════════════════════════════════════════════════════════
 //  INIT

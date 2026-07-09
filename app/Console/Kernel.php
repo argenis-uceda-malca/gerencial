@@ -16,13 +16,13 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
-        $schedule->command('tbretail:guardar-conteos')
-             ->dailyAt('02:00');
+        // $schedule->command('tbretail:guardar-conteos')
+        //      ->dailyAt('02:00');
 
         // Actualiza ventas cada 10 min (ventas_diarias + reporte_ventas, ultimos 3 dias)
-        $schedule->command('etl:refrescar-ultimos-dias')
-             ->everyTenMinutes()
-             ->withoutOverlapping(1);
+        // $schedule->command('etl:refrescar-ultimos-dias')
+        //      ->everyTenMinutes()
+        //      ->withoutOverlapping(5);
 
         // Clasificacion SSS/NUEVO/CIERRE: una vez al dia (suficiente)
         // $schedule->command('etl:refrescar-filtro-sss')

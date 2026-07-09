@@ -210,6 +210,44 @@ class DashboardVentasController extends Controller
         return response()->json($rows);
     }
 
+    public function topProductos(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $ini     = $request->input('ini', Carbon::today()->startOfYear()->toDateString());
+        $fin     = $request->input('fin', Carbon::today()->toDateString());
+        $canales = $request->input('canales', []);
+        $meses   = array_map('intval', $request->input('meses', []));
+        $dias    = array_map('intval', $request->input('dias', []));
+
+        $db = DB::connection('pgsql');
+
+        $dbCanales = [];
+        foreach ($canales as $c) {
+            if ($c === 'WEB') { $dbCanales[] = 'WEB'; $dbCanales[] = 'ECOMMERCE OFF'; }
+            else $dbCanales[] = $c;
+        }
+
+        $query = $db->table('automatizacion_pla_reporte_ventas')
+            ->selectRaw("codigo_padre,
+                COALESCE(NULLIF(TRIM(descripcion_padre), ''), 'SIN DESCRIPCIÓN') AS descripcion_padre,
+                SUM(importe_subtotal) AS total_venta,
+                SUM(unidades) AS total_unidades")
+            ->where('tipo_fila', 'ventas_act')
+            ->whereBetween('fecha_documento', [$ini, $fin])
+            ->whereNotNull('codigo_padre')
+            ->where('codigo_padre', '!=', '');
+
+        if ($dbCanales) $query->whereIn('sucursal_3', $dbCanales);
+        if ($meses)     $query->whereRaw('EXTRACT(MONTH FROM fecha_documento)::int IN (' . implode(',', $meses) . ')');
+        if ($dias)      $query->whereRaw('dia_equivalente::int IN (' . implode(',', $dias) . ')');
+
+        $result = $query->groupBy('codigo_padre', 'descripcion_padre')
+            ->orderByDesc(DB::raw('SUM(importe_subtotal)'))
+            ->limit(10)
+            ->get();
+
+        return response()->json($result);
+    }
+
     private function buildTiendas(string $ini, string $fin): array
     {
         $db = DB::connection('pgsql');

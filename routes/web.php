@@ -74,6 +74,7 @@ Route::middleware('session.auth')->group(function () {
     Route::get('/dashboard/gerencial', [App\Http\Controllers\DashboardGerencialController::class, 'index'])->name('dashboard.gerencial');
     Route::get('/dashboard/ventas', [App\Http\Controllers\DashboardVentasController::class, 'index'])->name('dashboard.ventas');
     Route::get('/dashboard/ventas/tiendas', [App\Http\Controllers\DashboardVentasController::class, 'tiendas'])->name('dashboard.ventas.tiendas');
+    Route::get('/dashboard/ventas/top-productos', [App\Http\Controllers\DashboardVentasController::class, 'topProductos'])->name('dashboard.ventas.top-productos');
     Route::get('/dashboard/reporte', [App\Http\Controllers\DashboardReporteController::class, 'index'])->name('dashboard.reporte');
     Route::get('/dashboard/reporte/dia', [App\Http\Controllers\DashboardReporteController::class, 'dia'])->name('dashboard.reporte.dia');
     Route::get('/dashboard/reporte/detalle', [App\Http\Controllers\DashboardReporteController::class, 'detalle'])->name('dashboard.reporte.detalle');
