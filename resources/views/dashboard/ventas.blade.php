@@ -1019,15 +1019,22 @@ let topProductosDebounce = null;
 
 function initGridTopProductos() {
   const columnDefs = [
-    { field:'rank', headerName:'#', width:45, sortable:false, filter:false,
-      valueGetter: p => (p.node?.rowIndex ?? 0) + 1 },
-    { field:'codigo_padre', headerName:'Código', width:110, sortable:true, filter:true,
-      cellStyle:{ fontWeight:600, fontFamily:'monospace', fontSize:'12px' } },
+    { field:'rank', headerName:'#', width:36, sortable:false, filter:false,
+      valueGetter: p => (p.node?.rowIndex ?? 0) + 1,
+      cellStyle:{ paddingLeft:'6px', paddingRight:'6px' } },
+    { field:'codigo_padre', headerName:'Código', width:85, sortable:true, filter:true,
+      cellStyle:{ fontFamily:'monospace', fontSize:'11px', fontWeight:600 } },
+    { field:'marca', headerName:'Marca', width:70, sortable:true, filter:true,
+      cellStyle:{ fontWeight:600, fontSize:'11px' } },
     { field:'descripcion_padre', headerName:'Producto', flex:1, sortable:true, filter:true,
-      cellStyle:{ fontSize:'12px' },
-      valueFormatter: p => p.value?.length > 40 ? p.value.substring(0,40) + '...' : p.value },
-    { field:'total_venta', headerName:'Venta', width:120, sortable:true,
-      cellRenderer:moneyRenderer, type:'numericColumn' },
+      cellStyle:{ fontSize:'11px' },
+      valueFormatter: p => p.value?.length > 35 ? p.value.substring(0,35) + '...' : p.value },
+    { field:'total_venta', headerName:'Venta', width:95, sortable:true,
+      cellRenderer:moneyRenderer, type:'numericColumn',
+      cellStyle:{ fontSize:'11px' } },
+    { field:'total_unidades', headerName:'Unds', width:65, sortable:true,
+      type:'numericColumn', cellStyle:{ fontSize:'11px' },
+      valueFormatter: p => p.value != null ? Math.round(p.value).toLocaleString('es-PE') : '' },
   ];
   gridTopProductos = agGrid.createGrid(document.getElementById('grid-top-productos'), {
     columnDefs,

@@ -523,12 +523,12 @@
               </li>
             @endif
 
-            <li class="menu-item{{ request()->routeIs('reporte_ventas') ? ' active' : '' }}">
+            <!-- <li class="menu-item{{ request()->routeIs('reporte_ventas') ? ' active' : '' }}">
                 <a href="{{ route('reporte_ventas') }}" class="menu-link">
                   <i class="menu-icon tf-icons bx bx-home-circle"></i>
                   <div data-i18n="Analytics">Reporte Gerencial</div>
                 </a>
-            </li>
+            </li> -->
 
             @if (in_array('acceso_administrador', session('permisos', [])))
             <li class="menu-item{{ request()->routeIs('dashboard.ventas') ? ' active' : '' }}">

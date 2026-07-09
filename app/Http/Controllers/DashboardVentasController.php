@@ -229,6 +229,7 @@ class DashboardVentasController extends Controller
         $query = $db->table('automatizacion_pla_reporte_ventas')
             ->selectRaw("codigo_padre,
                 COALESCE(NULLIF(TRIM(descripcion_padre), ''), 'SIN DESCRIPCIÓN') AS descripcion_padre,
+                marca,
                 SUM(importe_subtotal) AS total_venta,
                 SUM(unidades) AS total_unidades")
             ->where('tipo_fila', 'ventas_act')
@@ -240,7 +241,7 @@ class DashboardVentasController extends Controller
         if ($meses)     $query->whereRaw('EXTRACT(MONTH FROM fecha_documento)::int IN (' . implode(',', $meses) . ')');
         if ($dias)      $query->whereRaw('dia_equivalente::int IN (' . implode(',', $dias) . ')');
 
-        $result = $query->groupBy('codigo_padre', 'descripcion_padre')
+        $result = $query->groupBy('codigo_padre', 'descripcion_padre', 'marca')
             ->orderByDesc(DB::raw('SUM(importe_subtotal)'))
             ->limit(10)
             ->get();
