@@ -449,9 +449,14 @@
             <h5 class="mb-0">Resumen por Canal / Marca</h5>
             <div class="chart-range" id="range-resumen"></div>
           </div>
-          <input type="text" class="form-control form-control-sm"
-            placeholder="🔍 Buscar..." style="max-width:200px"
-            oninput="if(gridResumen) gridResumen.setGridOption('quickFilterText', this.value)">
+          <div class="d-flex gap-2 align-items-center">
+            <input type="text" class="form-control form-control-sm"
+              placeholder="🔍 Buscar..." style="max-width:200px"
+              oninput="if(gridResumen) gridResumen.setGridOption('quickFilterText', this.value)">
+            <button class="btn btn-sm btn-outline-secondary" onclick="exportarExcelResumen()" title="Exportar a Excel">
+              <i class="bx bx-export"></i>
+            </button>
+          </div>
         </div>
         <div class="card-body p-0">
           <div id="grid-resumen" class="ag-theme-quartz" style="height:300px;width:100%"></div>
@@ -460,9 +465,14 @@
     </div>
     <div class="col-lg-4">
       <div class="card h-100">
-        <div class="card-header">
-          <h5 class="mb-0">Top 10 Productos</h5>
-          <div class="chart-range" id="range-top-productos"></div>
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div>
+            <h5 class="mb-0">Top 10 Productos</h5>
+            <div class="chart-range" id="range-top-productos"></div>
+          </div>
+          <button class="btn btn-sm btn-outline-secondary" onclick="exportarExcelTopProductos()" title="Exportar a Excel">
+            <i class="bx bx-export"></i>
+          </button>
         </div>
         <div class="card-body p-0">
           <div id="grid-top-productos" class="ag-theme-quartz" style="height:300px;width:100%"></div>
@@ -482,6 +492,9 @@
         <input type="text" class="form-control form-control-sm"
           placeholder="🔍 Buscar tienda..." style="max-width:200px"
           oninput="if(gridTiendas) gridTiendas.setGridOption('quickFilterText', this.value)">
+        <button class="btn btn-sm btn-outline-secondary" onclick="exportarExcelTiendas()" title="Exportar a Excel">
+          <i class="bx bx-export"></i>
+        </button>
         <button class="btn btn-sm btn-outline-secondary" type="button"
           data-bs-toggle="collapse" data-bs-target="#tiendas-wrap">
           <i class="bx bx-chevron-down"></i>
@@ -899,6 +912,64 @@ function gmRenderer(p) {
 function moneyRenderer(p) {
   return `<span style="font-variant-numeric:tabular-nums">${fmtFull(p.value||0)}</span>`;
 }
+
+// ════════════════════════════════════════════════════════
+//  EXPORTAR A EXCEL
+// ════════════════════════════════════════════════════════
+function exportToExcel(gridApi, fileName) {
+  if (!gridApi) return;
+
+  const columns = gridApi.getColumns();
+  const exportCols = columns.filter(col => !col.getColDef().valueGetter && !col.getColDef().hide);
+
+  const rows = [];
+  gridApi.forEachNode(node => { rows.push(node.data); });
+
+  const pinnedBottom = gridApi.getGridOption('pinnedBottomRowData') || [];
+  const totalRow = pinnedBottom.length > 0 ? pinnedBottom[0] : null;
+
+  const fmt = v => {
+    if (typeof v === 'number' && !isNaN(v)) return Math.round(v * 100) / 100;
+    if (v == null) return '';
+    return String(v);
+  };
+
+  let html = '<html><head><meta charset="UTF-8"><style>' +
+    'table{border-collapse:collapse;font-family:Segoe UI,sans-serif;font-size:12px}' +
+    'th{background:#F5F5F5;border:1px solid #CCC;padding:6px 8px;font-weight:700;text-align:left}' +
+    'td{border:1px solid #CCC;padding:4px 8px}' +
+    '.total td{font-weight:700;border-top:2px solid #333}' +
+    '.num{text-align:right;font-variant-numeric:tabular-nums}' +
+    '</style></head><body><table><tr>' +
+    exportCols.map(col => `<th>${col.getColDef().headerName || col.getColId()}</th>`).join('') +
+    '</tr>';
+
+  rows.forEach(r => {
+    html += '<tr>' + exportCols.map(col => {
+      const v = r[col.getColDef().field];
+      return `<td${typeof v === 'number' ? ' class="num"' : ''}>${fmt(v)}</td>`;
+    }).join('') + '</tr>';
+  });
+
+  if (totalRow) {
+    html += '<tr class="total">' + exportCols.map(col => {
+      const v = totalRow[col.getColDef().field];
+      return `<td${typeof v === 'number' ? ' class="num"' : ''}>${fmt(v)}</td>`;
+    }).join('') + '</tr>';
+  }
+
+  html += '</table></body></html>';
+
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = fileName + '.xls';
+  link.click();
+}
+
+function exportarExcelResumen()   { exportToExcel(gridResumen, 'Resumen_Canal_Marca'); }
+function exportarExcelTiendas()   { exportToExcel(gridTiendas, 'Detalle_Tienda'); }
+function exportarExcelTopProductos() { exportToExcel(gridTopProductos, 'Top_10_Productos'); }
 
 // ════════════════════════════════════════════════════════
 //  AG GRID — RESUMEN

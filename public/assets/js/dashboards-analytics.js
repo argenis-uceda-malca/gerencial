@@ -122,7 +122,7 @@
         }
       },
       xaxis: {
-        categories: ['Ene', 'Feb', 'Mar', 'Abr', 'May','Jun'],
+        categories: ['Ene', 'Feb', 'Mar', 'Abr', 'May','Jun','Jul'],
         labels: {
           style: {
             fontSize: '13px',

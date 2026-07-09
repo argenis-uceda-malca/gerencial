@@ -1605,19 +1605,89 @@ async function refreshData(){
 /* ══════════════════════════════════════════════════════════
    EXCEL EXPORT
    ══════════════════════════════════════════════════════════ */
+function exportToExcel(grid, fileName) {
+  if (!grid) { alert('No hay tabla que exportar.'); return; }
+
+  var colDefs = grid.getColumnDefs();
+  var hasGroups = colDefs.some(function(c){ return c.children && c.children.length; });
+
+  var rows = [];
+  grid.forEachNode(function(node){ rows.push(node.data); });
+
+  var pinned = (grid.getGridOption && grid.getGridOption('pinnedBottomRowData')) || [];
+
+  var fmt = function(v){
+    if (typeof v === 'number' && !isNaN(v)) return Math.round(v * 100) / 100;
+    if (v == null) return '';
+    return String(v);
+  };
+
+  var leafFields = [];
+  var headerHtml = '';
+
+  if (hasGroups) {
+    function countLeaves(defs){ var c=0; defs.forEach(function(d){ if(d.children&&d.children.length) c+=countLeaves(d.children); else c++; }); return c; }
+    function maxDepth(defs){ var d=1; defs.forEach(function(df){ if(df.children&&df.children.length) d=Math.max(d,1+maxDepth(df.children)); }); return d; }
+    var totalDepth = maxDepth(colDefs);
+    var hRows = []; for(var i=0;i<totalDepth;i++) hRows.push([]);
+    function walk(defs, depth){
+      defs.forEach(function(def){
+        if(def.children&&def.children.length){
+          var lc=countLeaves(def.children);
+          hRows[depth].push('<th colspan="'+lc+'">'+(def.headerName||'')+'</th>');
+          walk(def.children, depth+1);
+        } else {
+          var rs=totalDepth-depth;
+          hRows[depth].push('<th'+(rs>1?' rowspan="'+rs+'"':'')+'>'+(def.headerName||def.field||'')+'</th>');
+          leafFields.push(def.field);
+        }
+      });
+    }
+    walk(colDefs, 0);
+    hRows.forEach(function(r){ headerHtml += '<tr>'+r.join('')+'</tr>'; });
+  } else {
+    var columns = grid.getColumns();
+    var exportCols = columns.filter(function(col){
+      var def = col.getColDef();
+      return !def.valueGetter && !def.hide && def.field;
+    });
+    leafFields = exportCols.map(function(col){ return col.getColDef().field; });
+    headerHtml = '<tr>'+exportCols.map(function(col){ return '<th>'+(col.getColDef().headerName||col.getColId())+'</th>'; }).join('')+'</tr>';
+  }
+
+  var bodyHtml = '';
+  rows.forEach(function(r){
+    var cls = r._esTotal ? ' class="total"' : '';
+    bodyHtml += '<tr'+cls+'>'+leafFields.map(function(f){
+      var v = r[f]; return '<td'+(typeof v==='number'?' class="num"':'')+'>'+fmt(v)+'</td>';
+    }).join('')+'</tr>';
+  });
+  pinned.forEach(function(r){
+    bodyHtml += '<tr class="total">'+leafFields.map(function(f){
+      var v = r[f]; return '<td'+(typeof v==='number'?' class="num"':'')+'>'+fmt(v)+'</td>';
+    }).join('')+'</tr>';
+  });
+
+  var html = '<html><head><meta charset="UTF-8"><style>' +
+    'table{border-collapse:collapse;font-family:Segoe UI,sans-serif;font-size:12px}' +
+    'th{background:#F5F5F5;border:1px solid #CCC;padding:6px 8px;font-weight:700;text-align:left}' +
+    'td{border:1px solid #CCC;padding:4px 8px}' +
+    '.total td{font-weight:700;border-top:2px solid #333}' +
+    '.num{text-align:right;font-variant-numeric:tabular-nums}' +
+    '</style></head><body><table>'+headerHtml+bodyHtml+'</table></body></html>';
+
+  var blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+  var link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = fileName + '.xls';
+  link.click();
+}
+
 document.getElementById('btn-excel').addEventListener('click', function(){
   var active = document.querySelector('#mainTabs .nav-link.active').dataset.bsTarget;
   var grid   = active==='#tab-pivot' ? gridPivot : gridDetalle;
-  if(!grid){ alert('No hay tabla que exportar.'); return; }
-  var rows=[]; grid.forEachNodeAfterFilterAndSort(function(n){if(n.data)rows.push(n.data);});
-  grid.forEachNode(function(){});
-  var pinned = (grid.getGridOption && grid.getGridOption('pinnedBottomRowData')) || [];
-  rows = rows.concat(pinned);
-  var cols=grid.getColumnDefs(); var hdrs=[],flds=[];
-  (function walk(list){ list.forEach(function(c){ if(c.children) walk(c.children); else { hdrs.push(c.headerName||c.field); flds.push(c.field); } }); })(cols);
-  var ws = XLSX.utils.aoa_to_sheet([hdrs].concat(rows.map(function(r){ return flds.map(function(f){ return r[f]??''; }); })));
-  var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Reporte');
-  XLSX.writeFile(wb,'reporte_'+activeIni+'_'+activeFin+'.xlsx');
+  var file   = active==='#tab-pivot' ? 'Reporte_Tabla_Dinamica' : 'Reporte_Detalle';
+  exportToExcel(grid, file + '_' + activeIni + '_' + activeFin);
 });
 
 /* ══════════════════════════════════════════════════════════
