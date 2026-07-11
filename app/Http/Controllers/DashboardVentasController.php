@@ -11,7 +11,7 @@ class DashboardVentasController extends Controller
     public function __construct()
     {
         $this->middleware(function ($request, $next) {
-            if (!in_array('acceso_administrador', session('permisos', []))) {
+            if (!in_array('acceso_dashboard_ventas', session('permisos', []))) {
                 return redirect('/')->with('error', 'No tienes permiso para acceder.');
             }
             return $next($request);

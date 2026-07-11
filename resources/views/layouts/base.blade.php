@@ -530,21 +530,25 @@
                 </a>
             </li> -->
 
-            @if (in_array('acceso_administrador', session('permisos', [])))
+            @if (in_array('acceso_dashboard_ventas', session('permisos', [])))
             <li class="menu-item{{ request()->routeIs('dashboard.ventas') ? ' active' : '' }}">
                 <a href="{{ route('dashboard.ventas') }}" class="menu-link">
                   <i class="menu-icon tf-icons bx bx-bar-chart-alt-2"></i>
                   <div>Dashboard Ventas</div>
                 </a>
             </li>
+            @endif
 
+            @if (in_array('acceso_reporte_ventas', session('permisos', [])))
             <li class="menu-item{{ request()->routeIs('dashboard.reporte') ? ' active' : '' }}">
                 <a href="{{ route('dashboard.reporte') }}" class="menu-link">
                   <i class="menu-icon tf-icons bx bx-spreadsheet"></i>
                   <div>Reporte Ventas</div>
                 </a>
             </li>
+            @endif
 
+            @if (in_array('acceso_ff_to', session('permisos', [])))
             <li class="menu-item{{ request()->routeIs('dashboard.ffto') ? ' active' : '' }}">
                 <a href="{{ route('dashboard.ffto') }}" class="menu-link">
                   <i class="menu-icon tf-icons bx bx-walk"></i>
@@ -701,10 +705,7 @@
             </a>
           </li>
 @endif -->
-@if (in_array('acceso_gerencial', session('permisos')) &&
-        in_array('acceso_top_venta', session('permisos')) &&
-        in_array('acceso_vta_acumulada', session('permisos')) &&
-        in_array('reporte_vta_mensual', session('permisos')))
+@if (in_array('acceso_administrador', session('permisos', [])))
 <!-- Misc -->
             <li class="menu-header small text-uppercase"><span class="menu-header-text">administracion</span></li>
             <li class="menu-item">
@@ -734,16 +735,6 @@
                 </li>
               </ul>
             </li>
-            {{-- <li class="menu-item">
-              <a
-                href=""
-                target="_blank"
-                class="menu-link"
-              >
-                <i class="menu-icon tf-icons bx bx-file"></i>
-                <div data-i18n="Documentation">Documentation</div>
-              </a>
-            </li> --}}
 @endif
           </ul>
         </aside>

@@ -245,7 +245,7 @@ class LoginController extends Controller
             //dd($user);
             return $user;
         } catch (RequestException | ClientException $e) {
-            abort(500);
+            return null;
         }
         
     }
@@ -253,10 +253,6 @@ class LoginController extends Controller
 
     public function login2(Request $request)
     {
-       
-        $user = $this->getUserSB($request);
-        
-        
         $request->validate([
             'username' => 'required',
             'password' => 'required',
@@ -264,34 +260,44 @@ class LoginController extends Controller
         $credentials = $request->only('username', 'password');
         $password = $credentials['password'];
 
-        
-        $password_encrypt = $this->des_encrypt_sb($user['CLAVE']);
-        
-        //dd($password_encrypt, $password);
-        //dd($user['CODIGO_USUARIO']);
-        
-        // Verificamos si se encontró un usuario y si el password coincide
-        if (!empty($user) && $password_encrypt === $password) {
-            
-            // dd("dentro");
-            // echo "dentro";
-            
-            //dd($password_encrypt, $password);
-            session(
-                [
-                    'username' => $user['CODIGO_USUARIO'],
-                    'first_name' => $user['NOMBRE'],
-                    'email' => $user['EMAIL'],
-                ]
-            );
-            //dd($user['CODIGO_USUARIO']);
-            //dd($this->getIdUser($user['CODIGO_USUARIO']));
-            $this->activarpermisos($this->getIdUser($user['CODIGO_USUARIO']));
-            //var_dump(session('username'));
-            return redirect('/inicio');
-        } else {
-            return redirect('/');
+        // 1. Intentar autenticación vía API externa
+        $apiUser = $this->getUserSB($request);
+
+        if (!empty($apiUser) && isset($apiUser['CLAVE'])) {
+            $password_encrypt = $this->des_encrypt_sb($apiUser['CLAVE']);
+
+            if ($password_encrypt === $password) {
+                session([
+                    'username' => $apiUser['CODIGO_USUARIO'],
+                    'first_name' => $apiUser['NOMBRE'],
+                    'email' => $apiUser['EMAIL'],
+                ]);
+                // Cachear password local para fallback futuro
+                $this->syncMigratedPassword($apiUser['CODIGO_USUARIO'], $password);
+                $this->activarpermisos($this->getIdUser($apiUser['CODIGO_USUARIO']));
+                return redirect('/inicio');
+            }
         }
+
+        // 2. Fallback local (API no disponible o usuario no encontrado)
+        $bi_conexion = DB::connection('pgsql2');
+        $localUser = $bi_conexion->table('auth_user')
+            ->where('username', $credentials['username'])
+            ->first();
+
+        if ($localUser && !empty($localUser->migrated_password) && Hash::check($password, $localUser->migrated_password)) {
+            session([
+                'id' => $localUser->id,
+                'username' => $localUser->username,
+                'first_name' => $localUser->first_name,
+                'last_name' => $localUser->last_name,
+                'email' => $localUser->email,
+            ]);
+            $this->activarpermisos($localUser->id);
+            return redirect('/inicio');
+        }
+
+        return redirect('/');
     }
 
     private function getIdUser($codigo){
@@ -301,6 +307,17 @@ class LoginController extends Controller
         $bi_conexion = DB::connection('pgsql2');
         $user = $bi_conexion->select("SELECT * FROM auth_user WHERE username = $codigo LIMIT 1");
         return $user[0]->id;
+    }
+
+    private function syncMigratedPassword($username, $password)
+    {
+        try {
+            DB::connection('pgsql2')->table('auth_user')
+                ->where('username', $username)
+                ->update(['migrated_password' => Hash::make($password)]);
+        } catch (\Exception $e) {
+            // No bloquear el login si falla la sincronización
+        }
     }
 
     private function normalize($user)

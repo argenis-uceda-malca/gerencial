@@ -59,35 +59,26 @@
                 <table class="table  order-column" id="mytable">
                     <thead class="table-light">
                         <tr>
-                            <th rowspan="3" class="text-center" style=" z-index: 999;">Usuario</th>
-                            <th rowspan="3" class="text-center" style="background: #aaaaaa2a; ">Nombres</th>
+                            <th rowspan="3" class="text-center" style="z-index: 999;">Usuario</th>
+                            <th rowspan="3" class="text-center" style="background: #aaaaaa2a;">Nombres</th>
                             <th rowspan="3" class="text-center" style="background: #aaaaaa2a">Email</th>
                             <th rowspan="3" class="text-center" style="background: #aaaaaa2a">Activo</th>
-                            <th rowspan="2" colspan="2" class="text-center" style="background: #3ca2bb33">Ultimo
-                                Ingreso
-                            </th>
-                            <th class="text-center" style="background: #23916933" colspan="12">Permisos</th>
+                            <th rowspan="2" colspan="2" class="text-center" style="background: #3ca2bb33">Ultimo Ingreso</th>
+                            <th class="text-center" style="background: #23916933" colspan="6">Permisos</th>
                             <th rowspan="3" class="text-center" style="background: #3ca2bb31">Marcas</th>
                         </tr>
                         <tr>
-                            <th rowspan="2" class="text-center" style="background: #e77f4f2a">Gerencial</th>
-                            <th colspan="5" class="text-center" style="background: #e77f4f2a">Gestion Tiendas</th>
-                            <th rowspan="2" class="text-center" style="background: #e77f4f2a">Social</th>
-                            <th rowspan="2" class="text-center" style="background: #e77f4f2a">RFM</th>
-                            <th rowspan="2" class="text-center" style="background: #e77f4f2a">Stock</th>
-                            <th rowspan="2" class="text-center" style="background: #e77f4f2a">Mapa</th>
-                            <th colspan="2" class="text-center" style="background: #aaaaaa2a">Ripley</th>
+                            <th class="text-center" style="background: #e77f4f2a" rowspan="2">Dashboard Ventas</th>
+                            <th class="text-center" style="background: #e77f4f2a" rowspan="2">Reporte Ventas</th>
+                            <th class="text-center" style="background: #e77f4f2a" rowspan="2">Follow-up FF vs TO</th>
+                            <th class="text-center" style="background: #e77f4f2a" colspan="2">Reporte TxD</th>
+                            <th class="text-center" style="background: #e77f4f2a" rowspan="2">Gestion Clientes RFM</th>
                         </tr>
                         <tr>
                             <th class="text-center" style="background: #3ca2bb3a">Hora</th>
                             <th class="text-center" style="background: #3ca2bb3a">Fecha</th>
-                            <th class="text-center" style="background: #e77f4f2c">Ventas Mensual</th>
-                            <th class="text-center" style="background: #e77f4f2c">Cubicaje Lin/Temp</th>
-                            <th class="text-center" style="background: #e77f4f2c">Participacion Lin/Temp</th>
-                            <th class="text-center" style="background: #e77f4f2c">Top Vta/Contrb</th>
-                            <th class="text-center" style="background: #e77f4f2c">Venta Acumulada</th>
-                            <th class="text-center" style="background: #aaaaaa2d">Lectura</th>
-                            <th class="text-center" style="background: #aaaaaa2d">Subir Data</th>
+                            <th class="text-center" style="background: #e77f4f2c">Reporte Ventas</th>
+                            <th class="text-center" style="background: #e77f4f2c">Cargar Excel</th>
                         </tr>
                     </thead>
                     <tbody class="table-border-bottom-0">
@@ -102,163 +93,53 @@
                                 </td>
                                 <td class="text-center">09:30</td>
                                 <td class="text-center">13/06/23</td>
-                                {{-- Gerencial --}}
+                                {{-- Dashboard Ventas (ID 166) --}}
                                 <td>
                                     <div class="text-center">
                                         <div class="form-switch">
-                                            <form action="{{ route('admin.cambiar') }}" id="form_permiso1"
-                                                method="POST">
+                                            <form action="{{ route('admin.cambiar') }}" method="POST">
                                                 @csrf
                                                 <input type="checkbox" class="form-check-input permiso-checkbox"
-                                                    data-usuario-id="{{ $item->id }}" data-permisoid="46"
-                                                    {{ $item->Auth_permission->contains(46) ? 'checked' : '' }}>
+                                                    data-usuario-id="{{ $item->id }}" data-permisoid="166"
+                                                    {{ $item->Auth_permission->contains(166) ? 'checked' : '' }}>
                                                 <input type="hidden" name="idusuario" value="{{ $item->id }}">
                                             </form>
                                         </div>
                                     </div>
                                 </td>
-                                {{-- Venta mensual --}}
+                                {{-- Reporte Ventas (ID 167) --}}
                                 <td>
                                     <div class="text-center">
                                         <div class="form-switch">
-                                            <form action="{{ route('admin.cambiar') }}" id="form_permiso2"
-                                                method="POST">
+                                            <form action="{{ route('admin.cambiar') }}" method="POST">
                                                 @csrf
                                                 <input class="form-check-input permiso-checkbox" type="checkbox"
-                                                    data-usuario-id="{{ $item->id }}" data-permisoid="114"
-                                                    {{ $item->Auth_permission->contains(114) ? 'checked' : '' }} />
+                                                    data-usuario-id="{{ $item->id }}" data-permisoid="167"
+                                                    {{ $item->Auth_permission->contains(167) ? 'checked' : '' }} />
                                                     <input type="hidden" name="idusuario" value="{{ $item->id }}">
                                             </form>
                                         </div>
                                     </div>
                                 </td>
-                                {{-- Cubicaje --}}
+                                {{-- Follow-up FF vs TO (ID 168) --}}
                                 <td>
                                     <div class="text-center">
                                         <div class="form-switch">
-                                            <form action="{{ route('admin.cambiar') }}" id="form_permiso3"
-                                                method="POST">
+                                            <form action="{{ route('admin.cambiar') }}" method="POST">
                                                 @csrf
                                                 <input class="form-check-input permiso-checkbox" type="checkbox"
-                                                    data-usuario-id="{{ $item->id }}" data-permisoid="115"
-                                                    {{ $item->Auth_permission->contains(115) ? 'checked' : '' }} />
+                                                    data-usuario-id="{{ $item->id }}" data-permisoid="168"
+                                                    {{ $item->Auth_permission->contains(168) ? 'checked' : '' }} />
                                                     <input type="hidden" name="idusuario" value="{{ $item->id }}">
                                             </form>
                                         </div>
                                     </div>
                                 </td>
-                                {{-- Participacion --}}
+                                {{-- Reporte TxD - Reporte Ventas (ID 97) --}}
                                 <td>
                                     <div class="text-center">
                                         <div class="form-switch">
-                                            <input class="form-check-input permiso-checkbox" type="checkbox" id="" />
-                                            {{-- <form action="{{ route('admin.cambiar') }}" id="form_permiso4"
-                                                method="POST">
-                                                @csrf
-                                                <input class="form-check-input checkpermiso" type="checkbox"
-                                                    data-usuario-id="{{ $item->id }}" data-permisoid=""
-                                                    {{ $item->Auth_permission->contains() ? 'checked' : '' }} />
-                                            </form> --}}
-                                        </div>
-                                    </div>
-                                </td>
-                                {{-- Top Vta --}}
-                                <td>
-                                    <div class="text-center">
-                                        <div class="form-switch">
-                                            <form action="{{ route('admin.cambiar') }}" id="form_permiso5"
-                                                method="POST">
-                                                @csrf
-                                                <input class="form-check-input permiso-checkbox" type="checkbox"
-                                                    data-usuario-id="{{ $item->id }}" data-permisoid="116"
-                                                    {{ $item->Auth_permission->contains(116) ? 'checked' : '' }} />
-                                                    <input type="hidden" name="idusuario" value="{{ $item->id }}">
-                                            </form>
-                                        </div>
-                                    </div>
-                                </td>
-                                {{-- Venta Acumulada --}}
-                                <td>
-                                    <div class="text-center">
-                                        <div class="form-switch">
-                                            <form action="{{ route('admin.cambiar') }}" id="form_permiso6"
-                                                method="POST">
-                                                @csrf
-                                                <input class="form-check-input permiso-checkbox" type="checkbox"
-                                                    data-usuario-id="{{ $item->id }}" data-permisoid="117"
-                                                    {{ $item->Auth_permission->contains(117) ? 'checked' : '' }} />
-                                                    <input type="hidden" name="idusuario" value="{{ $item->id }}">
-                                            </form>
-                                        </div>
-                                    </div>
-                                </td>
-                                {{-- Social --}}
-                                <td>
-                                    <div class="text-center">
-                                        <div class="form-switch">
-                                            
-                                            <form action="{{ route('admin.cambiar') }}" id="form_permiso7"
-                                                method="POST">
-                                                @csrf
-                                                <input class="form-check-input permiso-checkbox" type="checkbox"
-                                                    data-usuario-id="{{ $item->id }}" data-permisoid="128"
-                                                    {{ $item->Auth_permission->contains(128) ? 'checked' : '' }} />
-                                                    <input type="hidden" name="idusuario" value="{{ $item->id }}">
-                                            </form>
-                                        </div>
-                                    </div>
-                                </td>
-                                {{-- RFM --}}
-                                <td>
-                                    <div class="text-center">
-                                        <div class="form-switch">
-                                            <form action="{{ route('admin.cambiar') }}" id="form_permiso8"
-                                                method="POST">
-                                                @csrf
-                                                <input class="form-check-input permiso-checkbox" type="checkbox"
-                                                    data-usuario-id="{{ $item->id }}" data-permisoid="140"
-                                                    {{ $item->Auth_permission->contains(140) ? 'checked' : '' }} />
-                                                    <input type="hidden" name="idusuario" value="{{ $item->id }}">
-                                            </form>
-                                        </div>
-                                    </div>
-                                </td>
-                                {{-- Stock --}}
-                                <td>
-                                    <div class="text-center">
-                                        <div class="form-switch">
-                                            <form action="{{ route('admin.cambiar') }}" id="form_permiso9"
-                                                method="POST">
-                                                @csrf
-                                                <input class="form-check-input permiso-checkbox" type="checkbox"
-                                                    data-usuario-id="{{ $item->id }}" data-permisoid="165"
-                                                    {{ $item->Auth_permission->contains(165) ? 'checked' : '' }} />
-                                                    <input type="hidden" name="idusuario" value="{{ $item->id }}">
-                                            </form>
-                                        </div>
-                                    </div>
-                                </td>
-                                {{-- Mapa --}}
-                                <td>
-                                    <div class="text-center">
-                                        <div class="form-switch">
-                                            <form action="{{ route('admin.cambiar') }}" id="form_permiso10"
-                                                method="POST">
-                                                @csrf
-                                                <input class="form-check-input permiso-checkbox" type="checkbox"
-                                                    data-usuario-id="{{ $item->id }}" data-permisoid="130"
-                                                    {{ $item->Auth_permission->contains(130) ? 'checked' : '' }} />
-                                                    <input type="hidden" name="idusuario" value="{{ $item->id }}">
-                                            </form>
-                                        </div>
-                                    </div>
-                                </td>
-                                {{-- Ripley lectura --}}
-                                <td>
-                                    <div class="text-center">
-                                        <div class="form-switch">
-                                            <form action="{{ route('admin.cambiar') }}" id="form_permiso11"
-                                                method="POST">
+                                            <form action="{{ route('admin.cambiar') }}" method="POST">
                                                 @csrf
                                                 <input class="form-check-input permiso-checkbox" type="checkbox"
                                                     data-usuario-id="{{ $item->id }}" data-permisoid="97"
@@ -268,18 +149,31 @@
                                         </div>
                                     </div>
                                 </td>
-                                {{-- Ripley sibir data --}}
+                                {{-- Reporte TxD - Cargar Excel (ID 57) --}}
                                 <td>
                                     <div class="text-center">
                                         <div class="form-switch">
-                                            <form action="{{ route('admin.cambiar') }}" id="form_permiso12"
-                                            method="POST">
-                                            @csrf
-                                            <input class="form-check-input permiso-checkbox" type="checkbox"
-                                                data-usuario-id="{{ $item->id }}" data-permisoid="57"
-                                                {{ $item->Auth_permission->contains(57) ? 'checked' : '' }} />
-                                                <input type="hidden" name="idusuario" value="{{ $item->id }}">
-                                        </form>
+                                            <form action="{{ route('admin.cambiar') }}" method="POST">
+                                                @csrf
+                                                <input class="form-check-input permiso-checkbox" type="checkbox"
+                                                    data-usuario-id="{{ $item->id }}" data-permisoid="57"
+                                                    {{ $item->Auth_permission->contains(57) ? 'checked' : '' }} />
+                                                    <input type="hidden" name="idusuario" value="{{ $item->id }}">
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
+                                {{-- Gestion Clientes RFM (ID 140) --}}
+                                <td>
+                                    <div class="text-center">
+                                        <div class="form-switch">
+                                            <form action="{{ route('admin.cambiar') }}" method="POST">
+                                                @csrf
+                                                <input class="form-check-input permiso-checkbox" type="checkbox"
+                                                    data-usuario-id="{{ $item->id }}" data-permisoid="140"
+                                                    {{ $item->Auth_permission->contains(140) ? 'checked' : '' }} />
+                                                    <input type="hidden" name="idusuario" value="{{ $item->id }}">
+                                            </form>
                                         </div>
                                     </div>
                                 </td>
@@ -345,71 +239,7 @@
                     });
                 });
 
-                // handleCheckpermisoChange(1);
-                // handleCheckpermisoChange(2);
-                // handleCheckpermisoChange(3);
-
             });
-
-            function crearcheckpermiso(idformulario) {
-                id_formulario = "'#" + idformulario + "'"
-                console.log(id_formulario);
-                $('.checkpermiso').change(function() {
-                    var formData = $('#' + idformulario + '').serialize();
-                    var formData = $('#idformulario').serialize();
-                    console.log('Posting the following: ', formData);
-
-                    $.ajax({
-                        url: '/someurl',
-                        data: formData,
-                        type: 'post',
-                        dataType: 'json',
-                        success: function(data) {
-                            //  ... do something with the data...
-                            console.log(data);
-                        }
-                    });
-                });
-            }
-
-
-            function handleCheckpermisoChange(formNumber) {
-                $('#checkpermiso' + formNumber).change(function() {
-                    var formData = $('#form_permiso' + formNumber).serialize();
-                    console.log('Posting the following: ', formData);
-
-                    $.ajax({
-                        url: '/cambiar_permisos',
-                        data: formData,
-                        type: 'post',
-                        dataType: 'json',
-                        success: function(data) {
-                            // ... hacer algo con los datos...
-                            console.log(data);
-                            if (data == "cambiado") {
-                                //alert("actualizado");
-                                Swal.fire({
-                                    position: 'top-end',
-                                    icon: 'success',
-                                    title: 'Error al actualizar',
-                                    showConfirmButton: false,
-                                    timer: 1000
-                                });
-                            } else {
-                                // Swal.fire({
-                                //     position: 'top-end',
-                                //     icon: 'success',
-                                //     title: 'Error al actualizar',
-                                //     showConfirmButton: false,
-                                //     timer: 1000
-                                // }) ;
-                                // alert("actualizado") 
-                            }
-                        }
-                    });
-
-                });
-            }
         </script>
 
     @endsection
