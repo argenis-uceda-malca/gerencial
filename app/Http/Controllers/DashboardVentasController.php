@@ -175,21 +175,26 @@ class DashboardVentasController extends Controller
             ->get();
 
         $mQuery = $db->table('automatizacion_pla_reporte_ventas')
-            ->selectRaw("sucursal, SUM(meta_venta) AS meta")
+            ->selectRaw("sucursal, sucursal_3, marca, SUM(meta_venta) AS meta")
             ->where('tipo_fila', 'metas_std')
             ->whereBetween('fecha_documento', [$ini, $fin]);
 
+        if ($dbCanales) $mQuery->whereIn('sucursal_3', $dbCanales);
         if ($meses) $mQuery->whereRaw('EXTRACT(MONTH FROM fecha_documento)::int IN (' . implode(',', $meses) . ')');
         if ($dias)  $mQuery->whereRaw('dia_equivalente::int IN (' . implode(',', $dias) . ')');
 
-        $metas = $mQuery->groupBy('sucursal')->pluck('meta', 'sucursal');
+        $metas = $mQuery->groupBy('sucursal', 'sucursal_3', 'marca')
+            ->get()
+            ->keyBy(fn($r) => $r->sucursal . '|' . $r->sucursal_3 . '|' . $r->marca);
 
         $rows = [];
         foreach ($ventas as $r) {
+            $key  = $r->sucursal . '|' . $r->sucursal_3 . '|' . $r->marca;
             $canal = $this->canonicalCanal($r->sucursal_3);
             $venta = (float) $r->venta;
             $util  = (float) $r->util;
-            $meta  = (float) ($metas[$r->sucursal] ?? 0);
+            $meta  = (float) (($metas[$key] ?? null)?->meta ?? 0);
+            unset($metas[$key]); // remove matched, remaining are orphans
             $pct   = $meta > 0 ? round($venta / $meta * 100, 1) : 0;
             $gm    = $venta > 0 ? round($util / $venta * 100, 1) : 0;
             $var   = $meta > 0 ? round(($venta - $meta) / $meta * 100, 1) : 0;
@@ -204,6 +209,25 @@ class DashboardVentasController extends Controller
                 'util'     => round($util, 2),
                 'gm'       => $gm,
                 'var'      => $var,
+            ];
+        }
+
+        // Agregar metas huérfanas (sin ventas en el período)
+        foreach ($metas as $key => $m) {
+            $parts = explode('|', $key, 3);
+            if (count($parts) !== 3) continue;
+            [$sucursal, $s3, $marca] = $parts;
+            $meta = (float) $m->meta;
+            $rows[] = [
+                'sucursal' => $sucursal,
+                'canal'    => $this->canonicalCanal($s3),
+                'marca'    => $this->marcaLabel[$marca] ?? $marca,
+                'venta'    => 0.0,
+                'meta'     => round($meta, 2),
+                'pct'      => 0,
+                'util'     => 0.0,
+                'gm'       => 0,
+                'var'      => 0,
             ];
         }
 
@@ -275,18 +299,21 @@ class DashboardVentasController extends Controller
             ->get();
 
         $metas = $db->table('automatizacion_pla_reporte_ventas')
-            ->selectRaw("sucursal, SUM(meta_venta) AS meta")
+            ->selectRaw("sucursal, sucursal_3, marca, SUM(meta_venta) AS meta")
             ->where('tipo_fila', 'metas_std')
             ->whereBetween('fecha_documento', [$ini, $fin])
-            ->groupBy('sucursal')
-            ->pluck('meta', 'sucursal');
+            ->groupBy('sucursal', 'sucursal_3', 'marca')
+            ->get()
+            ->keyBy(fn($r) => $r->sucursal . '|' . $r->sucursal_3 . '|' . $r->marca);
 
         $rows = [];
         foreach ($ventas as $r) {
+            $key  = $r->sucursal . '|' . $r->sucursal_3 . '|' . $r->marca;
             $canal = $this->canonicalCanal($r->sucursal_3);
             $venta = (float) $r->venta;
             $util  = (float) $r->util;
-            $meta  = (float) ($metas[$r->sucursal] ?? 0);
+            $meta  = (float) (($metas[$key] ?? null)?->meta ?? 0);
+            unset($metas[$key]);
             $pct   = $meta > 0 ? round($venta / $meta * 100, 1) : 0;
             $gm    = $venta > 0 ? round($util / $venta * 100, 1) : 0;
             $var   = $meta > 0 ? round(($venta - $meta) / $meta * 100, 1) : 0;
@@ -303,6 +330,25 @@ class DashboardVentasController extends Controller
                 'var'      => $var,
             ];
         }
+
+        foreach ($metas as $key => $m) {
+            $parts = explode('|', $key, 3);
+            if (count($parts) !== 3) continue;
+            [$sucursal, $s3, $marca] = $parts;
+            $meta = (float) $m->meta;
+            $rows[] = [
+                'sucursal' => $sucursal,
+                'canal'    => $this->canonicalCanal($s3),
+                'marca'    => $this->marcaLabel[$marca] ?? $marca,
+                'venta'    => 0.0,
+                'meta'     => round($meta, 2),
+                'pct'      => 0,
+                'util'     => 0.0,
+                'gm'       => 0,
+                'var'      => 0,
+            ];
+        }
+
         return $rows;
     }
 
