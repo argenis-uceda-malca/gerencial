@@ -193,7 +193,7 @@ class DashboardVentasController extends Controller
             $canal = $this->canonicalCanal($r->sucursal_3);
             $venta = (float) $r->venta;
             $util  = (float) $r->util;
-            $meta  = (float) (($metas[$key] ?? null)?->meta ?? 0);
+            $meta  = (float) (isset($metas[$key]) ? $metas[$key]->meta : 0);
             unset($metas[$key]); // remove matched, remaining are orphans
             $pct   = $meta > 0 ? round($venta / $meta * 100, 1) : 0;
             $gm    = $venta > 0 ? round($util / $venta * 100, 1) : 0;
@@ -312,7 +312,7 @@ class DashboardVentasController extends Controller
             $canal = $this->canonicalCanal($r->sucursal_3);
             $venta = (float) $r->venta;
             $util  = (float) $r->util;
-            $meta  = (float) (($metas[$key] ?? null)?->meta ?? 0);
+            $meta  = (float) (isset($metas[$key]) ? $metas[$key]->meta : 0);
             unset($metas[$key]);
             $pct   = $meta > 0 ? round($venta / $meta * 100, 1) : 0;
             $gm    = $venta > 0 ? round($util / $venta * 100, 1) : 0;
