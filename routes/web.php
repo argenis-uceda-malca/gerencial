@@ -55,6 +55,7 @@ Route::post('/vermas_tienda', [ReportEnterController::class, 'vermas_tienda2'])-
 Route::get('/useradmin', [AdministradorController::class, 'index'])->name('admin.index');
 Route::post('/get_usuario', [AdministradorController::class, 'get_usuario'])->name('form.usuario');
 Route::post('/cambiar_permisos', [AdministradorController::class, 'cambiar'])->name('admin.cambiar');
+Route::post('/sync-users', [AdministradorController::class, 'syncUsers'])->name('admin.sync');
 
 Route::get('/', [LoginController::class,'index'] )->name('login.index');
 //Route::post('/login', [LoginController::class,'login'] )->name('form.login');

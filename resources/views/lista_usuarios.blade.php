@@ -54,7 +54,12 @@
 
         <!-- Bootstrap Table with Header - Light -->
         <div class="card">
-            <h5 class="card-header">Lista de Usuarios</h5>
+            <h5 class="card-header">
+                Lista de Usuarios
+                <button id="syncUsersBtn" class="btn btn-primary btn-sm float-end" style="margin-top:-4px;">
+                    <i class="bi bi-arrow-repeat"></i> Sincronizar Usuarios
+                </button>
+            </h5>
             <div class="table-responsive text-nowrap" style="padding: 10px;">
                 <table class="table  order-column" id="mytable">
                     <thead class="table-light">
@@ -217,7 +222,6 @@
                 $(document).on('change', '.permiso-checkbox', function() {
                     var usuarioid = $(this).data('usuario-id');
                     var permisoid = $(this).data('permisoid');
-                    //var isChecked = $(this).is(':checked');
 
                     $.ajax({
                         url: '{{ route('admin.cambiar') }}',
@@ -225,16 +229,41 @@
                         data: {
                             usuarioid: usuarioid,
                             permisoid: permisoid,
-                            //isChecked: isChecked,
                             _token: '{{ csrf_token() }}'
                         },
                         success: function(response) {
-                            // Manejar la respuesta del controlador si es necesario
                             console.log("regreso del controlaror " + response.message)
                         },
                         error: function(xhr) {
-                            // Manejar errores si los hay
                             console.log("error ")
+                        }
+                    });
+                });
+
+                $('#syncUsersBtn').click(function() {
+                    var btn = $(this);
+                    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Sincronizando...');
+
+                    $.ajax({
+                        url: '{{ route('admin.sync') }}',
+                        type: 'POST',
+                        data: { _token: '{{ csrf_token() }}' },
+                        success: function(response) {
+                            btn.html('<i class="bi bi-check-circle"></i> ' + response.message);
+                            setTimeout(function() {
+                                location.reload();
+                            }, 2000);
+                        },
+                        error: function(xhr) {
+                            var msg = 'Error al sincronizar';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                msg = xhr.responseJSON.message;
+                            }
+                            btn.html('<i class="bi bi-exclamation-triangle"></i> ' + msg);
+                            btn.prop('disabled', false);
+                            setTimeout(function() {
+                                btn.html('<i class="bi bi-arrow-repeat"></i> Sincronizar Usuarios');
+                            }, 4000);
                         }
                     });
                 });

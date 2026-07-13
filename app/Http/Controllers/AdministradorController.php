@@ -7,8 +7,12 @@ use App\Models\Auth_user_permissions;
 use Illuminate\Http\Request;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use App\Models\User;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ClientException;
 
 class AdministradorController extends Controller
 {
@@ -96,6 +100,122 @@ class AdministradorController extends Controller
             return view('lista_usuarios', compact('lista_usuario'));
         } catch (\Exception $e) {
             dd($e->getMessage()); // Imprime el mensaje de error en la pantalla
+        }
+    }
+
+    public function syncUsers()
+    {
+        try {
+            Log::info('[SyncUsers] Iniciando sincronización');
+
+            $client = new Client(['base_uri' => 'https://apirest.sbperu.com', 'verify' => false]);
+            $response = $client->request('POST', '/oauth/token', [
+                'headers' => ["Accept" => "application/json"],
+                'form_params' => [
+                    "grant_type" => "client_credentials",
+                    "client_id" => 7,
+                    "client_secret" => "bZtI2r4liDPMoSo1MLow3LrDEVjDYBBzUCSpNVOt",
+                    "scope" => ""
+                ]
+            ]);
+            $token = json_decode($response->getBody()->getContents());
+            Log::info('[SyncUsers] Token OAuth obtenido');
+
+            $response = $client->request('POST', '/v2/smartapp/net', [
+                'headers' => [
+                    "Authorization" => "{$token->token_type} {$token->access_token}",
+                    "Accept" => "application/json"
+                ],
+                'form_params' => [
+                    "type" => "listarusuariossoluflex",
+                    "env" => config('app.env')
+                ]
+            ]);
+
+            $rawBody = $response->getBody()->getContents();
+            Log::info('[SyncUsers] Respuesta API (primeros 500 chars): ' . substr($rawBody, 0, 500));
+
+            $apiUsers = json_decode($rawBody, true);
+
+            if (empty($apiUsers)) {
+                Log::warning('[SyncUsers] API devolvió vacío o null');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se obtuvieron usuarios de la API'
+                ]);
+            }
+
+            Log::info('[SyncUsers] Total usuarios desde API: ' . count($apiUsers));
+
+            // Log primer usuario como muestra para ver los campos
+            if (count($apiUsers) > 0) {
+                Log::info('[SyncUsers] Muestra primer usuario: ' . json_encode($apiUsers[0]));
+            }
+
+            $creados = 0;
+            $actualizados = 0;
+            $errores = 0;
+
+            foreach ($apiUsers as $i => $apiUser) {
+                $username = trim($apiUser['CODIGO_USUARIO'] ?? '');
+                if (empty($username)) {
+                    Log::warning("[SyncUsers] Usuario #{$i} sin CODIGO_USUARIO, se salta");
+                    continue;
+                }
+
+                $nombre = mb_substr(trim($apiUser['NOMBRE'] ?? ''), 0, 30);
+                $email = trim($apiUser['EMAIL'] ?? '');
+                $isActive = ($apiUser['CODIGO_ESTADO'] ?? '') === '01';
+
+                try {
+                    $existingUser = User::where('username', $username)->first();
+
+                    if ($existingUser) {
+                        $existingUser->update([
+                            'first_name' => $nombre ?: $existingUser->first_name,
+                            'email' => $email ?: $existingUser->email,
+                            'is_active' => $isActive,
+                        ]);
+                        $actualizados++;
+                        Log::info("[SyncUsers] Actualizado: {$username}");
+                    } else {
+                        User::create([
+                            'username' => $username,
+                            'password' => '',
+                            'last_name' => '',
+                            'first_name' => $nombre,
+                            'email' => $email,
+                            'is_active' => $isActive,
+                            'is_staff' => false,
+                            'is_superuser' => false,
+                            'date_joined' => now(),
+                        ]);
+                        $creados++;
+                        Log::info("[SyncUsers] CREADO nuevo: {$username} - {$nombre}");
+                    }
+                } catch (\Exception $e) {
+                    $errores++;
+                    Log::error("[SyncUsers] Error con {$username}: " . $e->getMessage());
+                }
+            }
+
+            Log::info("[SyncUsers] Finalizado: {$creados} creados, {$actualizados} actualizados, {$errores} errores");
+
+            return response()->json([
+                'success' => true,
+                'creados' => $creados,
+                'actualizados' => $actualizados,
+                'errores' => $errores,
+                'total_api' => count($apiUsers),
+                'message' => "{$creados} creados, {$actualizados} actualizados, {$errores} errores"
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('[SyncUsers] Excepción general: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al sincronizar: ' . $e->getMessage()
+            ], 500);
         }
     }
 

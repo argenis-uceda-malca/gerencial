@@ -105,7 +105,7 @@ class LoginController extends Controller
         $password = $credentials['password'];
 
         // Ejecutamos la consulta manualmente
-        $bi_conexion = DB::connection('pgsql2');
+        $bi_conexion = DB::connection('pgsql');
         $user = $bi_conexion->select("SELECT * FROM auth_user WHERE username = $username LIMIT 1");
 
         // Verificamos si se encontró un usuario y si el password coincide
@@ -153,7 +153,7 @@ class LoginController extends Controller
     //Función para insertar una clave hash en la nueva columna "migrated_password" 
     public function migratePasswords()
     {
-        $bi_conexion = DB::connection('pgsql2');
+        $bi_conexion = DB::connection('pgsql');
         $users = $bi_conexion->table('auth_user')->select('id', 'username')->whereNull('migrated_password')->get();
 
         foreach ($users as $user) {
@@ -280,7 +280,7 @@ class LoginController extends Controller
         }
 
         // 2. Fallback local (API no disponible o usuario no encontrado)
-        $bi_conexion = DB::connection('pgsql2');
+        $bi_conexion = DB::connection('pgsql');
         $localUser = $bi_conexion->table('auth_user')
             ->where('username', $credentials['username'])
             ->first();
@@ -304,7 +304,7 @@ class LoginController extends Controller
 
         $codigo = "'" . $codigo . "'";
         //dd($codigo);
-        $bi_conexion = DB::connection('pgsql2');
+        $bi_conexion = DB::connection('pgsql');
         $user = $bi_conexion->select("SELECT * FROM auth_user WHERE username = $codigo LIMIT 1");
         return $user[0]->id;
     }
@@ -312,7 +312,7 @@ class LoginController extends Controller
     private function syncMigratedPassword($username, $password)
     {
         try {
-            DB::connection('pgsql2')->table('auth_user')
+            DB::connection('pgsql')->table('auth_user')
                 ->where('username', $username)
                 ->update(['migrated_password' => Hash::make($password)]);
         } catch (\Exception $e) {

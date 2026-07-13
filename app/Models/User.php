@@ -19,6 +19,8 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
     use HasPermissions;
 
+    public $timestamps = false;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -34,7 +36,7 @@ class User extends Authenticatable
         'last_login',
         'is_superuser',
         'username',
-        'first_name ',
+        'first_name',
         'last_name',
         'email',
         'is_staff',
