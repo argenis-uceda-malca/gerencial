@@ -211,7 +211,7 @@
           obj[cc.key + '__' + v.key] = cell ? measureValue(cell, v) : null;
         });
       });
-      values.forEach(function (v) { obj['__total__' + v.key] = measureValue(rowTotal, v); });
+      values.forEach(function (v) { obj['__total__' + '__' + v.key] = measureValue(rowTotal, v); });
       return obj;
     }
 
