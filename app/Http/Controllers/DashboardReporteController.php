@@ -187,7 +187,59 @@ class DashboardReporteController extends Controller
             ];
         }
 
-        return response()->json(['act' => $actRows, 'hst' => $hstRows, 'metas' => $metasRows]);
+        $stockRows = [];
+        $maxDatesByWeek = $db->table('automatizacion_pla_reporte_ventas')
+            ->selectRaw('semana, MAX(fecha_documento) as max_fecha')
+            ->where('tipo_fila', 'stock_act')
+            ->whereIn('sucursal_3_1', ['BOUTIQUES', 'OUTLETS', 'WEB'])
+            ->whereBetween('fecha_documento', [$ini, $fin])
+            ->groupBy('semana')
+            ->get();
+        $stockDates = $maxDatesByWeek->pluck('max_fecha')->all();
+
+        if (!empty($stockDates)) {
+            foreach ($db->table('automatizacion_pla_reporte_ventas')
+                ->selectRaw("
+                    mes, semana::text AS semana,
+                    dia_equivalente::text AS dia, dia_semana,
+                    sucursal_3_1 AS canal, sucursal_2_1 AS subcanal,
+                    sucursal AS tienda, marca, categoria, filtro_sss, localidad,
+                    linea, temporada,
+                    SUM(inv_unds_act)  AS inv_unds_act,
+                    SUM(inv_costo_act) AS inv_costo_act
+                ")
+                ->where('tipo_fila', 'stock_act')
+                ->whereIn('sucursal_3_1', ['BOUTIQUES', 'OUTLETS', 'WEB'])
+                ->whereIn('fecha_documento', $stockDates)
+                ->groupBy(DB::raw("mes, semana, dia_equivalente, dia_semana,
+                    sucursal_3_1, sucursal_2_1, sucursal,
+                    marca, categoria, filtro_sss, localidad, linea, temporada"))
+                ->cursor() as $r) {
+                $s2 = $r->subcanal ?? '';
+                if (($r->canal ?? '') === 'BOUTIQUES' && isset($ml[$r->marca])) {
+                    $s2 = 'BOUTIQUES ' . ($ml[$r->marca] ?? $r->marca);
+                }
+                $stockRows[] = [
+                    'Mes'           => $r->mes        ?? '',
+                    'Semana'        => $r->semana     ?? '',
+                    'Día #'         => $r->dia        ?? '',
+                    'Día'           => $r->dia_semana ?? '',
+                    'Canal'         => $r->canal      ?? '',
+                    'Subcanal'      => $s2,
+                    'Tienda'        => $r->tienda     ?? '',
+                    'Marca'         => $ml[$r->marca] ?? $r->marca ?? '',
+                    'Categoría'     => $r->categoria  ?? '',
+                    'SSS'           => $r->filtro_sss ?? '',
+                    'Localidad'     => $r->localidad  ?? '',
+                    'Lineas'        => $r->linea      ?? '',
+                    'Temporada'     => $r->temporada  ?? '',
+                    'inv_unds_act'  => (int)$r->inv_unds_act,
+                    'inv_costo_act' => round((float)$r->inv_costo_act, 2),
+                ];
+            }
+        }
+
+        return response()->json(['act' => $actRows, 'hst' => $hstRows, 'metas' => $metasRows, 'stock' => $stockRows]);
     }
 
     private array $marcaLabel = [

@@ -1010,6 +1010,7 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
 var ALL_DATA    = [];
 var HST_DATA    = [];
 var METAS_DATA  = [];
+var STOCK_DATA  = [];
 var MERGED_DATA = [];
 var activeIni   = '{{ $mesIni }}';
 var activeFin   = '{{ $today }}';
@@ -1502,7 +1503,7 @@ async function loadDetalle(){
 /* ══════════════════════════════════════════════════════════
    MERGE DE DATOS (compartido)
    ══════════════════════════════════════════════════════════ */
-function buildMergedData(act, hst, metas){
+function buildMergedData(act, hst, metas, stock){
   act.forEach(function(r){ r['Marca Temporada'] = MARCA_TEMPORADA.includes(r.Marca) ? r.Marca : ''; });
 
   var semMes = {};
@@ -1551,10 +1552,35 @@ function buildMergedData(act, hst, metas){
       'Temporada':row['Temporada'] ?? '',
       'vta26': 0, 'gm26': 0, 'unds26': 0, 'tickets26': 0,
       'vta25': 0, 'gm25': 0, 'unds25': 0,
-      'meta_vta': row['meta_vta']
+      'meta_vta': row['meta_vta'],
+      'inv_unds_act': 0, 'inv_costo_act': 0
     };
   });
-  return actMerged.concat(hstMerged).concat(metasMerged);
+  var stockMerged = (stock || []).map(function(row){
+    return {
+      'Mes':      row['Mes'],
+      'Semana':   row['Semana'],
+      'Día #':    row['Día #'] ?? '',
+      'Día':      row['Día'],
+      'Canal':    row['Canal'],
+      'Subcanal': row['Subcanal'],
+      'Tienda':   row['Tienda'],
+      'Marca':    row['Marca'],
+      'Marca Temporada': MARCA_TEMPORADA.includes(row['Marca']) ? row['Marca'] : '',
+      'Categoría':row['Categoría'],
+      'SSS':      row['SSS'] ?? '',
+      'Localidad':row['Localidad'],
+      'Lineas':   row['Lineas'] ?? '',
+      'Temporada':row['Temporada'] ?? '',
+      'vta26': 0, 'gm26': 0, 'unds26': 0, 'tickets26': 0,
+      'vta25': 0, 'gm25': 0, 'unds25': 0,
+      'meta_vta': 0,
+      'inv_unds_act': row['inv_unds_act'] || 0,
+      'inv_costo_act': row['inv_costo_act'] || 0,
+      '_isStock': true
+    };
+  });
+  return actMerged.concat(hstMerged).concat(metasMerged).concat(stockMerged);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -1570,7 +1596,8 @@ async function loadPivotData(){
     ALL_DATA   = payload.act;
     HST_DATA   = payload.hst;
     METAS_DATA = payload.metas || [];
-    MERGED_DATA = buildMergedData(ALL_DATA, HST_DATA, METAS_DATA);
+    STOCK_DATA = payload.stock || [];
+    MERGED_DATA = buildMergedData(ALL_DATA, HST_DATA, METAS_DATA, STOCK_DATA);
 
     buildFilterOptions();
     buildFilterBar();
@@ -1592,7 +1619,8 @@ async function refreshData(){
     ALL_DATA   = payload.act;
     HST_DATA   = payload.hst;
     METAS_DATA = payload.metas || [];
-    MERGED_DATA = buildMergedData(ALL_DATA, HST_DATA, METAS_DATA);
+    STOCK_DATA = payload.stock || [];
+    MERGED_DATA = buildMergedData(ALL_DATA, HST_DATA, METAS_DATA, STOCK_DATA);
     applyPivot();
     setTimeout(function(){ gridPivot.refreshCells({force: true}); }, 50);
     if(detLoaded){ loadDetalle(); }
