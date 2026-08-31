@@ -1,6 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.base')
 
-@section('content')
+@section('title', 'Carga de archivos TXD')
+
+@section('contenido')
 <div class="container py-4">
     <h1 class="h4 mb-3">Carga de archivos TXD (SAGA / OECHSLE / RIPLEY)</h1>
 
