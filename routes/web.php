@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\InicioController;
 use App\Http\Controllers\ReportRfmController;
 use App\Http\Controllers\ReproteTxdController;
+use App\Http\Controllers\TxdUploadController;
 use App\Services\TbRetailService;
 use Carbon\Carbon;
 
@@ -140,3 +141,8 @@ Route::get('/probar-tbretail-masivo', function (TbRetailService $tbRetailService
         'errores' => $errores
     ]);
 });
+
+
+
+Route::get('/txd/cargar', [TxdUploadController::class, 'create'])->name('txd.upload.create');
+Route::post('/txd/cargar', [TxdUploadController::class, 'store'])->name('txd.upload.store');
