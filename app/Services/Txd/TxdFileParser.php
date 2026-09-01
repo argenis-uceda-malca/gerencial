@@ -309,23 +309,24 @@ class TxdFileParser
             if ($rowMap === false) {
                 continue;
             }
+            $rowMap = array_change_key_case($rowMap, CASE_LOWER);
 
-            $sku = trim($rowMap['SKU'] ?? '');
-            $desc = trim($rowMap['DESC_SKU'] ?? $rowMap['DESCRIPCION'] ?? '');
-            $precio = trim($rowMap['PAID PRICE'] ?? $rowMap['Paid_Price'] ?? $rowMap['Precio'] ?? 0);
-            $createdAt = trim($rowMap['CREATED AT'] ?? $rowMap['Created_At'] ?? '');
+            $sku = trim($rowMap['sku'] ?? '');
+            $desc = trim($rowMap['desc_sku'] ?? $rowMap['descripcion'] ?? '');
+            $precio = trim($rowMap['paid price'] ?? $rowMap['paid_price'] ?? $rowMap['precio'] ?? 0);
+            $createdAt = trim($rowMap['created at'] ?? $rowMap['created_at'] ?? '');
 
             $unidades = 0;
             foreach ($header as $h) {
                 $cl = strtolower(str_replace(' ', '_', trim($h)));
                 if (strpos($cl, 'unidades') !== false || strpos($cl, 'qty') !== false ||
                     strpos($cl, 'quantity') !== false || strpos($cl, 'cantidad') !== false) {
-                    $unidades = (int) ($rowMap[$h] ?? 0);
+                    $unidades = (int) ($rowMap[strtolower($h)] ?? 0);
                     break;
                 }
             }
             if (!$unidades) {
-                $unidades = (int) ($rowMap['UNIDADES'] ?? $rowMap['Unidades'] ?? $rowMap['Cantidad'] ?? 0);
+                $unidades = (int) ($rowMap['unidades'] ?? $rowMap['unidades'] ?? $rowMap['cantidad'] ?? 0);
             }
 
             if (!$sku && !$desc) {
@@ -370,7 +371,7 @@ class TxdFileParser
             $rows->push((object) $row);
         }
 
-        Log::info('[TxdFileParser] Falabella Ventas parseado', ['rows' => $rows->count()]);
+        Log::info('[TxdFileParser] Falabella Ventas parseado', ['rows' => $rows->count(), 'agrupados' => count($agrupados), 'header' => $header]);
 
         return $rows;
     }
