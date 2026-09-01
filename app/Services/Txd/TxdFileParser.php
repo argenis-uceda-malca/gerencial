@@ -364,6 +364,8 @@ class TxdFileParser
         $reader->close();
         @unlink($tmpPath);
 
+        $rows = new Collection();
+
         foreach ($agrupados as $row) {
             $rows->push((object) $row);
         }
