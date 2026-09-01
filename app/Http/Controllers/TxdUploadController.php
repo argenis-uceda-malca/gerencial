@@ -28,7 +28,7 @@ class TxdUploadController extends Controller
      * No exige los 5 juntos: se puede subir Oechsle esta semana y Ripley después,
      * por ejemplo, si llegan en momentos distintos.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request)
     {
         $request->validate([
             'oechsle_venta' => ['nullable', 'file', 'mimes:csv,txt'],
@@ -84,11 +84,16 @@ class TxdUploadController extends Controller
             });
         } catch (Throwable $e) {
             Log::error('Error cargando archivos TXD: ' . $e->getMessage(), ['exception' => $e]);
-
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['message' => 'Error al procesar los archivos: ' . $e->getMessage()], 422);
+            }
             return back()->withErrors(['archivo' => 'Error al procesar los archivos: ' . $e->getMessage()]);
         }
 
         if (empty($resumen)) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['message' => 'No se subió ningún archivo.'], 422);
+            }
             return back()->withErrors(['archivo' => 'No se subió ningún archivo.']);
         }
 
@@ -117,12 +122,17 @@ class TxdUploadController extends Controller
                     : ' — El pipeline TXD falló, revisar automatizacion_alertas.';
             } catch (Throwable $e) {
                 Log::error('Error ejecutando automatizacion_ejecutar_txd_completo: ' . $e->getMessage());
-
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json(['status' => $mensaje, 'message' => 'Staging cargado, pero el pipeline falló: ' . $e->getMessage()], 500);
+                }
                 return back()->with('status', $mensaje)
                     ->withErrors(['pipeline' => 'Staging cargado, pero el pipeline falló: ' . $e->getMessage()]);
             }
         }
 
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json(['status' => $mensaje, 'message' => $mensaje, 'resumen' => $resumen]);
+        }
         return back()->with('status', $mensaje);
     }
 }
