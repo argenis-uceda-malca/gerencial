@@ -15,26 +15,26 @@
         <div class="card mb-3">
             <div class="card-header">Archivos (sube solo los que tengas disponibles)</div>
             <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label">Oechsle — Venta (Lun-Sáb, .csv)</label>
-                        <input type="file" name="oechsle_venta" class="file form-control" accept=".csv,.txt" data-browse-on-zone-click="true">
+                <div class="row g-2">
+                    <div class="col">
+                        <label class="form-label small">Oechsle — Venta (Lun-Sáb, .csv)</label>
+                        <input type="file" name="oechsle_venta" class="file form-control form-control-sm" accept=".csv,.txt" data-browse-on-zone-click="true">
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Oechsle — Stock (Dom, .csv)</label>
-                        <input type="file" name="oechsle_stock" class="file form-control" accept=".csv,.txt" data-browse-on-zone-click="true">
+                    <div class="col">
+                        <label class="form-label small">Oechsle — Stock (Dom, .csv)</label>
+                        <input type="file" name="oechsle_stock" class="file form-control form-control-sm" accept=".csv,.txt" data-browse-on-zone-click="true">
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Ripley (Lun-Dom, .xlsx, hoja "TD1")</label>
-                        <input type="file" name="ripley" class="file form-control" accept=".xlsx,.xls" data-browse-on-zone-click="true">
+                    <div class="col">
+                        <label class="form-label small">Ripley (Lun-Dom, .xlsx, hoja "TD1")</label>
+                        <input type="file" name="ripley" class="file form-control form-control-sm" accept=".xlsx,.xls" data-browse-on-zone-click="true">
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Falabella — Stock (.xlsx, hoja "Product details")</label>
-                        <input type="file" name="falabella_stock" class="file form-control" accept=".xlsx,.xls" data-browse-on-zone-click="true">
+                    <div class="col">
+                        <label class="form-label small">Falabella — Stock (.xlsx, hoja "Product details")</label>
+                        <input type="file" name="falabella_stock" class="file form-control form-control-sm" accept=".xlsx,.xls" data-browse-on-zone-click="true">
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Falabella — Ventas (.xlsx, hoja "Sheet 1", export Seller Center)</label>
-                        <input type="file" name="falabella_ventas" class="file form-control" accept=".xlsx,.xls" data-browse-on-zone-click="true">
+                    <div class="col">
+                        <label class="form-label small">Falabella — Ventas (.xlsx, hoja "Sheet 1", Seller Center)</label>
+                        <input type="file" name="falabella_ventas" class="file form-control form-control-sm" accept=".xlsx,.xls" data-browse-on-zone-click="true">
                     </div>
                 </div>
             </div>
