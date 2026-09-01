@@ -24,7 +24,7 @@ class Kernel extends ConsoleKernel
         //      ->everyTenMinutes()
         //      ->withoutOverlapping(5);
 
-        // Clasificacion SSS/NUEVO/CIERRE: una vez al dia (suficiente)
+        // // Clasificacion SSS/NUEVO/CIERRE: una vez al dia (suficiente)
         // $schedule->command('etl:refrescar-filtro-sss')
         //      ->dailyAt('04:00')
         //      ->withoutOverlapping(10);

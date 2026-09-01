@@ -68,7 +68,7 @@ def inicio(tipo):
     #     sys.exit(1)
     
     if(tipo == 1):    
-        carpeta = 'reporte_txd/Oechsle'
+        carpeta = 'reporte_txd/oechsle'
         ruta_remota = os.path.join(BASE_LOCAL, *carpeta.split('/'))
         ruta_local = os.path.join(BASE_LOCAL, *carpeta.split('/'))
         # ruta_local = os.path.join(BASE_LOCAL, "oechsle")
@@ -292,15 +292,15 @@ def control_tablas(tipo, conn, cursor, ruta_completa_local):
     if(tipo == 1):
         #exit()
         #print("insertando")
-        load_data_infile(conn, temp_filepath, 'pla_temp_oechsle_txd')##
+        load_data_infile(conn, temp_filepath, 'automatizacion_temp_oechsle_txd')##
     if(tipo == 2):
-        load_data_infile(conn, temp_filepath, 'pla_temp_ripley_txd')##
+        load_data_infile(conn, temp_filepath, 'automatizacion_temp_ripley_txd')##
     if(tipo == 3): #stock
         #exit()
-        load_data_infile(conn, temp_filepath, 'pla_stock_txd')##
+        load_data_infile(conn, temp_filepath, 'automatizacion_stock_txd')##
     if(tipo == 4): #ventas
         #exit()
-        load_data_infile(conn, temp_filepath, 'pla_temp_saga_txd')##
+        load_data_infile(conn, temp_filepath, 'automatizacion_temp_saga_txd')##
     
     # load_data_infile(conn, temp_filepath, 'pla_temp_ripley_txd')
     # Confirmar los cambios y cerrar la conexión

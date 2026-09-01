@@ -1301,7 +1301,8 @@ function chipMeasure(key, aggFn){
   if(def.type==='raw' && def.allowAgg){
     var sel = ['sum','avg','min','max','count'].map(function(a){
       var lbl = PivotEngine.AGG_LABEL[a]||a;
-      return '<option value="'+a+'"'+((aggFn||'sum')===a?' selected':'')+'>'+lbl+'</option>';
+      var defAgg = def.defaultAgg || 'sum';
+      return '<option value="'+a+'"'+((aggFn||defAgg)===a?' selected':'')+'>'+lbl+'</option>';
     }).join('');
     html += '<select class="agg-select">'+sel+'</select>';
   }
@@ -1361,7 +1362,8 @@ function readConfig(){
   }
   var values = Array.prototype.map.call(elById('zone-values').querySelectorAll('.pivot-chip'), function(c){
     var s = c.querySelector('.agg-select');
-    return { key:c.dataset.key, aggFn: s ? s.value : 'sum' };
+    var def = PivotEngine.MEASURES[c.dataset.key] || {};
+    return { key:c.dataset.key, aggFn: s ? s.value : (def.defaultAgg || 'sum') };
   });
   return { rows:keysOf('zone-rows'), cols:keysOf('zone-cols'), values:values };
 }
@@ -1509,6 +1511,21 @@ function buildMergedData(act, hst, metas, stock){
   var semMes = {};
   act.forEach(function(row){ if(row['Semana'] && row['Mes']) semMes[row['Semana']] = row['Mes']; });
 
+  // Merge stock into act rows: sum stock by (Semana, Subcanal, Marca, Canal)
+  var stockByKey = {};
+  (stock || []).forEach(function(r){
+    var key = (r['Semana']||'') + '|' + (r['Subcanal']||'') + '|' + (r['Marca']||'') + '|' + (r['Canal']||'');
+    if (!stockByKey[key]) stockByKey[key] = { inv_unds_act: 0, inv_costo_act: 0 };
+    stockByKey[key].inv_unds_act += r['inv_unds_act'] || 0;
+    stockByKey[key].inv_costo_act += r['inv_costo_act'] || 0;
+  });
+  act.forEach(function(row){
+    var key = (row['Semana']||'') + '|' + (row['Subcanal']||'') + '|' + (row['Marca']||'') + '|' + (row['Canal']||'');
+    var s = stockByKey[key] || {};
+    row['inv_unds_act'] = s.inv_unds_act || 0;
+    row['inv_costo_act'] = s.inv_costo_act || 0;
+  });
+
   var actMerged = act.map(function(row){
     return Object.assign({}, row, {vta25:0, gm25:0, unds25:0, meta_vta:0});
   });
@@ -1556,31 +1573,7 @@ function buildMergedData(act, hst, metas, stock){
       'inv_unds_act': 0, 'inv_costo_act': 0
     };
   });
-  var stockMerged = (stock || []).map(function(row){
-    return {
-      'Mes':      row['Mes'],
-      'Semana':   row['Semana'],
-      'Día #':    row['Día #'] ?? '',
-      'Día':      row['Día'],
-      'Canal':    row['Canal'],
-      'Subcanal': row['Subcanal'],
-      'Tienda':   row['Tienda'],
-      'Marca':    row['Marca'],
-      'Marca Temporada': MARCA_TEMPORADA.includes(row['Marca']) ? row['Marca'] : '',
-      'Categoría':row['Categoría'],
-      'SSS':      row['SSS'] ?? '',
-      'Localidad':row['Localidad'],
-      'Lineas':   row['Lineas'] ?? '',
-      'Temporada':row['Temporada'] ?? '',
-      'vta26': 0, 'gm26': 0, 'unds26': 0, 'tickets26': 0,
-      'vta25': 0, 'gm25': 0, 'unds25': 0,
-      'meta_vta': 0,
-      'inv_unds_act': row['inv_unds_act'] || 0,
-      'inv_costo_act': row['inv_costo_act'] || 0,
-      '_isStock': true
-    };
-  });
-  return actMerged.concat(hstMerged).concat(metasMerged).concat(stockMerged);
+  return actMerged.concat(hstMerged).concat(metasMerged);
 }
 
 /* ══════════════════════════════════════════════════════════

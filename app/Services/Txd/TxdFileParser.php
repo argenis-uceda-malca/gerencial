@@ -47,7 +47,7 @@ class TxdFileParser
                 continue;
             }
 
-            if (empty(array_filter($cells, fn($c) => $c !== ''))) {
+            if (count($cells) !== count($header)) {
                 continue;
             }
 
@@ -124,6 +124,10 @@ class TxdFileParser
             }
 
             if (empty(array_filter($cells, fn($c) => $c !== ''))) {
+                continue;
+            }
+
+            if (count($cells) !== count($header)) {
                 continue;
             }
 
@@ -209,6 +213,10 @@ class TxdFileParser
                 continue;
             }
 
+            if (count($cells) !== count($header)) {
+                continue;
+            }
+
             $rowMap = array_combine($header, $cells);
             if ($rowMap === false) {
                 continue;
@@ -290,6 +298,10 @@ class TxdFileParser
             }
 
             if (empty(array_filter($cells, fn($c) => $c !== ''))) {
+                continue;
+            }
+
+            if (count($cells) !== count($header)) {
                 continue;
             }
 

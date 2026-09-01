@@ -48,8 +48,8 @@
     meta_vta:   { label: 'Meta Vta',    type: 'raw',  field: 'meta_vta', fmt: 'money', allowAgg: true },
     cumpl_pct:  { label: '%Cumpl Meta', type: 'calc', fmt: 'pct',
                   calc: function (s) { return s.meta_vta > 0 ? s.vta26 / s.meta_vta * 100 : null; } },
-    inv_unds_act:  { label: 'Inv Unds 26',  type: 'raw',  field: 'inv_unds_act',  fmt: 'int',   allowAgg: true },
-    inv_costo_act: { label: 'Inv Costo 26',  type: 'raw',  field: 'inv_costo_act', fmt: 'money', allowAgg: true }
+    inv_unds_act:  { label: 'Inv Unds 26',  type: 'raw',  field: 'inv_unds_act',  fmt: 'int',   allowAgg: true, defaultAgg: 'sum' },
+    inv_costo_act: { label: 'Inv Costo 26',  type: 'raw',  field: 'inv_costo_act', fmt: 'money', allowAgg: true, defaultAgg: 'sum' }
   };
 
   var AGG_LABEL = { sum: 'Σ', avg: 'Prom', min: 'Mín', max: 'Máx', count: 'Cont' };
@@ -101,12 +101,12 @@
     var def = MEASURES[spec.key];
     if (!def) return null;
     if (def.type === 'calc') return def.calc(sumsOf(cell));
-    return resolveAgg(cell[def.field], spec.aggFn || 'sum');
+    return resolveAgg(cell[def.field], spec.aggFn || def.defaultAgg || 'sum');
   }
   function measureHeader(spec) {
     var def = MEASURES[spec.key];
     if (!def) return spec.key;
-    if (def.type === 'raw' && spec.aggFn && spec.aggFn !== 'sum') {
+    if (def.type === 'raw' && spec.aggFn && spec.aggFn !== (def.defaultAgg || 'sum')) {
       return def.label + ' (' + (AGG_LABEL[spec.aggFn] || spec.aggFn) + ')';
     }
     return def.label;
