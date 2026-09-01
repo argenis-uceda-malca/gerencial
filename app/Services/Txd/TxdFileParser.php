@@ -24,7 +24,8 @@ class TxdFileParser
             $content = mb_convert_encoding($content, 'UTF-8', $encoding);
         }
 
-        $tmpPath = tempnam(sys_get_temp_dir(), 'txd_oech_');
+        $ext = $file->extension();
+        $tmpPath = sys_get_temp_dir() . '/txd_oech_' . uniqid() . '.' . $ext;
         file_put_contents($tmpPath, $content);
         $delimiter = $this->detectDelimiter($content);
 
@@ -89,8 +90,12 @@ class TxdFileParser
      */
     public function parseRipley($file): Collection
     {
-        $reader = ReaderFactory::createFromFile($file->getRealPath());
-        $reader->open($file->getRealPath());
+        $ext = $file->extension();
+        $tmpPath = sys_get_temp_dir() . '/txd_ripley_' . uniqid() . '.' . $ext;
+        copy($file->getRealPath(), $tmpPath);
+
+        $reader = ReaderFactory::createFromFile($tmpPath);
+        $reader->open($tmpPath);
 
         $sheet = null;
         foreach ($reader->getSheetIterator() as $sheetCandidate) {
@@ -153,6 +158,7 @@ class TxdFileParser
         }
 
         $reader->close();
+        @unlink($tmpPath);
 
         Log::info('[TxdFileParser] Ripley parseado', ['rows' => $rows->count()]);
 
@@ -166,8 +172,12 @@ class TxdFileParser
      */
     public function parseFalabellaStock($file): Collection
     {
-        $reader = ReaderFactory::createFromFile($file->getRealPath());
-        $reader->open($file->getRealPath());
+        $ext = $file->extension();
+        $tmpPath = sys_get_temp_dir() . '/txd_fbstock_' . uniqid() . '.' . $ext;
+        copy($file->getRealPath(), $tmpPath);
+
+        $reader = ReaderFactory::createFromFile($tmpPath);
+        $reader->open($tmpPath);
 
         $sheet = null;
         foreach ($reader->getSheetIterator() as $sheetCandidate) {
@@ -229,6 +239,7 @@ class TxdFileParser
         }
 
         $reader->close();
+        @unlink($tmpPath);
 
         Log::info('[TxdFileParser] Falabella Stock parseado', ['rows' => $rows->count()]);
 
@@ -243,8 +254,12 @@ class TxdFileParser
      */
     public function parseFalabellaVentas($file): Collection
     {
-        $reader = ReaderFactory::createFromFile($file->getRealPath());
-        $reader->open($file->getRealPath());
+        $ext = $file->extension();
+        $tmpPath = sys_get_temp_dir() . '/txd_fbventas_' . uniqid() . '.' . $ext;
+        copy($file->getRealPath(), $tmpPath);
+
+        $reader = ReaderFactory::createFromFile($tmpPath);
+        $reader->open($tmpPath);
 
         $sheet = null;
         foreach ($reader->getSheetIterator() as $sheetCandidate) {
@@ -335,6 +350,7 @@ class TxdFileParser
         }
 
         $reader->close();
+        @unlink($tmpPath);
 
         foreach ($agrupados as $row) {
             $rows->push((object) $row);
