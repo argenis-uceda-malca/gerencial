@@ -66,10 +66,10 @@ class TxdFileParser
                 'marca'      => $rowMap['MARCA'] ?? 'NA',
                 'cod_local'  => $rowMap['COD_LOCAL'] ?? $rowMap['CODIGO_LOCAL'] ?? 'NA',
                 'desc_local' => $rowMap['DESC_LOCAL'] ?? $rowMap['DESC_SUCURSAL'] ?? $rowMap['NOMBRE_LOCAL'] ?? 'NA',
-                'vta_act'    => $rowMap['VTA_ACT'] ?? $rowMap['VENTA'] ?? 'NA',
-                'vta_unds'   => $rowMap['VTA_UNDS'] ?? $rowMap['CANTIDAD'] ?? 'NA',
-                'stk_soles'  => $rowMap['STK_SOLES'] ?? $rowMap['STOCK_SOLES'] ?? 'NA',
-                'stk_unds'   => $rowMap['STK_UNDS'] ?? $rowMap['STOCK_UNDS'] ?? 'NA',
+                'vta_act'    => $this->numericOrNull($rowMap['VTA_ACT'] ?? $rowMap['VENTA'] ?? null),
+                'vta_unds'   => $this->numericOrNull($rowMap['VTA_UNDS'] ?? $rowMap['CANTIDAD'] ?? null),
+                'stk_soles'  => $this->numericOrNull($rowMap['STK_SOLES'] ?? $rowMap['STOCK_SOLES'] ?? null),
+                'stk_unds'   => $this->numericOrNull($rowMap['STK_UNDS'] ?? $rowMap['STOCK_UNDS'] ?? null),
             ];
 
             $rows->push((object) $data);
@@ -140,17 +140,17 @@ class TxdFileParser
                 'marca'         => $rowMap['MARCA'] ?? $rowMap['Marca'] ?? 'NA',
                 'temporada'     => $rowMap['TEMPORADA'] ?? $rowMap['Temporada'] ?? 'NA',
                 'sucursal'      => $rowMap['SUCURSAL'] ?? $rowMap['Sucursal'] ?? 'NA',
-                'costo_vta'     => $rowMap['COSTO_VTA'] ?? $rowMap['Costo_Vta'] ?? 'NA',
+                'costo_vta'     => $this->numericOrNull($rowMap['COSTO_VTA'] ?? $rowMap['Costo_Vta'] ?? null),
                 'codigo_modelo' => (string) ($rowMap['CODIGO_MODELO'] ?? $rowMap['Codigo_Modelo'] ?? $rowMap['COD_MODELO'] ?? ''),
                 'nombre_modelo' => $rowMap['NOMBRE_MODELO'] ?? $rowMap['Nombre_Modelo'] ?? 'NA',
-                'rebate_act'    => $rowMap['REBATE_ACT'] ?? $rowMap['Rebate_Act'] ?? 'NA',
+                'rebate_act'    => $this->numericOrNull($rowMap['REBATE_ACT'] ?? $rowMap['Rebate_Act'] ?? null),
                 'sku_txd'       => $rowMap['SKU_TXD'] ?? $rowMap['SKU'] ?? 'NA',
                 'desc_sku'      => $rowMap['DESC_SKU'] ?? $rowMap['Desc_Sku'] ?? 'NA',
-                'vta_soles'     => $rowMap['VTA_SOLES'] ?? $rowMap['Vta_Soles'] ?? 'NA',
-                'vta_unds'      => $rowMap['VTA_UNDS'] ?? $rowMap['Vta_Unds'] ?? 'NA',
-                'contr'         => $rowMap['CONTR'] ?? $rowMap['Contr'] ?? 'NA',
-                'stock_soles'   => $rowMap['STOCK_SOLES'] ?? $rowMap['Stock_Soles'] ?? 'NA',
-                'stock_unds'    => $rowMap['STOCK_UNDS'] ?? $rowMap['Stock_Unds'] ?? 'NA',
+                'vta_soles'     => $this->numericOrNull($rowMap['VTA_SOLES'] ?? $rowMap['Vta_Soles'] ?? null),
+                'vta_unds'      => $this->numericOrNull($rowMap['VTA_UNDS'] ?? $rowMap['Vta_Unds'] ?? null),
+                'contr'         => $this->numericOrNull($rowMap['CONTR'] ?? $rowMap['Contr'] ?? null),
+                'stock_soles'   => $this->numericOrNull($rowMap['STOCK_SOLES'] ?? $rowMap['Stock_Soles'] ?? null),
+                'stock_unds'    => $this->numericOrNull($rowMap['STOCK_UNDS'] ?? $rowMap['Stock_Unds'] ?? null),
             ];
 
             $rows->push((object) $data);
@@ -359,6 +359,21 @@ class TxdFileParser
         Log::info('[TxdFileParser] Falabella Ventas parseado', ['rows' => $rows->count()]);
 
         return $rows;
+    }
+
+    /**
+     * Convierte un valor numérico string ('NA', '', o número) a null o float.
+     */
+    private function numericOrNull($value)
+    {
+        if ($value === null || $value === '' || strtoupper((string) $value) === 'NA') {
+            return null;
+        }
+        $num = filter_var((string) $value, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+        if ($num === false || $num === '') {
+            return null;
+        }
+        return (float) str_replace(',', '.', $num);
     }
 
     /**
