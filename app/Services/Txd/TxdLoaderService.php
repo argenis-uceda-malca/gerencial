@@ -51,7 +51,9 @@ class TxdLoaderService
 
         $inserted = 0;
         foreach ($rows->chunk(self::CHUNK_SIZE) as $chunk) {
-            DB::table($table)->insert($chunk->toArray());
+            DB::table($table)->insert(
+                $chunk->map(fn ($item) => (array) $item)->toArray()
+            );
             $inserted += $chunk->count();
         }
 
