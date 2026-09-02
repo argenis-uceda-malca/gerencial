@@ -146,3 +146,4 @@ Route::get('/probar-tbretail-masivo', function (TbRetailService $tbRetailService
 
 Route::get('/txd/cargar', [TxdUploadController::class, 'create'])->name('txd.upload.create');
 Route::post('/txd/cargar', [TxdUploadController::class, 'store'])->name('txd.upload.store');
+Route::post('/txd/pipeline', [TxdUploadController::class, 'pipeline'])->name('txd.pipeline');

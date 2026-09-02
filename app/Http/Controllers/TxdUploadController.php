@@ -135,4 +135,30 @@ class TxdUploadController extends Controller
         }
         return back()->with('status', $mensaje);
     }
+
+    public function pipeline(Request $request)
+    {
+        $request->validate([
+            'p_fecha_ini' => ['nullable', 'date'],
+            'p_fecha_fin' => ['nullable', 'date'],
+            'p_fecha_stock' => ['nullable', 'date'],
+            'p_fecha_lunes' => ['nullable', 'date'],
+        ]);
+        try {
+            $r = DB::selectOne('SELECT automatizacion_ejecutar_txd_completo(?, ?, ?, ?, ?) AS ok', [
+                $request->input('p_fecha_ini'),
+                $request->input('p_fecha_fin'),
+                $request->input('p_fecha_stock'),
+                $request->input('p_fecha_lunes'),
+                false,
+            ]);
+            $msg = $r->ok ? 'Pipeline TXD ejecutado OK.' : 'Pipeline TXD falló, revisar automatizacion_alertas.';
+            if ($request->expectsJson() || $request->ajax()) return response()->json(['ok' => (bool) $r->ok, 'message' => $msg]);
+            return back()->with('status', $msg);
+        } catch (Throwable $e) {
+            Log::error('Error pipeline TXD: '.$e->getMessage());
+            if ($request->expectsJson() || $request->ajax()) return response()->json(['message' => 'Error pipeline: '.$e->getMessage()], 500);
+            return back()->withErrors(['pipeline' => 'Error pipeline: '.$e->getMessage()]);
+        }
+    }
 }
