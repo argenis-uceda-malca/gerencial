@@ -44,6 +44,7 @@ class TxdFileParser
         'sku gsc' => 'sku_txd',
         'sku_gsc' => 'sku_txd',
         'sku' => 'sku_txd',
+        'descripción' => 'desc_hijo_txd',
         'descripcion' => 'desc_hijo_txd',
         'description' => 'desc_hijo_txd',
         'temporada' => 'temporada',
@@ -53,18 +54,17 @@ class TxdFileParser
     ];
 
     private const MAP_FB_VENTAS = [
+        'falabella sku' => 'sku',
         'sku' => 'sku',
-        'desc_sku' => 'desc_sku',
+        'descripción' => 'desc_sku',
         'descripcion' => 'desc_sku',
+        'desc_sku' => 'desc_sku',
         'paid price' => 'precio',
         'paid_price' => 'precio',
         'precio' => 'precio',
         'created at' => 'created_at',
         'created_at' => 'created_at',
-        'unidades' => 'unidades',
-        'cantidad' => 'unidades',
-        'qty' => 'unidades',
-        'quantity' => 'unidades',
+        'marca' => 'marca',
     ];
 
     public function parseOechsle($file): Collection
@@ -160,7 +160,7 @@ class TxdFileParser
         $sheet = null;
         foreach ($reader->getSheetIterator() as $s) if (strtolower(trim($s->getName())) === 'product details') { $sheet = $s; break; }
         if (!$sheet) $sheet = $reader->getSheetIterator()->current();
-        $rows = new Collection();
+        $agrupados = [];
         $mapCol = null;
         foreach ($sheet->getRowIterator() as $row) {
             $vals = $row->toArray();
@@ -176,10 +176,14 @@ class TxdFileParser
             if (!$sku && !$desc) continue;
             $stockRaw = $tmp['inv_unds_act'] ?? 0;
             if (!is_numeric($stockRaw)) { $f = filter_var((string) $stockRaw, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION); $stockRaw = $f !== false && $f !== '' ? (int) $f : 0; }
-            $rows->push((object) ['sku_txd'=>$sku,'desc_hijo_txd'=>$desc,'sucursal'=>'Tienda Virtual','temporada'=>$tmp['temporada']??null,'inv_unds_act'=>(int)$stockRaw,'marca'=>$tmp['marca']??null]);
+            $key = $sku.'|'.$desc;
+            if (!isset($agrupados[$key])) $agrupados[$key] = ['sku_txd'=>$sku,'desc_hijo_txd'=>$desc,'sucursal'=>'Tienda Virtual','temporada'=>$tmp['temporada']??null,'inv_unds_act'=>0,'marca'=>$tmp['marca']??null];
+            $agrupados[$key]['inv_unds_act'] += (int)$stockRaw;
         }
         $reader->close(); @unlink($tmpPath);
-        Log::info('[TxdFileParser] Falabella Stock parseado', ['rows' => $rows->count()]);
+        $rows = new Collection();
+        foreach ($agrupados as $r) $rows->push((object) $r);
+        Log::info('[TxdFileParser] Falabella Stock parseado', ['rows' => $rows->count(), 'agrupados'=>count($agrupados)]);
         return $rows;
     }
 
@@ -205,9 +209,10 @@ class TxdFileParser
             if (empty(array_filter($vals, fn($c) => trim((string) $c) !== ''))) continue;
             $tmp = [];
             foreach ($mapCol as $i => $dbCol) { $v = $vals[$i] ?? null; if ($v instanceof \DateTimeInterface) $v = $v->format('Y-m-d H:i:s'); $tmp[$dbCol] = is_string($v) ? trim($v) : $v; }
-            $sku = $tmp['sku'] ?? ''; $desc = $tmp['desc_sku'] ?? ''; $precio = $tmp['precio'] ?? 0; $createdAt = $tmp['created_at'] ?? ''; $unidades = (int) ($tmp['unidades'] ?? 0);
+            $sku = $tmp['sku'] ?? ''; $desc = $tmp['desc_sku'] ?? ''; $precio = $tmp['precio'] ?? 0; $createdAt = $tmp['created_at'] ?? '';
+            $unidades = 1;
             if (!$sku && !$desc) continue;
-            try { $fecha = Carbon::parse($createdAt); } catch (\Throwable $e) { Log::warning('[TxdFileParser] No se pudo parsear fecha', ['date'=>$createdAt]); continue; }
+            try { $fecha = Carbon::parse($createdAt); } catch (\Throwable $e) { try { $fecha = Carbon::createFromFormat('M d, Y H:i', $createdAt); } catch (\Throwable $e2) { Log::warning('[TxdFileParser] No se pudo parsear fecha', ['date'=>$createdAt]); continue; } }
             $diaKey = $diaMap[strtolower($fecha->format('l'))] ?? 'lunes';
             $key = $sku.'|'.$desc.'|'.$precio;
             if (!isset($agrupados[$key])) $agrupados[$key] = ['sku'=>$sku,'desc_sku'=>$desc,'sucursal'=>'Tienda Virtual','lunes'=>0,'martes'=>0,'miercoles'=>0,'jueves'=>0,'viernes'=>0,'sabado'=>0,'domingo'=>0,'vta_unds'=>0,'vta_soles'=>0,'nro_local'=>$nroLocal++,'marca'=>'','skip'=>0];
