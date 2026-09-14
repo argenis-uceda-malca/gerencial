@@ -530,6 +530,7 @@
                 </a>
             </li> -->
 
+
             @if (in_array('acceso_dashboard_ventas', session('permisos', [])))
             <li class="menu-item{{ request()->routeIs('dashboard.ventas') ? ' active' : '' }}">
                 <a href="{{ route('dashboard.ventas') }}" class="menu-link">
@@ -544,6 +545,18 @@
                 <a href="{{ route('dashboard.reporte') }}" class="menu-link">
                   <i class="menu-icon tf-icons bx bx-spreadsheet"></i>
                   <div>Reporte Ventas</div>
+                </a>
+            </li>
+            <li class="menu-item{{ request()->routeIs('dashboard.reporte.consolidado') ? ' active' : '' }}">
+                <a href="{{ route('dashboard.reporte.consolidado') }}" class="menu-link">
+                  <i class="menu-icon tf-icons bx bx-bar-chart-alt"></i>
+                  <div>Reporte Consolidado</div>
+                </a>
+            </li>
+            <li class="menu-item{{ request()->routeIs('dashboard.reporte.txd') ? ' active' : '' }}">
+                <a href="{{ route('dashboard.reporte.txd') }}" class="menu-link">
+                  <i class="menu-icon tf-icons bx bx-store"></i>
+                  <div>Reporte TXD</div>
                 </a>
             </li>
             @endif
@@ -708,6 +721,18 @@
 @if (in_array('acceso_administrador', session('permisos', [])))
 <!-- Misc -->
             <li class="menu-header small text-uppercase"><span class="menu-header-text">administracion</span></li>
+            <li class="menu-item{{ request()->routeIs('monitor.ventas') ? ' active' : '' }}">
+              <a href="{{ route('monitor.ventas') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-pulse"></i>
+                <div>Monitor de Ventas</div>
+              </a>
+            </li>
+            <li class="menu-item{{ request()->routeIs('captura.monitor') ? ' active' : '' }}">
+              <a href="{{ route('captura.monitor') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-receipt"></i>
+                <div>Motor Captura FE</div>
+              </a>
+            </li>
             <li class="menu-item">
               <a
                 href="javascript:void(0);" class="menu-link menu-toggle"
@@ -1129,6 +1154,7 @@
     </script>
 
     @yield('footer')
+    @stack('scripts')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.0/js/toastr.js" integrity="sha512-7jcpjqSVjhATgn0Xkmzyxc4emfAYP81qnhsL9rxaSlqI+m3Yw/feChvPXfeiVI/K+Ji93wvAtSxCRhmAoOvdww==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <div class="modal fade" id="commonModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"

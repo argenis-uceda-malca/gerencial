@@ -31,15 +31,12 @@ class TxdUploadController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'oechsle_venta' => ['nullable', 'file', 'mimes:csv,txt'],
-            'oechsle_stock' => ['nullable', 'file', 'mimes:csv,txt'],
-            'ripley' => ['nullable', 'file', 'mimes:xlsx,xls'],
-            'falabella_stock' => ['nullable', 'file', 'mimes:xlsx,xls'],
+            'oechsle_venta'    => ['nullable', 'file', 'mimes:csv,txt'],
+            'oechsle_stock'    => ['nullable', 'file', 'mimes:csv,txt'],
+            'ripley'           => ['nullable', 'file', 'mimes:xlsx,xls'],
+            'falabella_stock'  => ['nullable', 'file', 'mimes:xlsx,xls'],
             'falabella_ventas' => ['nullable', 'file', 'mimes:xlsx,xls'],
-            'p_fecha_ini' => ['nullable', 'date'],
-            'p_fecha_fin' => ['nullable', 'date'],
-            'p_fecha_stock' => ['nullable', 'date'],
-            'p_fecha_lunes' => ['nullable', 'date'],
+            'p_fecha_stock'    => ['nullable', 'date'],
             'ejecutar_pipeline' => ['nullable', 'boolean'],
         ]);
 
@@ -107,12 +104,9 @@ class TxdUploadController extends Controller
         if ($request->boolean('ejecutar_pipeline')) {
             try {
                 $resultado = DB::selectOne(
-                    'SELECT automatizacion_ejecutar_txd_completo(?, ?, ?, ?, ?) AS ok',
+                    'SELECT automatizacion_ejecutar_txd_completo(NULL, NULL, ?, ?) AS ok',
                     [
-                        $request->input('p_fecha_ini'),
-                        $request->input('p_fecha_fin'),
-                        $request->input('p_fecha_stock'),
-                        $request->input('p_fecha_lunes'),
+                        $request->input('p_fecha_stock') ?: null,
                         false,
                     ]
                 );
@@ -139,17 +133,11 @@ class TxdUploadController extends Controller
     public function pipeline(Request $request)
     {
         $request->validate([
-            'p_fecha_ini' => ['nullable', 'date'],
-            'p_fecha_fin' => ['nullable', 'date'],
             'p_fecha_stock' => ['nullable', 'date'],
-            'p_fecha_lunes' => ['nullable', 'date'],
         ]);
         try {
-            $r = DB::selectOne('SELECT automatizacion_ejecutar_txd_completo(?, ?, ?, ?, ?) AS ok', [
-                $request->input('p_fecha_ini'),
-                $request->input('p_fecha_fin'),
-                $request->input('p_fecha_stock'),
-                $request->input('p_fecha_lunes'),
+            $r = DB::selectOne('SELECT automatizacion_ejecutar_txd_completo(NULL, NULL, ?, ?) AS ok', [
+                $request->input('p_fecha_stock') ?: null,
                 false,
             ]);
             $msg = $r->ok ? 'Pipeline TXD ejecutado OK.' : 'Pipeline TXD falló, revisar automatizacion_alertas.';

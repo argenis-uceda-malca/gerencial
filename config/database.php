@@ -78,6 +78,22 @@ return [
             'sslmode' => 'prefer',
         ],
 
+        // Conexión para el módulo FE (Facturación Electrónica).
+        // Apunta al mismo Postgres central; los modelos Fe* usan este alias.
+        'central' => [
+            'driver' => 'pgsql',
+            'host' => env('CENTRAL_DB_HOST', env('DB_HOST', '172.16.1.23')),
+            'port' => env('CENTRAL_DB_PORT', env('DB_PORT', '5432')),
+            'database' => env('CENTRAL_DB_DATABASE', env('DB_DATABASE', 'smartanalytic')),
+            'username' => env('CENTRAL_DB_USERNAME', env('DB_USERNAME', 'postgres')),
+            'password' => env('CENTRAL_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'schema' => 'public',
+            'sslmode' => 'prefer',
+        ],
+
         'pgsql2' => [
             'driver' => 'pgsql',
             'url' => env('DATABASE_URL'),

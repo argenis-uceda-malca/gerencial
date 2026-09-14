@@ -187,7 +187,7 @@
             <div class="head">
                 <div>
                     <h3><i class="bx bx-cog" style="color:#696cff"></i> Pipeline automático <span class="badge bg-label-primary" style="font-size:10px">Opcional</span></h3>
-                    <p>Ejecuta <code>automatizacion_ejecutar_txd_completo()</code> al terminar la carga</p>
+                    <p>Ejecuta el pipeline al terminar la carga. Las fechas se detectan automáticamente de los archivos.</p>
                 </div>
                 <div class="form-check form-switch m-0">
                     <input class="form-check-input" type="checkbox" role="switch" name="ejecutar_pipeline" value="1" id="sw-pipeline">
@@ -195,13 +195,13 @@
                 </div>
             </div>
             <div id="pipeline-fields" class="collapse-txd" style="display:none">
-                <div class="txd-dates">
-                    <div><label>Fecha inicio</label><input type="date" name="p_fecha_ini" class="form-control"></div>
-                    <div><label>Fecha fin</label><input type="date" name="p_fecha_fin" class="form-control"></div>
-                    <div><label>Fecha stock</label><input type="date" name="p_fecha_stock" class="form-control"></div>
-                    <div><label>Lunes de la semana</label><input type="date" name="p_fecha_lunes" class="form-control"></div>
+                <div class="txd-dates" style="grid-template-columns:1fr">
+                    <div>
+                        <label>Fecha stock Falabella <span style="font-weight:400;text-transform:none">(opcional — si no se pone, usa la fecha del último día del archivo)</span></label>
+                        <input type="date" name="p_fecha_stock" class="form-control" style="max-width:220px">
+                    </div>
                 </div>
-                <div class="px-3 pb-3"><small class="text-muted"><i class="bx bx-bulb"></i> Deja vacío para usar los defaults del SP.</small></div>
+                <div class="px-3 pb-3"><small class="text-muted"><i class="bx bx-bulb"></i> Las fechas de ventas se detectan automáticamente del contenido de cada archivo.</small></div>
             </div>
         </div>
 
@@ -216,20 +216,20 @@
         <div class="head">
             <div>
                 <h3><i class="bx bx-play-circle" style="color:#28a745"></i> Ejecutar pipeline con lo ya cargado</h3>
-                <p>Si ya subiste archivos sin marcar el switch, ejecútalo aquí sin volver a subir</p>
+                <p>Si ya subiste archivos sin marcar el switch, ejecútalo aquí sin volver a subir. Las fechas se detectan automáticamente.</p>
             </div>
         </div>
         <form id="form-txd-pipeline" method="POST" action="{{ route('txd.pipeline') }}">
             @csrf
-            <div class="txd-dates">
-                <div><label>Fecha inicio</label><input type="date" name="p_fecha_ini" class="form-control" id="pl-p_fecha_ini"></div>
-                <div><label>Fecha fin</label><input type="date" name="p_fecha_fin" class="form-control" id="pl-p_fecha_fin"></div>
-                <div><label>Fecha stock</label><input type="date" name="p_fecha_stock" class="form-control" id="pl-p_fecha_stock"></div>
-                <div><label>Lunes de la semana</label><input type="date" name="p_fecha_lunes" class="form-control" id="pl-p_fecha_lunes"></div>
+            <div class="txd-dates" style="grid-template-columns:1fr">
+                <div>
+                    <label>Fecha stock Falabella <span style="font-weight:400;text-transform:none">(opcional)</span></label>
+                    <input type="date" name="p_fecha_stock" class="form-control" id="pl-p_fecha_stock" style="max-width:220px">
+                </div>
             </div>
             <div class="px-3 pb-3 d-flex gap-2">
                 <button type="submit" class="btn btn-success" id="btn-pipeline"><i class="bx bx-cog"></i> Ejecutar pipeline</button>
-                <small class="text-muted align-self-center">Usa las mismas fechas del bloque superior o deja vacío.</small>
+                <small class="text-muted align-self-center">Las fechas de ventas se detectan del contenido de los archivos.</small>
             </div>
         </form>
     </div>

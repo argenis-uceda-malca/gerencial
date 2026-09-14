@@ -73,7 +73,17 @@ Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name
 
 // Nuevo proceso de dashboards (sobre automatizacion_pla_reporte_ventas)
 Route::middleware('session.auth')->group(function () {
-    Route::get('/dashboard/gerencial', [App\Http\Controllers\DashboardGerencialController::class, 'index'])->name('dashboard.gerencial');
+    // Motor de Captura FE — monitor y administración
+    Route::get('/captura/monitor', [\App\Http\Controllers\CapturaMonitorController::class, 'index'])->name('captura.monitor');
+    Route::get('/captura/registros', [\App\Http\Controllers\CapturaMonitorController::class, 'registros'])->name('captura.registros');
+    Route::get('/captura/registros/{id}/errores', [\App\Http\Controllers\CapturaMonitorController::class, 'erroresRegistro'])->name('captura.errores');
+    Route::post('/captura/registros/{id}/reset', [\App\Http\Controllers\CapturaMonitorController::class, 'resetRegistro'])->name('captura.reset');
+    Route::post('/captura/ejecutar', [\App\Http\Controllers\CapturaMonitorController::class, 'ejecutar'])->name('captura.ejecutar');
+    Route::get('/captura/cola-por-tienda', [\App\Http\Controllers\CapturaMonitorController::class, 'colaPorTienda'])->name('captura.cola-por-tienda');
+    Route::post('/captura/forzar', [\App\Http\Controllers\CapturaMonitorController::class, 'forzarCaptura'])->name('captura.forzar');
+    Route::post('/captura/registros/{id}/forzar', [\App\Http\Controllers\CapturaMonitorController::class, 'forzarRegistro'])->name('captura.forzar-registro');
+    Route::get('/captura/registros/{id}/documento', [\App\Http\Controllers\CapturaMonitorController::class, 'verDocumento'])->name('captura.documento');
+
     Route::get('/dashboard/ventas', [App\Http\Controllers\DashboardVentasController::class, 'index'])->name('dashboard.ventas');
     Route::get('/dashboard/ventas/tiendas', [App\Http\Controllers\DashboardVentasController::class, 'tiendas'])->name('dashboard.ventas.tiendas');
     Route::get('/dashboard/ventas/rows', [App\Http\Controllers\DashboardVentasController::class, 'rows'])->name('dashboard.ventas.rows');
@@ -82,8 +92,20 @@ Route::middleware('session.auth')->group(function () {
     Route::get('/dashboard/reporte/dia', [App\Http\Controllers\DashboardReporteController::class, 'dia'])->name('dashboard.reporte.dia');
     Route::get('/dashboard/reporte/detalle', [App\Http\Controllers\DashboardReporteController::class, 'detalle'])->name('dashboard.reporte.detalle');
     Route::get('/dashboard/reporte/pivot', [App\Http\Controllers\DashboardReporteController::class, 'pivot'])->name('dashboard.reporte.pivot');
+
+    Route::get('/dashboard/reporte-consolidado', [App\Http\Controllers\DashboardConsolidadoController::class, 'index'])->name('dashboard.reporte.consolidado');
+    Route::get('/dashboard/reporte-consolidado/pivot', [App\Http\Controllers\DashboardConsolidadoController::class, 'pivot'])->name('dashboard.reporte.consolidado.pivot');
+    Route::get('/dashboard/reporte-consolidado/dia', [App\Http\Controllers\DashboardConsolidadoController::class, 'dia'])->name('dashboard.reporte.consolidado.dia');
+    Route::get('/dashboard/reporte-consolidado/detalle', [App\Http\Controllers\DashboardConsolidadoController::class, 'detalle'])->name('dashboard.reporte.consolidado.detalle');
+    Route::get('/dashboard/reporte-txd', [App\Http\Controllers\DashboardTxdController::class, 'index'])->name('dashboard.reporte.txd');
+    Route::get('/dashboard/reporte-txd/pivot', [App\Http\Controllers\DashboardTxdController::class, 'pivot'])->name('dashboard.reporte.txd.pivot');
+    Route::get('/dashboard/reporte-txd/dia', [App\Http\Controllers\DashboardTxdController::class, 'dia'])->name('dashboard.reporte.txd.dia');
+    Route::get('/dashboard/reporte-txd/detalle', [App\Http\Controllers\DashboardTxdController::class, 'detalle'])->name('dashboard.reporte.txd.detalle');
     Route::get('/dashboard/ff-to', [App\Http\Controllers\DashboardFfToController::class, 'index'])->name('dashboard.ffto');
     Route::get('/dashboard/ff-to/data', [App\Http\Controllers\DashboardFfToController::class, 'data'])->name('dashboard.ffto.data');
+
+    // Monitor de ventas y ETL
+    Route::get('/monitor/ventas', [\App\Http\Controllers\MonitorVentasController::class, 'index'])->name('monitor.ventas');
 });
 
 

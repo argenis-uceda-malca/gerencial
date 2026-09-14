@@ -197,8 +197,7 @@ class TxdFileParser
         $sheet = null;
         foreach ($reader->getSheetIterator() as $s) if (strtolower(trim($s->getName())) === 'sheet 1') { $sheet = $s; break; }
         if (!$sheet) $sheet = $reader->getSheetIterator()->current();
-        $diaMap = ['monday'=>'lunes','tuesday'=>'martes','wednesday'=>'miercoles','thursday'=>'jueves','friday'=>'viernes','saturday'=>'sabado','sunday'=>'domingo'];
-        $mapCol = null; $agrupados = []; $nroLocal = 1;
+        $mapCol = null; $agrupados = [];
         foreach ($sheet->getRowIterator() as $row) {
             $vals = $row->toArray();
             if ($mapCol === null) {
@@ -209,16 +208,23 @@ class TxdFileParser
             if (empty(array_filter($vals, fn($c) => trim((string) $c) !== ''))) continue;
             $tmp = [];
             foreach ($mapCol as $i => $dbCol) { $v = $vals[$i] ?? null; if ($v instanceof \DateTimeInterface) $v = $v->format('Y-m-d H:i:s'); $tmp[$dbCol] = is_string($v) ? trim($v) : $v; }
-            $sku = $tmp['sku'] ?? ''; $desc = $tmp['desc_sku'] ?? ''; $precio = $tmp['precio'] ?? 0; $createdAt = $tmp['created_at'] ?? '';
-            $unidades = 1;
+            $sku = $tmp['sku'] ?? ''; $desc = $tmp['desc_sku'] ?? ''; $precio = (float)($tmp['precio'] ?? 0); $createdAt = $tmp['created_at'] ?? '';
             if (!$sku && !$desc) continue;
-            try { $fecha = Carbon::parse($createdAt); } catch (\Throwable $e) { try { $fecha = Carbon::createFromFormat('M d, Y H:i', $createdAt); } catch (\Throwable $e2) { Log::warning('[TxdFileParser] No se pudo parsear fecha', ['date'=>$createdAt]); continue; } }
-            $diaKey = $diaMap[strtolower($fecha->format('l'))] ?? 'lunes';
-            $key = $sku.'|'.$desc.'|'.$precio;
-            if (!isset($agrupados[$key])) $agrupados[$key] = ['sku'=>$sku,'desc_sku'=>$desc,'sucursal'=>'Tienda Virtual','lunes'=>0,'martes'=>0,'miercoles'=>0,'jueves'=>0,'viernes'=>0,'sabado'=>0,'domingo'=>0,'vta_unds'=>0,'vta_soles'=>0,'nro_local'=>$nroLocal++,'marca'=>'','skip'=>0];
-            $agrupados[$key][$diaKey] += $unidades;
-            $agrupados[$key]['vta_unds'] += $unidades;
-            $agrupados[$key]['vta_soles'] += round((float) $precio * $unidades, 2);
+            // Usar la fecha real del archivo (created_at = fecha de la venta en Seller Center)
+            try {
+                $fechaCarbon = Carbon::parse($createdAt);
+            } catch (\Throwable $e) {
+                try { $fechaCarbon = Carbon::createFromFormat('M d, Y H:i', $createdAt); }
+                catch (\Throwable $e2) { Log::warning('[TxdFileParser] No se pudo parsear fecha FB', ['date'=>$createdAt]); continue; }
+            }
+            $fechaStr = $fechaCarbon->format('Y-m-d');
+            $key = $sku . '|' . $desc . '|' . $fechaStr;
+            if (!isset($agrupados[$key])) {
+                $agrupados[$key] = ['sku'=>$sku,'desc_sku'=>$desc,'sucursal'=>'Tienda Virtual','fecha'=>$fechaStr,'vta_unds'=>0,'vta_soles'=>0,'marca'=>$tmp['marca'] ?? ''];
+            }
+            $agrupados[$key]['vta_unds'] += 1;
+            $agrupados[$key]['vta_soles'] += round($precio, 2);
+            if (!empty($tmp['marca'])) $agrupados[$key]['marca'] = $tmp['marca'];
         }
         $reader->close(); @unlink($tmpPath);
         $rows = new Collection();

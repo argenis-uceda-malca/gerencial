@@ -19,7 +19,7 @@
   var SEP = '';   // separador interno de claves
 
   /* ── Campos base que se agregan en cada celda ─────────────────────────── */
-  var BASE_FIELDS = ['vta26', 'vta25', 'gm26', 'gm25', 'unds26', 'unds25', 'tickets26', 'meta_vta', 'inv_unds_act', 'inv_costo_act'];
+  var BASE_FIELDS = ['vta26', 'vta25', 'gm26', 'gm25', 'unds26', 'unds25', 'tickets26', 'meta_vta', 'inv_unds_act', 'inv_costo_act', 'vta_si26', 'vta_si25'];
 
   /* ── Catálogo de medidas ──────────────────────────────────────────────
      type 'raw'  → agrega un campo base con la aggFn elegida (sum/avg/min/max/count)
@@ -27,6 +27,8 @@
   var MEASURES = {
     vta26:      { label: 'Vta Neta 26', type: 'raw',  field: 'vta26',     fmt: 'money', allowAgg: true },
     vta25:      { label: 'Vta Neta 25', type: 'raw',  field: 'vta25',     fmt: 'money', allowAgg: true },
+    vta_si26:   { label: 'Vta SI 26',  type: 'raw',  field: 'vta_si26',  fmt: 'money', allowAgg: true },
+    vta_si25:   { label: 'Vta SI 25',  type: 'raw',  field: 'vta_si25',  fmt: 'money', allowAgg: true },
     gm26:       { label: 'GM 26 (S/)',  type: 'raw',  field: 'gm26',      fmt: 'money', allowAgg: true },
     gm25:       { label: 'GM 25 (S/)',  type: 'raw',  field: 'gm25',      fmt: 'money', allowAgg: true },
     unds26:     { label: 'Unid 26',     type: 'raw',  field: 'unds26',    fmt: 'int',   allowAgg: true },

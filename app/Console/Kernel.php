@@ -28,6 +28,22 @@ class Kernel extends ConsoleKernel
         // $schedule->command('etl:refrescar-filtro-sss')
         //      ->dailyAt('04:00')
         //      ->withoutOverlapping(10);
+
+        // Motor de Captura FE: corre cada minuto pero con mutex para que no
+        // se solapen ejecuciones si una tienda tarda más de 60 s en procesar.
+        $schedule->command('captura:ejecutar')
+             ->everyMinute()
+             ->withoutOverlapping(5)
+             ->runInBackground();
+
+        // Monitor de anomalías en ventas: cada 30 minutos en horario comercial.
+        // Detecta: ETL congelado, sin ventas, venta anormal alta/baja, tiendas silenciosas.
+        $schedule->command('ventas:monitorear')
+             ->everyThirtyMinutes()
+             ->between('08:00', '23:00')
+             ->withoutOverlapping(10)
+             ->runInBackground()
+             ->appendOutputTo(storage_path('logs/monitor-ventas.log'));
     }
 
     /**

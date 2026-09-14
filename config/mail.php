@@ -15,6 +15,9 @@ return [
 
     'default' => env('MAIL_MAILER', 'smtp'),
 
+    // Destinatarios de alertas del monitor de ventas (CSV: a@x.com,b@x.com)
+    'monitor_destinatarios' => env('MAIL_MONITOR_DESTINATARIOS', ''),
+
     /*
     |--------------------------------------------------------------------------
     | Mailer Configurations
