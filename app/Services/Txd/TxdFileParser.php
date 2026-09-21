@@ -9,7 +9,7 @@ use Carbon\Carbon;
 
 class TxdFileParser
 {
-    private const MAP_OECHSLE = [
+    const MAP_OECHSLE = [
         'periodo' => 'fecha',
         'cod_oechsle' => 'sku_txd',
         'descripcion_producto' => 'desc_sku',
@@ -22,7 +22,7 @@ class TxdFileParser
         'inventario_unid' => 'stk_unds',
     ];
 
-    private const MAP_RIPLEY = [
+    const MAP_RIPLEY = [
         'fecha' => 'fecha',
         'marca' => 'marca',
         'temporada' => 'temporada',
@@ -40,7 +40,7 @@ class TxdFileParser
         'suma de stock und.' => 'stock_unds',
     ];
 
-    private const MAP_FB_STOCK = [
+    const MAP_FB_STOCK = [
         'sku gsc' => 'sku_txd',
         'sku_gsc' => 'sku_txd',
         'sku' => 'sku_txd',
@@ -53,7 +53,7 @@ class TxdFileParser
         'marca' => 'marca',
     ];
 
-    private const MAP_FB_VENTAS = [
+    const MAP_FB_VENTAS = [
         'falabella sku' => 'sku',
         'sku' => 'sku',
         'descripción' => 'desc_sku',

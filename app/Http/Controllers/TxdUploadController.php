@@ -12,10 +12,15 @@ use Throwable;
 
 class TxdUploadController extends Controller
 {
+    private TxdFileParser $parser;
+    private TxdLoaderService $loader;
+
     public function __construct(
-        private readonly TxdFileParser $parser,
-        private readonly TxdLoaderService $loader,
+        TxdFileParser $parser,
+        TxdLoaderService $loader,
     ) {
+        $this->parser = $parser;
+        $this->loader = $loader;
         $this->middleware(function ($request, $next) {
             if (!in_array('acceso_txd_cargar', session('permisos', []))) {
                 return redirect('/')->with('error', 'No tienes permiso para acceder.');

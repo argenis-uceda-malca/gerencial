@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 class ValidadorCapturaService
 {
     /** Tolerancia de redondeo entre cabecera y suma de detalle. */
-    private const TOLERANCIA_REDONDEO = 0.02;
+    const TOLERANCIA_REDONDEO = 0.02;
 
     /**
      * @return string[] Códigos de error encontrados (vacío si el

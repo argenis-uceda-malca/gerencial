@@ -8,9 +8,9 @@ use Carbon\Carbon;
 
 class DashboardTxdController extends Controller
 {
-    private const TXD_TABLE = 'automatizacion_pla_reporte_txd';
+    const TXD_TABLE = 'automatizacion_pla_reporte_txd';
 
-    private array $monthNames = [
+    private $monthNames = [
         1  => 'Enero',     2  => 'Febrero',  3  => 'Marzo',
         4  => 'Abril',     5  => 'Mayo',     6  => 'Junio',
         7  => 'Julio',     8  => 'Agosto',   9  => 'Setiembre',
@@ -27,7 +27,7 @@ class DashboardTxdController extends Controller
         });
     }
 
-    private array $dayOrder = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+    private $dayOrder = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
 
     private function dayKey(string $dia): string
     {

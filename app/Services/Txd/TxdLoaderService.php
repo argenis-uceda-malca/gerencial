@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\DB;
  */
 class TxdLoaderService
 {
-    private const CHUNK_SIZE = 1000;
+    const CHUNK_SIZE = 1000;
 
     public function loadOechsle(Collection $rows): int
     {

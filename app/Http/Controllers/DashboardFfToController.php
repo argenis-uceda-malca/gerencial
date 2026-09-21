@@ -25,7 +25,7 @@ class DashboardFfToController extends Controller
      * por request. Evita que una ventana con muchos días sin cargar
      * bloquee la respuesta HTTP por demasiado tiempo.
      */
-    private const MAX_DIAS_BACKFILL = 15;
+    const MAX_DIAS_BACKFILL = 15;
 
     public function index(Request $request)
     {
