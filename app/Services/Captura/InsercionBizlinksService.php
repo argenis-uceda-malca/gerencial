@@ -39,6 +39,12 @@ class InsercionBizlinksService
             $this->insertarDetalleItem($conexion, $item, $pfx);
         }
 
+        // Filas adicionales de cabecera (campos que van en SPE_EINVOICEHEADER_ADD)
+        // deben existir antes de que Bizlinks lea el header.
+        foreach ($documento['headerAdd'] ?? [] as $addRow) {
+            $this->insertarFila($conexion, "{$pfx}[SPE_EINVOICEHEADER_ADD]", $addRow);
+        }
+
         $this->insertarCabecera($conexion, $documento['cabecera'], $pfx);
     }
 

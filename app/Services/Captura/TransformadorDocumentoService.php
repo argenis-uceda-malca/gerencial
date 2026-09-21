@@ -148,7 +148,22 @@ class TransformadorDocumentoService
             $cabecera['numeroDocumentoReferenciaPrinc'] = $datosReferencia['serieNumeroOriginal'];
         }
 
-        return ['cabecera' => $cabecera, 'detalle' => $detalleTransformado];
+        // Para facturas (tipo 01), SUNAT exige declarar la forma de pago.
+        // Bizlinks lo lee desde SPE_EINVOICEHEADER_ADD con clave 'formaPagoNegociable'.
+        // 0 = Contado (no negociable), 1 = Crédito (factura negociable Ley 29623).
+        $headerAdd = [];
+        if ($codigoSunat === '01') {
+            $headerAdd[] = [
+                'tipoDocumentoEmisor'   => '6',
+                'numeroDocumentoEmisor' => $emisor->ruc,
+                'serieNumero'           => $serieNumero,
+                'tipoDocumento'         => $codigoSunat,
+                'clave'                 => 'formaPagoNegociable',
+                'valor'                 => '0',
+            ];
+        }
+
+        return ['cabecera' => $cabecera, 'detalle' => $detalleTransformado, 'headerAdd' => $headerAdd];
     }
 
     /**

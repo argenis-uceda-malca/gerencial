@@ -20,7 +20,7 @@ class DashboardTxdController extends Controller
     public function __construct()
     {
         $this->middleware(function ($request, $next) {
-            if (!in_array('acceso_reporte_ventas', session('permisos', []))) {
+            if (!in_array('acceso_reporte_txd', session('permisos', []))) {
                 return redirect('/')->with('error', 'No tienes permiso para acceder.');
             }
             return $next($request);

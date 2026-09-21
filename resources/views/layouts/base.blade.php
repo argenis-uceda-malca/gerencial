@@ -547,18 +547,6 @@
                   <div>Reporte Ventas</div>
                 </a>
             </li>
-            <li class="menu-item{{ request()->routeIs('dashboard.reporte.consolidado') ? ' active' : '' }}">
-                <a href="{{ route('dashboard.reporte.consolidado') }}" class="menu-link">
-                  <i class="menu-icon tf-icons bx bx-bar-chart-alt"></i>
-                  <div>Reporte Consolidado</div>
-                </a>
-            </li>
-            <li class="menu-item{{ request()->routeIs('dashboard.reporte.txd') ? ' active' : '' }}">
-                <a href="{{ route('dashboard.reporte.txd') }}" class="menu-link">
-                  <i class="menu-icon tf-icons bx bx-store"></i>
-                  <div>Reporte TXD</div>
-                </a>
-            </li>
             @endif
 
             @if (in_array('acceso_ff_to', session('permisos', [])))
@@ -657,29 +645,38 @@
               </li>
 @endif -->
 
-@if (in_array('subir_data', session('permisos')) || in_array('acceso_reporte', session('permisos')))
-<li class="menu-item">
-                <a href="javascript:void(0);" class="menu-link menu-toggle">
-                  <i class="menu-icon tf-icons bx bx-lock-open-alt"></i>
-                  <div data-i18n="Authentications">Reporte TxD</div>
-                </a>
-                <ul class="menu-sub">
-                  @if (in_array('acceso_reporte', session('permisos')))
-<li class="menu-item">
-                    <a href="{{ route('reportetxd') }}" class="menu-link" target="_blank">
-                      <div data-i18n="Basic">Reporte Ventas</div>
-                    </a>
-                  </li>
+@if (in_array('acceso_reporte_txd', session('permisos', [])) || in_array('acceso_txd_cargar', session('permisos', [])))
+<li class="menu-item{{ request()->routeIs('dashboard.reporte.txd') || request()->routeIs('txd.upload*') ? ' active' : '' }}">
+    <a href="javascript:void(0);" class="menu-link menu-toggle">
+      <i class="menu-icon tf-icons bx bx-store"></i>
+      <div>Reporte TxD</div>
+    </a>
+    <ul class="menu-sub">
+      @if (in_array('acceso_reporte_txd', session('permisos', [])))
+      <li class="menu-item{{ request()->routeIs('dashboard.reporte.txd') ? ' active' : '' }}">
+        <a href="{{ route('dashboard.reporte.txd') }}" class="menu-link">
+          <div>Reporte Ventas</div>
+        </a>
+      </li>
+      @endif
+      @if (in_array('acceso_txd_cargar', session('permisos', [])))
+      <li class="menu-item{{ request()->routeIs('txd.upload*') ? ' active' : '' }}">
+        <a href="{{ route('txd.upload.create') }}" class="menu-link">
+          <div>Cargar Excel</div>
+        </a>
+      </li>
+      @endif
+    </ul>
+</li>
 @endif
-                  @if (in_array('subir_data', session('permisos')))
-<li class="menu-item">
-                    <a href="" class="menu-link" target="_blank">
-                      <div data-i18n="Basic">Cargar Excel</div>
-                    </a>
-                  </li>
-@endif
-                </ul>
-              </li>
+
+@if (in_array('acceso_reporte_consolidado', session('permisos', [])))
+<li class="menu-item{{ request()->routeIs('dashboard.reporte.consolidado') ? ' active' : '' }}">
+    <a href="{{ route('dashboard.reporte.consolidado') }}" class="menu-link">
+      <i class="menu-icon tf-icons bx bx-bar-chart-alt"></i>
+      <div>Reporte Consolidado</div>
+    </a>
+</li>
 @endif
 
 <!-- @if (in_array('acceso_social', session('permisos')))
