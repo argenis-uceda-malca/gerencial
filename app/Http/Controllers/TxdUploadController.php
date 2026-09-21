@@ -17,7 +17,7 @@ class TxdUploadController extends Controller
 
     public function __construct(
         TxdFileParser $parser,
-        TxdLoaderService $loader,
+        TxdLoaderService $loader
     ) {
         $this->parser = $parser;
         $this->loader = $loader;

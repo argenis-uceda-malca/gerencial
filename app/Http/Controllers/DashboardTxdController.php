@@ -141,7 +141,7 @@ class DashboardTxdController extends Controller
                 0::bigint                    AS tickets26,
                 SUM(vta_soles_si_act)        AS vta_si26
             ")
-            ->where($this->scopeAct(...))
+            ->where(fn($q) => $this->scopeAct($q))
             ->whereBetween('fecha', [$ini, $fin])
             ->groupBy(DB::raw($groupCols))
             ->cursor() as $r) {
@@ -181,7 +181,7 @@ class DashboardTxdController extends Controller
                 SUM(vta_unds_hst)            AS unds25,
                 SUM(vta_soles_si_hst)        AS vta_si25
             ")
-            ->where($this->scopeHst(...))
+            ->where(fn($q) => $this->scopeHst($q))
             ->whereRaw("fecha BETWEEN (?::date - INTERVAL '1 year') AND (?::date - INTERVAL '1 year')", [$ini, $fin])
             ->groupBy(DB::raw($groupCols))
             ->cursor() as $r) {
@@ -217,7 +217,7 @@ class DashboardTxdController extends Controller
                 linea_2 AS linea, temporada_txd AS temporada,
                 SUM(meta) AS meta_vta
             ")
-            ->where($this->scopeMetas(...))
+            ->where(fn($q) => $this->scopeMetas($q))
             ->whereBetween('fecha', [$ini, $fin])
             ->groupBy(DB::raw($groupCols))
             ->cursor() as $r) {
@@ -325,7 +325,7 @@ class DashboardTxdController extends Controller
                 SUM(vta_act)     AS vta26,
                 SUM(vta_costo_act) AS costo26
             ")
-            ->where($this->scopeAct(...))
+            ->where(fn($q) => $this->scopeAct($q))
             ->whereBetween('fecha', [$ini, $fin]);
 
         if ($canales) $vQuery->whereIn($canal, $canales);
@@ -343,7 +343,7 @@ class DashboardTxdController extends Controller
                 SUM(vta_hst)     AS vta25,
                 SUM(vta_costo_hst) AS costo25
             ")
-            ->where($this->scopeHst(...))
+            ->where(fn($q) => $this->scopeHst($q))
             ->whereRaw("fecha BETWEEN (?::date - INTERVAL '1 year') AND (?::date - INTERVAL '1 year')", [$ini, $fin]);
 
         if ($canales) $hQuery->whereIn($canal, $canales);
@@ -357,7 +357,7 @@ class DashboardTxdController extends Controller
         $metas = [];
         $mQuery = $db->table(self::TXD_TABLE)
             ->selectRaw("{$subcanal} AS sucursal_2_1, SUM(meta) AS meta_vta, SUM(meta_contribucion) AS meta_contri")
-            ->where($this->scopeMetas(...))
+            ->where(fn($q) => $this->scopeMetas($q))
             ->whereBetween('fecha', [$ini, $fin]);
 
         if ($canales) $mQuery->whereIn($canal, $canales);
@@ -524,7 +524,7 @@ class DashboardTxdController extends Controller
                 NULLIF(SUM(pvp * vta_unds_act), 0) AS pvp_total,
                 SUM(vta_soles_si_act)     AS vta_si26
             ")
-            ->where($this->scopeAct(...))
+            ->where(fn($q) => $this->scopeAct($q))
             ->whereBetween('fecha', [$ini, $fin]);
 
         $applyFilters($vQuery);
@@ -543,7 +543,7 @@ class DashboardTxdController extends Controller
                 SUM(vta_unds_hst)         AS unds25,
                 SUM(vta_soles_si_hst)     AS vta_si25
             ")
-            ->where($this->scopeHst(...))
+            ->where(fn($q) => $this->scopeHst($q))
             ->whereRaw("fecha BETWEEN (?::date - INTERVAL '1 year') AND (?::date - INTERVAL '1 year')", [$ini, $fin]);
 
         $applyFilters($hQuery);
@@ -556,7 +556,7 @@ class DashboardTxdController extends Controller
         $metas = [];
         $mQuery = $db->table(self::TXD_TABLE)
             ->selectRaw("{$subcanal} AS sucursal_2_1, {$canal} AS sucursal_3_1, SUM(meta) AS meta_vta, SUM(meta_contribucion) AS meta_contri")
-            ->where($this->scopeMetas(...))
+            ->where(fn($q) => $this->scopeMetas($q))
             ->whereBetween('fecha', [$ini, $fin]);
 
         $applyFilters($mQuery);
