@@ -243,8 +243,8 @@ class TxdFileParser
 
     private function parseRipleyDate(string $fechaRaw): string
     {
-        try { return Carbon::createFromFormat('d-m-Y', $fechaRaw)->format('Y-m-d'); } catch (\Throwable) {
-            try { $d = Carbon::createFromTimestamp(\PhpOffice\PhpSpreadsheet\Shared\Date::excelToTimestamp((float) $fechaRaw)); return $d->format('Y-m-d'); } catch (\Throwable) { return $fechaRaw; }
+        try { return Carbon::createFromFormat('d-m-Y', $fechaRaw)->format('Y-m-d'); } catch (\Throwable $e) {
+            try { $d = Carbon::createFromTimestamp(\PhpOffice\PhpSpreadsheet\Shared\Date::excelToTimestamp((float) $fechaRaw)); return $d->format('Y-m-d'); } catch (\Throwable $e) { return $fechaRaw; }
         }
     }
 

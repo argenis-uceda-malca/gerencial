@@ -57,10 +57,10 @@ class CapturaMonitorController extends Controller
                 ", [$cursor]);
 
                 $resultado[$tienda->codigo_tienda] = ['cola' => (int) $row->total, 'ok' => true];
-            } catch (\Throwable) {
+            } catch (\Throwable $e) {
                 $resultado[$tienda->codigo_tienda] = ['cola' => null, 'ok' => false];
             } finally {
-                try { $conexionSvc->cerrar($tienda, 'soluflex'); } catch (\Throwable) {}
+                try { $conexionSvc->cerrar($tienda, 'soluflex'); } catch (\Throwable $e) {}
             }
         }
 
@@ -229,7 +229,7 @@ class CapturaMonitorController extends Controller
         } catch (\Throwable $e) {
             return response()->json(['ok' => false, 'error' => $e->getMessage()], 500);
         } finally {
-            try { $conexionSvc->cerrar($tienda, 'bizlinks'); } catch (\Throwable) {}
+            try { $conexionSvc->cerrar($tienda, 'bizlinks'); } catch (\Throwable $e) {}
         }
     }
 

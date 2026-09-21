@@ -119,8 +119,8 @@ class MotorCapturaService
             FeLogSistema::log('ERROR', 'FORZAR_CAPTURA', $e->getMessage(), $tienda->codigo_tienda);
             return ['ok' => false, 'mensaje' => $e->getMessage(), 'estado' => 'ERROR'];
         } finally {
-            try { $this->conexiones->cerrar($tienda, 'soluflex'); } catch (Throwable) {}
-            try { $this->conexiones->cerrar($tienda, 'bizlinks'); } catch (Throwable) {}
+            try { $this->conexiones->cerrar($tienda, 'soluflex'); } catch (Throwable $e) {}
+            try { $this->conexiones->cerrar($tienda, 'bizlinks'); } catch (Throwable $e) {}
         }
     }
 

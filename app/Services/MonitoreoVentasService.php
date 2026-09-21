@@ -146,7 +146,7 @@ class MonitoreoVentasService
                 HAVING COUNT(DISTINCT CASE WHEN fecha_documento < :hoy6::date THEN fecha_documento END) >= 2
                 ORDER BY MAX(marca), sucursal_2
             ", ['hoy'=>$hoy,'hoy2'=>$hoy,'hoy3'=>$hoy,'hoy4'=>$hoy,'hoy5'=>$hoy,'hoy6'=>$hoy]);
-        } catch (\Exception) {
+        } catch (\Exception $e) {
             return [];
         }
     }
@@ -162,7 +162,7 @@ class MonitoreoVentasService
                 FROM automatizacion_control_ejecucion
                 ORDER BY id DESC LIMIT :lim
             ", ['lim' => $limite]);
-        } catch (\Exception) {
+        } catch (\Exception $e) {
             return [];
         }
     }
@@ -173,7 +173,7 @@ class MonitoreoVentasService
             return DB::connection('pgsql')->select("
                 SELECT * FROM automatizacion_alertas WHERE atendida = FALSE ORDER BY id DESC
             ");
-        } catch (\Exception) {
+        } catch (\Exception $e) {
             return [];
         }
     }
