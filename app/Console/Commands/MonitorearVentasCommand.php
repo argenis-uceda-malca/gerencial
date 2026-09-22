@@ -16,9 +16,13 @@ class MonitorearVentasCommand extends Command
 
     protected $description = 'Detecta anomalías en ventas y ETL, envía alertas por email';
 
-    public function __construct(private MonitoreoVentasService $monitor)
+    /** @var MonitoreoVentasService */
+    private $monitor;
+
+    public function __construct(MonitoreoVentasService $monitor)
     {
         parent::__construct();
+        $this->monitor = $monitor;
     }
 
     public function handle(): int
