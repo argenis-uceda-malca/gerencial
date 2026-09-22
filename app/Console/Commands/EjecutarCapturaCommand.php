@@ -18,9 +18,13 @@ class EjecutarCapturaCommand extends Command
 
     protected $description = 'Detecta ventas nuevas en cada tienda activa y las inserta en su base intermedia de Bizlinks';
 
-    public function __construct(private MotorCapturaService $motor)
+    /** @var MotorCapturaService */
+    private $motor;
+
+    public function __construct(MotorCapturaService $motor)
     {
         parent::__construct();
+        $this->motor = $motor;
     }
 
     public function handle(): int
