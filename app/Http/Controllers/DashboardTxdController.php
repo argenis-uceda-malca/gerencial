@@ -38,7 +38,7 @@ class DashboardTxdController extends Controller
         );
     }
 
-    private array $marcaLabel = [
+    private $marcaLabel = [
         'MENTHA & CHOCOLATE' => 'MCH',
         'BLUES BY MILK'      => 'BBM',
         'EXIT'               => 'EXIT',
@@ -85,7 +85,7 @@ class DashboardTxdController extends Controller
             ->distinct()
             ->orderBy('mes_n')
             ->get()
-            ->map(fn($r) => ['n' => (int)$r->mes_n, 'nom' => $this->monthName($r->mes_n)])
+            ->map(function ($r) { return ['n' => (int)$r->mes_n, 'nom' => $this->monthName($r->mes_n)]; })
             ->values()
             ->all();
 
@@ -141,7 +141,7 @@ class DashboardTxdController extends Controller
                 0::bigint                    AS tickets26,
                 SUM(vta_soles_si_act)        AS vta_si26
             ")
-            ->where(fn($q) => $this->scopeAct($q))
+            ->where(function ($q) { $this->scopeAct($q); })
             ->whereBetween('fecha', [$ini, $fin])
             ->groupBy(DB::raw($groupCols))
             ->cursor() as $r) {
@@ -181,7 +181,7 @@ class DashboardTxdController extends Controller
                 SUM(vta_unds_hst)            AS unds25,
                 SUM(vta_soles_si_hst)        AS vta_si25
             ")
-            ->where(fn($q) => $this->scopeHst($q))
+            ->where(function ($q) { $this->scopeHst($q); })
             ->whereRaw("fecha BETWEEN (?::date - INTERVAL '1 year') AND (?::date - INTERVAL '1 year')", [$ini, $fin])
             ->groupBy(DB::raw($groupCols))
             ->cursor() as $r) {
@@ -217,7 +217,7 @@ class DashboardTxdController extends Controller
                 linea_2 AS linea, temporada_txd AS temporada,
                 SUM(meta) AS meta_vta
             ")
-            ->where(fn($q) => $this->scopeMetas($q))
+            ->where(function ($q) { $this->scopeMetas($q); })
             ->whereBetween('fecha', [$ini, $fin])
             ->groupBy(DB::raw($groupCols))
             ->cursor() as $r) {
@@ -251,7 +251,7 @@ class DashboardTxdController extends Controller
             ->selectRaw('semana, MAX(fecha) as max_fecha')
             ->where('tipo_fila', 'VENTA')
             ->whereBetween('fecha', [$ini, $fin])
-            ->when(!empty($actSemanas), fn ($q) => $q->whereIn('semana', $actSemanas))
+            ->when(!empty($actSemanas), function ($q) use ($actSemanas) { return $q->whereIn('semana', $actSemanas); })
             ->groupBy('semana')
             ->get();
         $stockDates = $maxDatesByWeek->pluck('max_fecha')->all();
@@ -325,7 +325,7 @@ class DashboardTxdController extends Controller
                 SUM(vta_act)     AS vta26,
                 SUM(vta_costo_act) AS costo26
             ")
-            ->where(fn($q) => $this->scopeAct($q))
+            ->where(function ($q) { $this->scopeAct($q); })
             ->whereBetween('fecha', [$ini, $fin]);
 
         if ($canales) $vQuery->whereIn($canal, $canales);
@@ -343,7 +343,7 @@ class DashboardTxdController extends Controller
                 SUM(vta_hst)     AS vta25,
                 SUM(vta_costo_hst) AS costo25
             ")
-            ->where(fn($q) => $this->scopeHst($q))
+            ->where(function ($q) { $this->scopeHst($q); })
             ->whereRaw("fecha BETWEEN (?::date - INTERVAL '1 year') AND (?::date - INTERVAL '1 year')", [$ini, $fin]);
 
         if ($canales) $hQuery->whereIn($canal, $canales);
@@ -357,7 +357,7 @@ class DashboardTxdController extends Controller
         $metas = [];
         $mQuery = $db->table(self::TXD_TABLE)
             ->selectRaw("{$subcanal} AS sucursal_2_1, SUM(meta) AS meta_vta, SUM(meta_contribucion) AS meta_contri")
-            ->where(fn($q) => $this->scopeMetas($q))
+            ->where(function ($q) { $this->scopeMetas($q); })
             ->whereBetween('fecha', [$ini, $fin]);
 
         if ($canales) $mQuery->whereIn($canal, $canales);
@@ -524,7 +524,7 @@ class DashboardTxdController extends Controller
                 NULLIF(SUM(pvp * vta_unds_act), 0) AS pvp_total,
                 SUM(vta_soles_si_act)     AS vta_si26
             ")
-            ->where(fn($q) => $this->scopeAct($q))
+            ->where(function ($q) { $this->scopeAct($q); })
             ->whereBetween('fecha', [$ini, $fin]);
 
         $applyFilters($vQuery);
@@ -543,7 +543,7 @@ class DashboardTxdController extends Controller
                 SUM(vta_unds_hst)         AS unds25,
                 SUM(vta_soles_si_hst)     AS vta_si25
             ")
-            ->where(fn($q) => $this->scopeHst($q))
+            ->where(function ($q) { $this->scopeHst($q); })
             ->whereRaw("fecha BETWEEN (?::date - INTERVAL '1 year') AND (?::date - INTERVAL '1 year')", [$ini, $fin]);
 
         $applyFilters($hQuery);
@@ -556,7 +556,7 @@ class DashboardTxdController extends Controller
         $metas = [];
         $mQuery = $db->table(self::TXD_TABLE)
             ->selectRaw("{$subcanal} AS sucursal_2_1, {$canal} AS sucursal_3_1, SUM(meta) AS meta_vta, SUM(meta_contribucion) AS meta_contri")
-            ->where(fn($q) => $this->scopeMetas($q))
+            ->where(function ($q) { $this->scopeMetas($q); })
             ->whereBetween('fecha', [$ini, $fin]);
 
         $applyFilters($mQuery);
@@ -585,7 +585,7 @@ class DashboardTxdController extends Controller
 
         $rows = [];
         foreach ($s3Groups as $s3) {
-            usort($byS3[$s3], fn($a, $b) => $b['vta26'] <=> $a['vta26']);
+            usort($byS3[$s3], function ($a, $b) { return $b['vta26'] <=> $a['vta26']; });
             foreach ($byS3[$s3] as $row) $rows[] = $row;
             $rows[] = $this->buildDetalleSubtotal("Total $s3", $s3, $byS3[$s3], $totalVta26, $totalVta25, false);
         }
@@ -651,7 +651,7 @@ class DashboardTxdController extends Controller
 
     private function buildDetalleSubtotal(string $label, string $s3, array $rows, float $tv26, float $tv25, bool $isTotal): array
     {
-        $leaf = array_filter($rows, fn($r) => !$r['_esSubtotal']);
+        $leaf = array_filter($rows, function ($r) { return !$r['_esSubtotal']; });
 
         $vta26    = array_sum(array_column($leaf, 'vta26'));
         $vta25    = array_sum(array_column($leaf, 'vta25'));

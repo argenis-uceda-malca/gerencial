@@ -73,11 +73,13 @@ class ValidadorCapturaService
                 'resuelto' => $accion !== 'CUARENTENA',
             ]);
 
-            match ($accion) {
-                'INSERTAR_CON_DEFAULT' => $this->aplicarDefault($documento, $codigoError, $regla->valor_default ?? null),
-                'ALERTA_SOLO' => $this->generarAlerta($registro, $codigoError),
-                default => $continuar = false, // CUARENTENA o acción desconocida
-            };
+            if ($accion === 'INSERTAR_CON_DEFAULT') {
+                $this->aplicarDefault($documento, $codigoError, $regla->valor_default ?? null);
+            } elseif ($accion === 'ALERTA_SOLO') {
+                $this->generarAlerta($registro, $codigoError);
+            } else {
+                $continuar = false; // CUARENTENA o acción desconocida
+            }
         }
 
         if (! $continuar) {

@@ -66,7 +66,7 @@ class InsercionBizlinksService
      */
     private function insertarFila(ConnectionInterface $conexion, string $tabla, array $datos): void
     {
-        $columnas      = implode(', ', array_map(fn ($c) => "[{$c}]", array_keys($datos)));
+        $columnas      = implode(', ', array_map(function ($c) { return "[{$c}]"; }, array_keys($datos)));
         $placeholders  = implode(', ', array_fill(0, count($datos), '?'));
 
         $conexion->statement(

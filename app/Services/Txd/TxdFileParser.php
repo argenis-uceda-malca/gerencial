@@ -91,7 +91,7 @@ class TxdFileParser
                 }
                 continue;
             }
-            if (empty(array_filter($vals, fn($c) => trim((string) $c) !== ''))) continue;
+            if (empty(array_filter($vals, function ($c) { return trim((string) $c) !== ''; }))) continue;
             $data = [];
             foreach ($mapCol as $i => $dbCol) {
                 $val = $vals[$i] ?? null;
@@ -101,7 +101,7 @@ class TxdFileParser
                 if ($val === '' || $val === null || strtoupper((string) $val) === 'NA') $data[$dbCol] = null;
                 else $data[$dbCol] = $val;
             }
-            if (empty(array_filter($data, fn($v) => $v !== null && $v !== ''))) continue;
+            if (empty(array_filter($data, function ($v) { return $v !== null && $v !== ''; }))) continue;
             foreach (['vta_act','vta_unds','stk_soles','stk_unds'] as $c) if (array_key_exists($c, $data)) $data[$c] = $this->numericOrNull($data[$c]);
             $rows->push((object) array_merge(['fecha'=>null,'sku_txd'=>null,'desc_sku'=>null,'marca'=>null,'cod_local'=>null,'desc_local'=>null,'vta_act'=>null,'vta_unds'=>null,'stk_soles'=>null,'stk_unds'=>null], $data));
         }
@@ -129,7 +129,7 @@ class TxdFileParser
                 foreach ($vals as $i => $col) { $k = preg_replace('/\s+/', ' ', strtolower(trim((string) $col))); if (isset(self::MAP_RIPLEY[$k])) $mapCol[$i] = self::MAP_RIPLEY[$k]; }
                 continue;
             }
-            if (empty(array_filter($vals, fn($c) => trim((string) $c) !== ''))) continue;
+            if (empty(array_filter($vals, function ($c) { return trim((string) $c) !== ''; }))) continue;
             $data = [];
             foreach ($mapCol as $i => $dbCol) {
                 $val = $vals[$i] ?? null;
@@ -169,7 +169,7 @@ class TxdFileParser
                 foreach ($vals as $i => $col) { $k = preg_replace('/\s+/', ' ', strtolower(trim((string) $col))); if (isset(self::MAP_FB_STOCK[$k])) $mapCol[$i] = self::MAP_FB_STOCK[$k]; }
                 continue;
             }
-            if (empty(array_filter($vals, fn($c) => trim((string) $c) !== ''))) continue;
+            if (empty(array_filter($vals, function ($c) { return trim((string) $c) !== ''; }))) continue;
             $tmp = [];
             foreach ($mapCol as $i => $dbCol) { $v = $vals[$i] ?? null; if ($v instanceof \DateTimeInterface) $v = $v->format('Y-m-d'); $tmp[$dbCol] = is_string($v) ? trim($v) : $v; }
             $sku = $tmp['sku_txd'] ?? ''; $desc = $tmp['desc_hijo_txd'] ?? '';
@@ -205,7 +205,7 @@ class TxdFileParser
                 foreach ($vals as $i => $col) { $k = preg_replace('/\s+/', ' ', strtolower(trim((string) $col))); if (isset(self::MAP_FB_VENTAS[$k])) $mapCol[$i] = self::MAP_FB_VENTAS[$k]; }
                 continue;
             }
-            if (empty(array_filter($vals, fn($c) => trim((string) $c) !== ''))) continue;
+            if (empty(array_filter($vals, function ($c) { return trim((string) $c) !== ''; }))) continue;
             $tmp = [];
             foreach ($mapCol as $i => $dbCol) { $v = $vals[$i] ?? null; if ($v instanceof \DateTimeInterface) $v = $v->format('Y-m-d H:i:s'); $tmp[$dbCol] = is_string($v) ? trim($v) : $v; }
             $sku = $tmp['sku'] ?? ''; $desc = $tmp['desc_sku'] ?? ''; $precio = (float)($tmp['precio'] ?? 0); $createdAt = $tmp['created_at'] ?? '';

@@ -39,7 +39,7 @@ class DashboardFfToController extends Controller
             ->groupBy(DB::raw("mes, EXTRACT(MONTH FROM fecha_documento)"))
             ->orderBy(DB::raw("EXTRACT(MONTH FROM fecha_documento)"))
             ->get()
-            ->map(fn($r) => ['n' => (int) $r->mes_n, 'nom' => $r->mes])
+            ->map(function ($r) { return ['n' => (int) $r->mes_n, 'nom' => $r->mes]; })
             ->values()
             ->all();
 
@@ -122,7 +122,7 @@ class DashboardFfToController extends Controller
             );
         }
 
-        usort($sucursales, fn($a, $b) => $b['to_act'] <=> $a['to_act']);
+        usort($sucursales, function ($a, $b) { return $b['to_act'] <=> $a['to_act']; });
 
         $global = $this->buildRow(
             'TOTAL',
@@ -158,7 +158,7 @@ class DashboardFfToController extends Controller
             ->groupBy('s.sucursal')
             ->selectRaw('s.sucursal, SUM(t.conteo) AS ff')
             ->pluck('ff', 'sucursal')
-            ->map(fn($v) => (float) $v)
+            ->map(function ($v) { return (float) $v; })
             ->all();
     }
 
@@ -180,7 +180,7 @@ class DashboardFfToController extends Controller
             ->whereBetween('fecha', [$ini, $finReal->toDateString()])
             ->selectRaw('DISTINCT fecha::date AS fecha')
             ->pluck('fecha')
-            ->map(fn($d) => Carbon::parse($d)->toDateString())
+            ->map(function ($d) { return Carbon::parse($d)->toDateString(); })
             ->all();
 
         $faltantes = [];

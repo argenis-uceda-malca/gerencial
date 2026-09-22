@@ -46,7 +46,7 @@ class DashboardVentasController extends Controller
 
         $meses = collect($rows)
             ->groupBy('mes_n')
-            ->map(fn($g) => ['n' => $g[0]['mes_n'], 'nom' => $g[0]['mes']])
+            ->map(function ($g) { return ['n' => $g[0]['mes_n'], 'nom' => $g[0]['mes']]; })
             ->sortBy('n')
             ->values()
             ->all();
@@ -91,7 +91,7 @@ class DashboardVentasController extends Controller
             ->whereBetween('fecha_documento', [$ini, $fin])
             ->groupBy(DB::raw("fecha_documento::date, marca, sucursal_3"))
             ->get()
-            ->keyBy(fn($r) => $r->fecha . '|' . $r->marca . '|' . $this->canonicalCanal($r->sucursal_3));
+            ->keyBy(function ($r) { return $r->fecha . '|' . $r->marca . '|' . $this->canonicalCanal($r->sucursal_3); });
 
         // Marcar metas ya usadas; las sobrantes (días sin ventas) se agregan como filas venta=0
         $usedMetaKeys = [];
@@ -138,7 +138,7 @@ class DashboardVentasController extends Controller
             ];
         }
 
-        usort($rows, fn($a, $b) => strcmp($a['fecha'], $b['fecha']));
+        usort($rows, function ($a, $b) { return strcmp($a['fecha'], $b['fecha']); });
         return $rows;
     }
 
@@ -185,7 +185,7 @@ class DashboardVentasController extends Controller
 
         $metas = $mQuery->groupBy('sucursal', 'sucursal_3', 'marca')
             ->get()
-            ->keyBy(fn($r) => $r->sucursal . '|' . $r->sucursal_3 . '|' . $r->marca);
+            ->keyBy(function ($r) { return $r->sucursal . '|' . $r->sucursal_3 . '|' . $r->marca; });
 
         $rows = [];
         foreach ($ventas as $r) {
@@ -304,7 +304,7 @@ class DashboardVentasController extends Controller
             ->whereBetween('fecha_documento', [$ini, $fin])
             ->groupBy('sucursal', 'sucursal_3', 'marca')
             ->get()
-            ->keyBy(fn($r) => $r->sucursal . '|' . $r->sucursal_3 . '|' . $r->marca);
+            ->keyBy(function ($r) { return $r->sucursal . '|' . $r->sucursal_3 . '|' . $r->marca; });
 
         $rows = [];
         foreach ($ventas as $r) {

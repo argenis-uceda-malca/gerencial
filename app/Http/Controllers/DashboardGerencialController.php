@@ -27,11 +27,13 @@ class DashboardGerencialController extends Controller
             ->distinct()->orderBy('sucursal_2')->pluck('sucursal_2');
 
         // -- Query base reutilizable --
-        $base = fn () => $db->table('automatizacion_pla_reporte_ventas')
-            ->where('tipo_fila', 'ventas_act')
-            ->whereBetween('fecha_documento', [$fechaInicio, $fechaFin])
-            ->when($marcaFiltro, fn ($q) => $q->where('marca', $marcaFiltro))
-            ->when($canalFiltro, fn ($q) => $q->where('sucursal_2', $canalFiltro));
+        $base = function () use ($db, $fechaInicio, $fechaFin, $marcaFiltro, $canalFiltro) {
+            return $db->table('automatizacion_pla_reporte_ventas')
+                ->where('tipo_fila', 'ventas_act')
+                ->whereBetween('fecha_documento', [$fechaInicio, $fechaFin])
+                ->when($marcaFiltro, function ($q) use ($marcaFiltro) { return $q->where('marca', $marcaFiltro); })
+                ->when($canalFiltro, function ($q) use ($canalFiltro) { return $q->where('sucursal_2', $canalFiltro); });
+        };
 
         // -- KPIs período actual --
         $kpi = $base()
@@ -50,8 +52,8 @@ class DashboardGerencialController extends Controller
         $ventaAnterior = (float) ($db->table('automatizacion_pla_reporte_ventas')
             ->where('tipo_fila', 'ventas_act')
             ->whereBetween('fecha_documento', [$iniAnterior, $finAnterior])
-            ->when($marcaFiltro, fn ($q) => $q->where('marca', $marcaFiltro))
-            ->when($canalFiltro, fn ($q) => $q->where('sucursal_2', $canalFiltro))
+            ->when($marcaFiltro, function ($q) use ($marcaFiltro) { return $q->where('marca', $marcaFiltro); })
+            ->when($canalFiltro, function ($q) use ($canalFiltro) { return $q->where('sucursal_2', $canalFiltro); })
             ->sum('importe_subtotal') ?? 0);
 
         $variacion = $ventaAnterior > 0

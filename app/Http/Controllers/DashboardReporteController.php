@@ -17,7 +17,7 @@ class DashboardReporteController extends Controller
             return $next($request);
         });
     }
-    private array $dayOrder = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+    private $dayOrder = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
 
     private function dayKey(string $dia): string
     {
@@ -41,7 +41,7 @@ class DashboardReporteController extends Controller
             ->groupBy(DB::raw("mes, EXTRACT(MONTH FROM fecha_documento)"))
             ->orderBy(DB::raw("EXTRACT(MONTH FROM fecha_documento)"))
             ->get()
-            ->map(fn($r) => ['n' => (int)$r->mes_n, 'nom' => $r->mes])
+            ->map(function ($r) { return ['n' => (int)$r->mes_n, 'nom' => $r->mes]; })
             ->values()
             ->all();
 
@@ -250,7 +250,7 @@ class DashboardReporteController extends Controller
         return response()->json(['act' => $actRows, 'hst' => $hstRows, 'metas' => $metasRows, 'stock' => $stockRows]);
     }
 
-    private array $marcaLabel = [
+    private $marcaLabel = [
         'MENTHA & CHOCOLATE' => 'MCH',
         'BLUES BY MILK'      => 'BBM',
         'EXIT'               => 'EXIT',
@@ -353,7 +353,7 @@ class DashboardReporteController extends Controller
 
         $s3Order  = ['BOUTIQUES' => 0, 'OUTLETS' => 1, 'WEB' => 2];
         $s3Groups = array_keys($data);
-        usort($s3Groups, fn($a, $b) => ($s3Order[$a] ?? 9) - ($s3Order[$b] ?? 9));
+        usort($s3Groups, function ($a, $b) use ($s3Order) { return ($s3Order[$a] ?? 9) - ($s3Order[$b] ?? 9); });
 
         $rows = [];
 
@@ -548,11 +548,11 @@ class DashboardReporteController extends Controller
         }
 
         $s3Groups = array_keys($byS3);
-        usort($s3Groups, fn($a, $b) => ($s3Order[$a] ?? 9) - ($s3Order[$b] ?? 9));
+        usort($s3Groups, function ($a, $b) use ($s3Order) { return ($s3Order[$a] ?? 9) - ($s3Order[$b] ?? 9); });
 
         $rows = [];
         foreach ($s3Groups as $s3) {
-            usort($byS3[$s3], fn($a, $b) => $b['vta26'] <=> $a['vta26']);
+            usort($byS3[$s3], function ($a, $b) { return $b['vta26'] <=> $a['vta26']; });
             foreach ($byS3[$s3] as $row) $rows[] = $row;
             $rows[] = $this->buildDetalleSubtotal("Total $s3", $s3, $byS3[$s3], $totalVta26, $totalVta25, false);
         }
@@ -614,7 +614,7 @@ class DashboardReporteController extends Controller
 
     private function buildDetalleSubtotal(string $label, string $s3, array $rows, float $tv26, float $tv25, bool $isTotal): array
     {
-        $leaf = array_filter($rows, fn($r) => !$r['_esSubtotal']);
+        $leaf = array_filter($rows, function ($r) { return !$r['_esSubtotal']; });
 
         $vta26    = array_sum(array_column($leaf, 'vta26'));
         $vta25    = array_sum(array_column($leaf, 'vta25'));

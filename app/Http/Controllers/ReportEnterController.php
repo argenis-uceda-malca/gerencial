@@ -1539,11 +1539,13 @@ class ReportEnterController extends Controller
 
             if (!empty($paraInsertar)) {
                 DB::table('config_sucursales')->insert(
-                    collect($paraInsertar)->map(fn($s) => [
-                        'sucursal' => $s,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ])->toArray()
+                    collect($paraInsertar)->map(function ($s) {
+                        return [
+                            'sucursal' => $s,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                    })->toArray()
                 );
             }
 

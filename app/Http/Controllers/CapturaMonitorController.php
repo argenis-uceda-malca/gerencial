@@ -109,13 +109,13 @@ class CapturaMonitorController extends Controller
                 'idtransaccion_soluflex'  => $r->idtransaccion_soluflex,
                 'serie_numero_bizlinks'   => $r->serie_numero_bizlinks ?? '—',
                 'tipo_documento_sunat'    => $r->tipo_documento_sunat ?? '—',
-                'fecha_venta'             => $r->fecha_venta?->format('Y-m-d') ?? '—',
+                'fecha_venta'             => ($r->fecha_venta !== null ? $r->fecha_venta->format('Y-m-d') : null) ?? '—',
                 'importe_total'           => number_format((float) $r->importe_total, 2),
                 'razon_social_cliente'    => $r->razon_social_cliente ?? '—',
                 'numero_documento_cliente'=> $r->numero_documento_cliente ?? '—',
                 'estado'                  => "<span class=\"badge bg-{$badge}\">{$r->estado}</span>",
                 'intentos_captura'        => $r->intentos_captura,
-                'fecha_captura'           => $r->fecha_captura?->format('Y-m-d H:i') ?? '—',
+                'fecha_captura'           => ($r->fecha_captura !== null ? $r->fecha_captura->format('Y-m-d H:i') : null) ?? '—',
                 'acciones'                => $this->botonesAccion($r),
             ];
         });
@@ -207,7 +207,7 @@ class CapturaMonitorController extends Controller
             return response()->json([
                 'ok'       => true,
                 'header'   => (array) $header,
-                'detalles' => array_map(fn($d) => (array) $d, $detalles),
+                'detalles' => array_map(function ($d) { return (array) $d; }, $detalles),
                 'archivos' => $response ? [
                     'url_pdf' => $response->bl_url_pdf,
                     'url_cdr' => $response->bl_url_cdr,
@@ -220,7 +220,7 @@ class CapturaMonitorController extends Controller
                     'id'           => $registro->id,
                     'serie_numero' => $registro->serie_numero_bizlinks,
                     'tipo'         => $registro->tipo_documento_sunat,
-                    'fecha_venta'  => $registro->fecha_venta?->format('d/m/Y'),
+                    'fecha_venta'  => $registro->fecha_venta !== null ? $registro->fecha_venta->format('d/m/Y') : null,
                     'importe'      => number_format((float) $registro->importe_total, 2),
                     'cliente'      => $registro->razon_social_cliente,
                     'ruc_dni'      => $registro->numero_documento_cliente,

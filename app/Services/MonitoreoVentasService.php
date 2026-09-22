@@ -240,11 +240,11 @@ class MonitoreoVentasService
         if ($hora >= self::HORA_TIENDAS) {
             $silenciosas = array_filter(
                 (array) $tiendas,
-                fn($t) => (float)$t->venta_hoy == 0 && (int)$t->dias_semana >= 3
+                function ($t) { return (float)$t->venta_hoy == 0 && (int)$t->dias_semana >= 3; }
             );
 
             if (!empty($silenciosas)) {
-                $nombres = implode(', ', array_map(fn($t) => $t->sucursal_2, $silenciosas));
+                $nombres = implode(', ', array_map(function ($t) { return $t->sucursal_2; }, $silenciosas));
                 $n = count($silenciosas);
                 $alertas[] = [
                     'tipo'    => 'tiendas_silenciosas',
