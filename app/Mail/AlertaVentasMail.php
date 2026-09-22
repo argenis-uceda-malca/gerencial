@@ -11,22 +11,28 @@ class AlertaVentasMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(
-        public array  $alertas,
-        public Carbon $ahora
-    ) {}
+    /** @var array */
+    public $alertas;
+    /** @var Carbon */
+    public $ahora;
 
-    public function build(): static
+    public function __construct(array $alertas, Carbon $ahora)
     {
-        $criticos = count(array_filter($this->alertas, fn($a) => $a['nivel'] === 'critico'));
-        $warnings = count(array_filter($this->alertas, fn($a) => $a['nivel'] !== 'critico'));
+        $this->alertas = $alertas;
+        $this->ahora   = $ahora;
+    }
+
+    public function build()
+    {
+        $criticos = count(array_filter($this->alertas, function ($a) { return $a['nivel'] === 'critico'; }));
+        $warnings = count(array_filter($this->alertas, function ($a) { return $a['nivel'] !== 'critico'; }));
 
         $partes = [];
         if ($criticos) $partes[] = "{$criticos} CRÍTICO(S)";
         if ($warnings)  $partes[] = "{$warnings} aviso(s)";
         $resumen = implode(' + ', $partes);
 
-        return $this->subject("⚠️ Alerta ventas Smart Brands — {$resumen} — {$this->ahora->format('d/m/Y H:i')}")
+        return $this->subject("Alerta ventas Smart Brands - {$resumen} - {$this->ahora->format('d/m/Y H:i')}")
                     ->view('emails.alertas_ventas');
     }
 }

@@ -15,13 +15,29 @@ use Throwable;
  */
 class MotorCapturaService
 {
+    /** @var ConexionTiendaService */
+    private $conexiones;
+    /** @var DetectorVentasService */
+    private $detector;
+    /** @var TransformadorDocumentoService */
+    private $transformador;
+    /** @var ValidadorCapturaService */
+    private $validador;
+    /** @var InsercionBizlinksService */
+    private $insercion;
+
     public function __construct(
-        private ConexionTiendaService $conexiones,
-        private DetectorVentasService $detector,
-        private TransformadorDocumentoService $transformador,
-        private ValidadorCapturaService $validador,
-        private InsercionBizlinksService $insercion,
+        ConexionTiendaService $conexiones,
+        DetectorVentasService $detector,
+        TransformadorDocumentoService $transformador,
+        ValidadorCapturaService $validador,
+        InsercionBizlinksService $insercion
     ) {
+        $this->conexiones   = $conexiones;
+        $this->detector     = $detector;
+        $this->transformador = $transformador;
+        $this->validador    = $validador;
+        $this->insercion    = $insercion;
     }
 
     /**

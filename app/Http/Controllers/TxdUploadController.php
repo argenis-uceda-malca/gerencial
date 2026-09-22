@@ -12,8 +12,10 @@ use Throwable;
 
 class TxdUploadController extends Controller
 {
-    private TxdFileParser $parser;
-    private TxdLoaderService $loader;
+    /** @var TxdFileParser */
+    private $parser;
+    /** @var TxdLoaderService */
+    private $loader;
 
     public function __construct(
         TxdFileParser $parser,
@@ -106,7 +108,7 @@ class TxdUploadController extends Controller
         }
 
         $mensaje = 'Cargado a staging: ' . collect($resumen)
-            ->map(fn ($n, $k) => "{$k}={$n} filas")
+            ->map(function ($n, $k) { return "{$k}={$n} filas"; })
             ->implode(', ');
 
         // El orquestador solo se dispara si el usuario lo pide explícitamente:
