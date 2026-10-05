@@ -49,7 +49,7 @@ class CapturaMonitorController extends Controller
                 $cursor   = $tienda->ultimo_idtransaccion_capturado ?? 0;
 
                 if ($tienda->tipo_fuente === 'CENTRAL') {
-                    $fechaInicio = $tienda->fecha_inicio_captura?->format('Ymd');
+                    $fechaInicio = $tienda->fecha_inicio_captura ? $tienda->fecha_inicio_captura->format('Ymd') : null;
                     $filtroFecha = $fechaInicio ? "AND c.FECHA_DOCUMENTO >= '{$fechaInicio}'" : '';
                     $row = $conexion->selectOne("
                         SELECT COUNT(*) AS total

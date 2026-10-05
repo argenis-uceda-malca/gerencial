@@ -44,10 +44,10 @@ class Kernel extends ConsoleKernel
              ->withoutOverlapping(5)
              ->runInBackground();
 
-        $schedule->command('captura:monitorear-bizlinks')
-             ->everyFiveMinutes()
-             ->withoutOverlapping(3)
-             ->runInBackground();
+        // $schedule->command('captura:monitorear-bizlinks')
+        //      ->everyFiveMinutes()
+        //      ->withoutOverlapping(3)
+        //      ->runInBackground();
 
         // Monitor de anomalías en ventas: cada 30 minutos en horario comercial.
         // Detecta: ETL congelado, sin ventas, venta anormal alta/baja, tiendas silenciosas.
