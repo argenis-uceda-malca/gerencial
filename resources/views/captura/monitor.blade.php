@@ -667,6 +667,7 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
         <span class="text-muted" style="font-size:.68rem">•</span>
         <small class="text-muted" style="font-size:.7rem">Sync: <span id="sync-time">—</span></small>
         <span class="rf-badge" id="lbl-rf"><i class="bx bx-refresh" id="rf-icon"></i><span id="txt-cd">60s</span></span>
+        <span id="ciclo-resultado" style="font-size:.68rem;display:none"></span>
       </div>
     </div>
     <div class="d-flex gap-2 flex-wrap">
@@ -1949,7 +1950,8 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
 
   // ── Auto-ciclo: capturar → sync → tabla (cada 60 s) ──────────
   (function () {
-    var INTERVAL = 60;
+    var INTERVAL   = 60;
+    var PHASE_MIN  = 900; // ms mínimo visible por fase
     var rfOn = true, remaining = INTERVAL, rfTimer;
     var cycling = false;
     var lbl  = document.getElementById('lbl-rf');
@@ -1961,6 +1963,10 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
       var n = new Date();
       return [n.getHours(), n.getMinutes(), n.getSeconds()]
         .map(function (v) { return String(v).padStart(2, '0'); }).join(':');
+    }
+
+    function wait(ms) {
+      return new Promise(function (resolve) { setTimeout(resolve, ms); });
     }
 
     function setPhase(phase) {
@@ -1976,40 +1982,79 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
       }
     }
 
+    function setCicloResultado(ok, msg) {
+      var el = document.getElementById('ciclo-resultado');
+      if (!el) return;
+      el.style.display = '';
+      el.style.color   = ok ? '#71dd37' : '#ff3e1d';
+      el.textContent   = (ok ? '✓ ' : '✗ ') + msg + ' ' + fmtNow();
+    }
+
     function runCycle() {
       if (cycling || !rfOn) return;
       cycling  = true;
       remaining = INTERVAL;
+      console.log('[ciclo] iniciando ' + fmtNow());
       setPhase('capturando');
 
-      fetch('{{ route("captura.ejecutar") }}', {
+      var capturaOk = false, capturaError = '';
+
+      var pCaptura = fetch('{{ route("captura.ejecutar") }}', {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       })
-      .then(function (r) { return r.json(); })
-      .catch(function () { return {}; })
+      .then(function (r) {
+        console.log('[ciclo] captura HTTP ' + r.status);
+        capturaOk = r.ok;
+        return r.json();
+      })
+      .catch(function (e) {
+        capturaError = e ? String(e) : 'error red';
+        console.warn('[ciclo] captura error:', capturaError);
+        return {};
+      });
+
+      Promise.all([pCaptura, wait(PHASE_MIN)])
       .then(function () {
         var el = document.getElementById('last-capture-time');
         if (el) { el.textContent = fmtNow(); }
+        console.log('[ciclo] sincronizando...');
         setPhase('sincronizando');
-        return fetch('{{ route("captura.sync-bizlinks") }}', {
+
+        var pSync = fetch('{{ route("captura.sync-bizlinks") }}', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
           body: JSON.stringify({}),
+        })
+        .then(function (r) {
+          console.log('[ciclo] sync HTTP ' + r.status);
+          return r.json();
+        })
+        .catch(function (e) {
+          console.warn('[ciclo] sync error:', e ? String(e) : 'error red');
+          return {};
         });
+
+        return Promise.all([pSync, wait(PHASE_MIN)]);
       })
-      .catch(function () { return {}; })
       .then(function () {
         setTime();
+        console.log('[ciclo] actualizando tabla...');
         setPhase('actualizando');
         cargarDatos();
         verificarEstadoMotor();
+        setCicloResultado(true, 'ciclo OK');
+        return wait(PHASE_MIN);
       })
-      .catch(function () {})
+      .catch(function (e) {
+        console.error('[ciclo] error inesperado:', e ? String(e) : '?');
+        setCicloResultado(false, 'error');
+      })
       .then(function () {
         cycling = false;
         setPhase('idle');
+        console.log('[ciclo] finalizado, próximo en ' + INTERVAL + 's');
       });
     }
 
