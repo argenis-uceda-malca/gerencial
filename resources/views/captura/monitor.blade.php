@@ -2158,8 +2158,9 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
       if (!info) { slot.innerHTML = ''; return; }
 
       if (!info.ok) {
+        const msg = info.error ? info.error.substring(0, 200) : 'Sin conexión a Soluflex';
         slot.innerHTML = `<span class="badge" style="background:rgba(255,62,29,.1);color:#ff3e1d;font-size:.55rem"
-          title="Sin conexión a Soluflex"><i class="bx bx-wifi-off"></i></span>`;
+          title="${msg.replace(/"/g,'&quot;')}"><i class="bx bx-wifi-off"></i> error</span>`;
         return;
       }
 
