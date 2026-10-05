@@ -10,12 +10,19 @@ use App\Services\Captura\ConexionTiendaService;
 use App\Services\Captura\MotorCapturaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 
 class CapturaMonitorController extends Controller
 {
     public function index()
     {
-        $tiendas = FeTienda::orderBy('codigo_tienda')->get();
+        // Cards: todas las tiendas, activas primero luego inactivas, ordenado por código
+        $tiendas = FeTienda::orderByRaw("CASE WHEN estado='ACTIVA' THEN 0 ELSE 1 END")
+            ->orderBy('codigo_tienda')
+            ->get();
+
+        // Solo para el modal de ejecución del motor
+        $tiendasActivas = $tiendas->where('estado', 'ACTIVA')->values();
 
         $stats = [
             'capturados_hoy' => FeControlRegistro::whereDate('fecha_captura', today())->count(),
@@ -26,7 +33,7 @@ class CapturaMonitorController extends Controller
 
         $logsRecientes = FeLogSistema::orderByDesc('fecha')->take(50)->get();
 
-        return view('captura.monitor', compact('tiendas', 'stats', 'logsRecientes'));
+        return view('captura.monitor', compact('tiendas', 'tiendasActivas', 'stats', 'logsRecientes'));
     }
 
     // AJAX — cola pendiente por tienda (COUNT en Soluflex)
@@ -41,24 +48,51 @@ class CapturaMonitorController extends Controller
                 $pfx      = $conexionSvc->prefijoSoluflex($tienda);
                 $cursor   = $tienda->ultimo_idtransaccion_capturado ?? 0;
 
-                $row = $conexion->selectOne("
-                    SELECT COUNT(*) AS total
-                    FROM {$pfx}[CABECERA_DOCUMENTO] c
-                    INNER JOIN {$pfx}[DOCUMENTOS] d
-                        ON d.CODIGO_DOCUMENTO = c.CODIGO_DOCUMENTO
-                    INNER JOIN {$pfx}[DOCUMENTOS_SERIES] ds
-                        ON ds.CODIGO_DOCUMENTO = c.CODIGO_DOCUMENTO
-                       AND ds.IDEMPRESA        = c.IDEMPRESA
-                       AND ds.NUMERO_SERIE     = c.NUMERO_SERIE
-                    WHERE c.IDTRANSACCION > ?
-                      AND c.CODIGO_ESTADO      = '12'
-                      AND d.FLAG_FACT_ELECTRONICA = 'S'
-                      AND ds.FLAG_ELECTRONICO  = 'S'
-                ", [$cursor]);
+                if ($tienda->tipo_fuente === 'CENTRAL') {
+                    $fechaInicio = $tienda->fecha_inicio_captura?->format('Ymd');
+                    $filtroFecha = $fechaInicio ? "AND c.FECHA_DOCUMENTO >= '{$fechaInicio}'" : '';
+                    $row = $conexion->selectOne("
+                        SELECT COUNT(*) AS total
+                        FROM {$pfx}[CABECERA_DOCUMENTO] c
+                        INNER JOIN {$pfx}[DOCUMENTOS] d
+                            ON d.CODIGO_DOCUMENTO = c.CODIGO_DOCUMENTO
+                        INNER JOIN {$pfx}[DOCUMENTOS_SERIES] ds
+                            ON ds.CODIGO_DOCUMENTO = c.CODIGO_DOCUMENTO
+                           AND ds.IDEMPRESA        = c.IDEMPRESA
+                           AND ds.NUMERO_SERIE     = c.NUMERO_SERIE
+                        WHERE c.CODIGO_ESTADO        = '12'
+                          AND d.FLAG_FACT_ELECTRONICA = 'S'
+                          AND ds.FLAG_ELECTRONICO     = 'S'
+                          AND c.IDSUCURSAL NOT IN (SELECT IDSUCURSAL FROM {$pfx}[iptiendas])
+                          {$filtroFecha}
+                    ");
+                    // Descontar los ya capturados en nuestro sistema
+                    $yaCapturados = FeControlRegistro::where('codigo_tienda', 'CENTRAL')
+                        ->whereIn('estado', ['CAPTURADO', 'PENDIENTE', 'CUARENTENA'])
+                        ->count();
+                    $cola = max(0, (int) $row->total - $yaCapturados);
+                } else {
+                    $row = $conexion->selectOne("
+                        SELECT COUNT(*) AS total
+                        FROM {$pfx}[CABECERA_DOCUMENTO] c
+                        INNER JOIN {$pfx}[DOCUMENTOS] d
+                            ON d.CODIGO_DOCUMENTO = c.CODIGO_DOCUMENTO
+                        INNER JOIN {$pfx}[DOCUMENTOS_SERIES] ds
+                            ON ds.CODIGO_DOCUMENTO = c.CODIGO_DOCUMENTO
+                           AND ds.IDEMPRESA        = c.IDEMPRESA
+                           AND ds.NUMERO_SERIE     = c.NUMERO_SERIE
+                        WHERE c.IDTRANSACCION > ?
+                          AND c.CODIGO_ESTADO      = '12'
+                          AND d.FLAG_FACT_ELECTRONICA = 'S'
+                          AND ds.FLAG_ELECTRONICO  = 'S'
+                    ", [$cursor]);
+                    $cola = (int) $row->total;
+                }
 
-                $resultado[$tienda->codigo_tienda] = ['cola' => (int) $row->total, 'ok' => true];
+                $resultado[$tienda->codigo_tienda] = ['cola' => $cola, 'ok' => true];
             } catch (\Throwable $e) {
-                $resultado[$tienda->codigo_tienda] = ['cola' => null, 'ok' => false];
+                \Log::error("colaPorTienda [{$tienda->codigo_tienda}]: " . $e->getMessage());
+                $resultado[$tienda->codigo_tienda] = ['cola' => null, 'ok' => false, 'error' => $e->getMessage()];
             } finally {
                 try { $conexionSvc->cerrar($tienda, 'soluflex'); } catch (\Throwable $e) {}
             }
@@ -86,12 +120,18 @@ class CapturaMonitorController extends Controller
                   ->orWhere('razon_social_cliente', 'ilike', "%{$b}%");
             });
         }
+        if ($request->filled('fecha_ini')) {
+            $query->whereDate('fecha_venta', '>=', $request->fecha_ini);
+        }
+        if ($request->filled('fecha_fin')) {
+            $query->whereDate('fecha_venta', '<=', $request->fecha_fin);
+        }
 
         $total    = $query->count();
         $start    = (int) $request->get('start', 0);
         $length   = (int) $request->get('length', 25);
 
-        $registros = $query->orderByDesc('fecha_ultima_actualizacion')
+        $registros = $query->orderByDesc('id')
             ->skip($start)->take($length)->get();
 
         $estadoBadge = [
@@ -113,7 +153,10 @@ class CapturaMonitorController extends Controller
                 'importe_total'           => number_format((float) $r->importe_total, 2),
                 'razon_social_cliente'    => $r->razon_social_cliente ?? '—',
                 'numero_documento_cliente'=> $r->numero_documento_cliente ?? '—',
-                'estado'                  => "<span class=\"badge bg-{$badge}\">{$r->estado}</span>",
+                'estado'                  => $r->estado,
+                'estado_bizlinks'         => $r->estado_bizlinks ?? '—',
+                'codigo_error_bizlinks'   => $r->codigo_error_bizlinks ?? '—',
+                'mensaje_bizlinks'        => $r->mensaje_bizlinks ?? '',
                 'intentos_captura'        => $r->intentos_captura,
                 'fecha_captura'           => ($r->fecha_captura !== null ? $r->fecha_captura->format('Y-m-d H:i') : null) ?? '—',
                 'acciones'                => $this->botonesAccion($r),
@@ -141,9 +184,55 @@ class CapturaMonitorController extends Controller
     public function resetRegistro(int $id)
     {
         $registro = FeControlRegistro::findOrFail($id);
-        $registro->update(['estado' => 'PENDIENTE', 'motivo_cuarentena' => null]);
+        $registro->update([
+            'estado'                => 'PENDIENTE',
+            'motivo_cuarentena'     => null,
+            'intentos_captura'      => 0,
+            'estado_bizlinks'       => null,
+            'codigo_error_bizlinks' => null,
+            'mensaje_bizlinks'      => null,
+            'fecha_sync_bizlinks'   => null,
+        ]);
 
         return response()->json(['ok' => true]);
+    }
+
+    // Reset masivo: errores/cuarentena o rechazados por Bizlinks/SUNAT
+    public function resetMasivo(Request $request)
+    {
+        if ($request->input('tipo') === 'bizlinks_rechazados') {
+            // Reintentar documentos rechazados por SUNAT (R) — los re-inserta en Bizlinks
+            $query = FeControlRegistro::where('estado', 'CAPTURADO')
+                ->where('estado_bizlinks', 'R');
+
+            if ($request->filled('codigo_tienda')) {
+                $query->where('codigo_tienda', $request->codigo_tienda);
+            }
+
+            $total = $query->count();
+            $query->update([
+                'estado'                => 'ERROR_CAPTURA',
+                'estado_bizlinks'       => null,
+                'codigo_error_bizlinks' => null,
+                'mensaje_bizlinks'      => null,
+                'fecha_sync_bizlinks'   => null,
+            ]);
+        } else {
+            $query = FeControlRegistro::whereIn('estado', ['ERROR_CAPTURA', 'CUARENTENA']);
+
+            if ($request->filled('codigo_tienda')) {
+                $query->where('codigo_tienda', $request->codigo_tienda);
+            }
+
+            $total = $query->count();
+            $query->update([
+                'estado'            => 'PENDIENTE',
+                'motivo_cuarentena' => null,
+                'intentos_captura'  => 0,
+            ]);
+        }
+
+        return response()->json(['ok' => true, 'reseteados' => $total]);
     }
 
     // Forzar captura directamente desde un ID de fe_control_registros (sin que el usuario sepa el IDTRANSACCION)
@@ -199,7 +288,7 @@ class CapturaMonitorController extends Controller
             );
 
             $response = $conexion->selectOne(
-                "SELECT TOP 1 bl_url_pdf, bl_url_cdr, bl_url_ubl, bl_mensajeSunat, bl_estadoRegistro, bl_fechaRespuestaSunat
+                "SELECT TOP 1 bl_url_pdf, bl_url_cdr, bl_url_ubl, bl_mensaje, bl_mensajeSunat, bl_estadoRegistro, bl_fechaRespuestaSunat
                  FROM {$pfx}[SPE_EINVOICE_RESPONSE] WHERE [serieNumero] = ?",
                 [$registro->serie_numero_bizlinks]
             );
@@ -209,10 +298,10 @@ class CapturaMonitorController extends Controller
                 'header'   => (array) $header,
                 'detalles' => array_map(function ($d) { return (array) $d; }, $detalles),
                 'archivos' => $response ? [
-                    'url_pdf' => $response->bl_url_pdf,
-                    'url_cdr' => $response->bl_url_cdr,
-                    'url_ubl' => $response->bl_url_ubl,
-                    'mensaje_sunat'  => $response->bl_mensajeSunat,
+                    'url_pdf'        => $response->bl_url_pdf,
+                    'url_cdr'        => $response->bl_url_cdr,
+                    'url_ubl'        => $response->bl_url_ubl,
+                    'mensaje_sunat'  => $response->bl_mensajeSunat ?: $response->bl_mensaje,
                     'estado'         => $response->bl_estadoRegistro,
                     'fecha_respuesta'=> $response->bl_fechaRespuestaSunat,
                 ] : null,
@@ -233,11 +322,47 @@ class CapturaMonitorController extends Controller
         }
     }
 
-    // Ejecutar el motor manualmente (fire-and-forget con timeout largo)
-    public function ejecutar()
+    // Sincronizar estado de Bizlinks para todos los CAPTURADO sin estado final
+    public function syncBizlinks(Request $request)
     {
         try {
-            Artisan::call('captura:ejecutar');
+            $params = $request->filled('codigo_tienda')
+                ? ['--tienda' => $request->codigo_tienda]
+                : [];
+            Artisan::call('captura:monitorear-bizlinks', $params);
+            $output = Artisan::output();
+            return response()->json(['ok' => true, 'output' => trim($output) ?: 'Sincronización completada']);
+        } catch (\Throwable $e) {
+            return response()->json(['ok' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    // Estado del motor (running / idle) — consultado por el frontend cada pocos segundos
+    public function estadoMotor()
+    {
+        $desde = Cache::get('captura:motor:corriendo');
+        return response()->json([
+            'corriendo' => $desde !== null,
+            'desde'     => $desde,
+        ]);
+    }
+
+    // Ejecutar el motor manualmente (fire-and-forget con timeout largo)
+    public function ejecutar(Request $request)
+    {
+        if (Cache::has('captura:motor:corriendo')) {
+            return response()->json(['ok' => false, 'error' => 'El motor ya está corriendo.'], 409);
+        }
+
+        try {
+            $params = [];
+            $tiendas = $request->input('tiendas', []);
+            if (is_array($tiendas) && count($tiendas)) {
+                $params['--tiendas'] = implode(',', array_filter($tiendas));
+            } elseif ($request->filled('codigo_tienda')) {
+                $params['--tiendas'] = $request->codigo_tienda;
+            }
+            Artisan::call('captura:ejecutar', $params);
             $output = Artisan::output();
             return response()->json(['ok' => true, 'output' => trim($output)]);
         } catch (\Throwable $e) {
@@ -249,15 +374,16 @@ class CapturaMonitorController extends Controller
     {
         $btns = '';
         if ($r->estado === 'CAPTURADO' && $r->serie_numero_bizlinks) {
-            $btns .= "<button class=\"btn btn-sm btn-outline-primary btn-ver-cpe me-1\" data-id=\"{$r->id}\" title=\"Ver CPE en Bizlinks\"><i class=\"bx bx-file\"></i></button>";
+            $btns .= "<button class=\"ac-btn ac-btn-cpe btn-ver-cpe\" data-id=\"{$r->id}\" title=\"Ver CPE en Bizlinks\"><i class=\"bx bx-file-blank\"></i></button>";
         }
-        if (in_array($r->estado, ['ERROR_CAPTURA', 'CUARENTENA'], true)) {
-            $btns .= "<button class=\"btn btn-sm btn-outline-warning btn-reset me-1\" data-id=\"{$r->id}\" title=\"Reintentar\"><i class=\"bx bx-refresh\"></i></button>";
+        if (in_array($r->estado, ['ERROR_CAPTURA', 'CUARENTENA'], true)
+            || ($r->estado === 'CAPTURADO' && in_array($r->estado_bizlinks, ['E', 'L'], true))) {
+            $btns .= "<button class=\"ac-btn ac-btn-retry btn-reset\" data-id=\"{$r->id}\" title=\"Reintentar en Bizlinks\"><i class=\"bx bx-refresh\"></i></button>";
         }
         if (in_array($r->estado, ['PENDIENTE', 'ERROR_CAPTURA'], true)) {
-            $btns .= "<button class=\"btn btn-sm btn-outline-danger btn-forzar-directo me-1\" data-id=\"{$r->id}\" title=\"Forzar captura ahora\"><i class=\"bx bx-send\"></i></button>";
+            $btns .= "<button class=\"ac-btn ac-btn-force btn-forzar-directo\" data-id=\"{$r->id}\" title=\"Forzar captura ahora\"><i class=\"bx bx-send\"></i></button>";
         }
-        $btns .= "<button class=\"btn btn-sm btn-outline-secondary btn-errores\" data-id=\"{$r->id}\" title=\"Ver errores\"><i class=\"bx bx-info-circle\"></i></button>";
+        $btns .= "<button class=\"ac-btn ac-btn-info btn-errores\" data-id=\"{$r->id}\" title=\"Ver historial de errores\"><i class=\"bx bx-info-circle\"></i></button>";
         return $btns;
     }
 }

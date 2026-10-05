@@ -22,7 +22,7 @@ class FeTienda extends Model
     protected $fillable = [
         'codigo_tienda', 'nombre_tienda', 'idempresa_soluflex', 'idsucursal_soluflex',
         'servidor_host', 'servidor_puerto', 'bd_soluflex_nombre', 'bd_bizlinks_nombre',
-        'usuario_conexion', 'password_conexion_cifrado', 'estado',
+        'usuario_conexion', 'password_conexion_cifrado', 'estado', 'tipo_fuente', 'fecha_inicio_captura',
         'ultimo_idtransaccion_capturado', 'fecha_ultima_captura', 'fecha_ultimo_monitoreo',
         'numero_serie_nc',
     ];
@@ -30,6 +30,7 @@ class FeTienda extends Model
     protected $casts = [
         'fecha_ultima_captura' => 'datetime',
         'fecha_ultimo_monitoreo' => 'datetime',
+        'fecha_inicio_captura' => 'date',
         'servidor_puerto' => 'integer',
         'ultimo_idtransaccion_capturado' => 'integer',
         'numero_serie_nc' => 'integer',

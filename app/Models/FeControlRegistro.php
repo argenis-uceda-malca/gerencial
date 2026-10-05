@@ -25,11 +25,13 @@ class FeControlRegistro extends Model
         'serie_numero_bizlinks', 'numero_documento_emisor', 'numero_documento_cliente',
         'razon_social_cliente', 'importe_total', 'fecha_venta', 'estado',
         'motivo_cuarentena', 'intentos_captura', 'fecha_captura',
+        'estado_bizlinks', 'codigo_error_bizlinks', 'mensaje_bizlinks', 'fecha_sync_bizlinks',
     ];
 
     protected $casts = [
         'fecha_venta' => 'datetime',
         'fecha_captura' => 'datetime',
+        'fecha_sync_bizlinks' => 'datetime',
         'importe_total' => 'decimal:2',
         'idtransaccion_soluflex' => 'integer',
         'intentos_captura' => 'integer',

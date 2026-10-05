@@ -54,21 +54,43 @@ class MotorCapturaService
             $conexionSoluflex = $this->conexiones->conexionSoluflex($tienda);
             $pfxSoluflex      = $this->conexiones->prefijoSoluflex($tienda);
 
-            $ventas = $this->detector->obtenerVentasNuevas(
-                $conexionSoluflex,
-                $tienda->ultimo_idtransaccion_capturado,
-                $pfxSoluflex
-            );
+            if ($tienda->tipo_fuente === 'CENTRAL') {
+                // Sucursales con motor individual activo: se excluyen de la captura
+                // central para evitar duplicados (cada motor captura las suyas).
+                $sucursalesConMotor = FeTienda::where('tipo_fuente', 'TIENDA')
+                    ->where('estado', 'ACTIVA')
+                    ->whereNotNull('idsucursal_soluflex')
+                    ->pluck('idsucursal_soluflex')
+                    ->toArray();
+
+                // Ventana deslizante de 5 días: cubre retrasos de sincronización
+                // en tiendas que pierden conexión temporalmente.
+                $fechaInicioCentral = date('Ymd', strtotime('-1 day'));
+
+                $ventas = $this->detector->obtenerDocumentosCentral(
+                    $conexionSoluflex,
+                    $pfxSoluflex,
+                    $fechaInicioCentral,
+                    $sucursalesConMotor
+                );
+            } else {
+                $ventas = $this->detector->obtenerVentasNuevas(
+                    $conexionSoluflex,
+                    $tienda->ultimo_idtransaccion_capturado,
+                    $pfxSoluflex
+                );
+            }
 
             foreach ($ventas as $venta) {
                 $this->procesarVenta($tienda, $conexionSoluflex, $pfxSoluflex, $venta, $resumen);
 
-                // El cursor avanza venta por venta, no al final del lote,
-                // para no reprocesar ventas ya resueltas si el proceso
-                // se interrumpe a mitad de camino (ver seccion 5 del
-                // Diseno de Flujo).
-                $tienda->ultimo_idtransaccion_capturado = (int) $venta->IDTRANSACCION;
-                $tienda->save();
+                // CENTRAL no usa cursor: la deduplicación la hace firstOrCreate
+                // en procesarVenta() vía la restricción UNIQUE de fe_control_registros.
+                // Solo las tiendas con cursor propio avanzan aquí.
+                if ($tienda->tipo_fuente !== 'CENTRAL') {
+                    $tienda->ultimo_idtransaccion_capturado = (int) $venta->IDTRANSACCION;
+                    $tienda->save();
+                }
             }
 
             $tienda->fecha_ultima_captura = now();
@@ -164,10 +186,23 @@ class MotorCapturaService
 
         $detalle   = $this->detector->obtenerDetalle($conexionSoluflex, (int) $venta->IDTRANSACCION, $pfxSoluflex);
         $documento = $this->transformador->transformar($conexionSoluflex, $tienda, $venta, $detalle, $pfxSoluflex);
-        $errores   = $this->validador->validar($documento);
+
+        // Guardar metadatos del documento antes de intentar Bizlinks,
+        // para que los errores también muestren tipo, serie y cliente.
+        $registro->fill([
+            'tipo_documento_sunat'      => $documento['cabecera']['tipoDocumento'] ?? null,
+            'serie_numero_bizlinks'     => $documento['cabecera']['serieNumero'] ?? null,
+            'numero_documento_cliente'  => $documento['cabecera']['numeroDocumentoAdquiriente'] ?? null,
+            'razon_social_cliente'      => $documento['cabecera']['razonSocialAdquiriente'] ?? null,
+        ]);
+        $registro->save();
+
+        $resultado = $this->validador->validar($documento);
+        $errores   = $resultado['errores'];
+        $mensajes  = $resultado['mensajes'];
 
         if (! empty($errores)) {
-            $continuar = $this->validador->resolver($registro, $documento, $errores);
+            $continuar = $this->validador->resolver($registro, $documento, $errores, $mensajes);
             if (! $continuar) {
                 $resumen['cuarentena']++;
 

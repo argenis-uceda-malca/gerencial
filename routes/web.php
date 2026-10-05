@@ -78,11 +78,14 @@ Route::middleware('session.auth')->group(function () {
     Route::get('/captura/registros', [\App\Http\Controllers\CapturaMonitorController::class, 'registros'])->name('captura.registros');
     Route::get('/captura/registros/{id}/errores', [\App\Http\Controllers\CapturaMonitorController::class, 'erroresRegistro'])->name('captura.errores');
     Route::post('/captura/registros/{id}/reset', [\App\Http\Controllers\CapturaMonitorController::class, 'resetRegistro'])->name('captura.reset');
+    Route::get('/captura/estado-motor', [\App\Http\Controllers\CapturaMonitorController::class, 'estadoMotor'])->name('captura.estado-motor');
     Route::post('/captura/ejecutar', [\App\Http\Controllers\CapturaMonitorController::class, 'ejecutar'])->name('captura.ejecutar');
     Route::get('/captura/cola-por-tienda', [\App\Http\Controllers\CapturaMonitorController::class, 'colaPorTienda'])->name('captura.cola-por-tienda');
     Route::post('/captura/forzar', [\App\Http\Controllers\CapturaMonitorController::class, 'forzarCaptura'])->name('captura.forzar');
     Route::post('/captura/registros/{id}/forzar', [\App\Http\Controllers\CapturaMonitorController::class, 'forzarRegistro'])->name('captura.forzar-registro');
     Route::get('/captura/registros/{id}/documento', [\App\Http\Controllers\CapturaMonitorController::class, 'verDocumento'])->name('captura.documento');
+    Route::post('/captura/registros/reset-masivo', [\App\Http\Controllers\CapturaMonitorController::class, 'resetMasivo'])->name('captura.reset-masivo');
+    Route::post('/captura/sync-bizlinks', [\App\Http\Controllers\CapturaMonitorController::class, 'syncBizlinks'])->name('captura.sync-bizlinks');
 
     Route::get('/dashboard/ventas', [App\Http\Controllers\DashboardVentasController::class, 'index'])->name('dashboard.ventas');
     Route::get('/dashboard/ventas/tiendas', [App\Http\Controllers\DashboardVentasController::class, 'tiendas'])->name('dashboard.ventas.tiendas');

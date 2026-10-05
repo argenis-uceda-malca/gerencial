@@ -28,13 +28,19 @@ class ConexionTiendaService
     }
 
     /**
-     * Prefijo de 4 partes para tablas de SOLUFLEX_FARO de esta tienda.
-     * Incluye el punto final: "[host].[db].[dbo].".
-     * En modo directo devuelve cadena vacía (tabla sin prefijo).
+     * Prefijo para tablas de SOLUFLEX_FARO de esta tienda.
+     * Tienda normal (gateway): "[host].[db].[dbo]."  (4 partes)
+     * CENTRAL (BD local del gateway): "[db].[dbo]."   (2 partes, sin IP)
+     * Modo directo: cadena vacía.
      */
     public function prefijoSoluflex(FeTienda $tienda): string
     {
         if ($this->usaGateway()) {
+            if ($tienda->tipo_fuente === 'CENTRAL') {
+                // SOLUFLEX_FARO está en el mismo servidor gateway, no necesita IP.
+                return "[{$tienda->bd_soluflex_nombre}].[dbo].";
+            }
+
             return "[{$tienda->servidor_host}].[{$tienda->bd_soluflex_nombre}].[dbo].";
         }
 
@@ -42,13 +48,14 @@ class ConexionTiendaService
     }
 
     /**
-     * Prefijo de 4 partes para tablas de BIZLINKS_TST21 de esta tienda.
-     * Incluye el punto final: "[host].[db].[dbo].".
-     * En modo directo devuelve cadena vacía.
+     * Prefijo para tablas de Bizlinks de esta tienda.
+     * Tienda normal (gateway): "[host].[db].[dbo]."
+     * CENTRAL: cadena vacía — usa conexión directa a 10.20.0.134 (sin linked server).
+     * Modo directo: cadena vacía.
      */
     public function prefijoBizlinks(FeTienda $tienda): string
     {
-        if ($this->usaGateway()) {
+        if ($this->usaGateway() && $tienda->tipo_fuente !== 'CENTRAL') {
             return "[{$tienda->servidor_host}].[{$tienda->bd_bizlinks_nombre}].[dbo].";
         }
 
@@ -66,11 +73,12 @@ class ConexionTiendaService
 
     public function conexionBizlinks(FeTienda $tienda): ConnectionInterface
     {
-        if ($this->usaGateway()) {
-            return $this->conexionGateway($tienda);
+        // CENTRAL: conexión directa a la máquina dedicada Bizlinks (sin pasar por linked server del gateway).
+        if ($tienda->tipo_fuente === 'CENTRAL' || !$this->usaGateway()) {
+            return $this->registrarDirecta($tienda, $tienda->bd_bizlinks_nombre, 'bizlinks');
         }
 
-        return $this->registrarDirecta($tienda, $tienda->bd_bizlinks_nombre, 'bizlinks');
+        return $this->conexionGateway($tienda);
     }
 
     /**

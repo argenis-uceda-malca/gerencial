@@ -28,10 +28,39 @@ class InsercionBizlinksService
 {
     public function insertar(ConnectionInterface $conexion, array $documento, string $pfx): void
     {
-        // Sin transaction(): los linked servers requieren MSDTC para
-        // transacciones distribuidas. Si no está habilitado en el servidor
-        // central, el BEGIN TRANSACTION falla. Cada INSERT es atómico de
-        // forma implícita en el servidor remoto.
+        $serie = $documento['cabecera']['serieNumero'];
+        $ruc   = $documento['cabecera']['numeroDocumentoEmisor'];
+        $tipo  = $documento['cabecera']['tipoDocumento'];
+
+        // Limpiar registros anteriores si existen (reintento tras error en Bizlinks).
+        // Incluye tablas de respuesta/error para que el monitor no lea el rechazo anterior.
+        foreach ([
+            "{$pfx}[SPE_EINVOICEDETAIL]",
+            "{$pfx}[SPE_EINVOICEHEADER_ADD]",
+            "{$pfx}[SPE_EINVOICEHEADER]",
+        ] as $tabla) {
+            $conexion->statement(
+                "DELETE FROM {$tabla} WHERE [serieNumero] = ? AND [numeroDocumentoEmisor] = ? AND [tipoDocumento] = ?",
+                [$serie, $ruc, $tipo]
+            );
+        }
+
+        // SPE_EINVOICE_RESPONSE y SPE_ERROR_LOG: limpiar por serieNumero solamente
+        // (esas tablas no siempre tienen numeroDocumentoEmisor / tipoDocumento).
+        foreach ([
+            "{$pfx}[SPE_EINVOICE_RESPONSE]",
+            "{$pfx}[SPE_ERROR_LOG]",
+        ] as $tabla) {
+            try {
+                $conexion->statement(
+                    "DELETE FROM {$tabla} WHERE [serieNumero] = ?",
+                    [$serie]
+                );
+            } catch (\Throwable $e) {
+                // Ignorar si la tabla no existe o usa columna distinta
+            }
+        }
+
         // Detalle primero: Bizlinks monitorea SPE_EINVOICEHEADER con polling
         // muy rápido (< 2s). Si insertamos header antes que el detalle,
         // Bizlinks valida y reporta "no items" antes de que los ítems existan.
@@ -39,8 +68,6 @@ class InsercionBizlinksService
             $this->insertarDetalleItem($conexion, $item, $pfx);
         }
 
-        // Filas adicionales de cabecera (campos que van en SPE_EINVOICEHEADER_ADD)
-        // deben existir antes de que Bizlinks lea el header.
         foreach ($documento['headerAdd'] ?? [] as $addRow) {
             $this->insertarFila($conexion, "{$pfx}[SPE_EINVOICEHEADER_ADD]", $addRow);
         }

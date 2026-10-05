@@ -18,31 +18,43 @@ class ValidadorCapturaService
     const TOLERANCIA_REDONDEO = 0.02;
 
     /**
-     * @return string[] Códigos de error encontrados (vacío si el
-     *                   documento está correcto).
+     * @return array{errores: string[], mensajes: array<string,string>}
+     *   errores  → lista de códigos encontrados
+     *   mensajes → detalle legible por código, para el historial de errores
      */
     public function validar(array $documento): array
     {
-        $errores = [];
+        $errores   = [];
+        $mensajes  = [];
 
         foreach ($documento['detalle'] as $item) {
             if (Str::of((string) $item['descripcion'])->trim()->isEmpty()) {
-                $errores[] = 'PRODUCTO_SIN_DESCRIPCION';
+                $errores[]  = 'PRODUCTO_SIN_DESCRIPCION';
+                $mensajes['PRODUCTO_SIN_DESCRIPCION'] = 'Ítem sin descripción de producto.';
                 break;
             }
         }
 
         if (blank($documento['cabecera']['tipoDocumentoAdquiriente']) || blank($documento['cabecera']['numeroDocumentoAdquiriente'])) {
-            $errores[] = 'CLIENTE_SIN_DOCUMENTO';
+            $errores[]  = 'CLIENTE_SIN_DOCUMENTO';
+            $mensajes['CLIENTE_SIN_DOCUMENTO'] = 'El comprobante no tiene documento de identidad del cliente.';
         }
 
-        $sumaDetalle = array_sum(array_column($documento['detalle'], 'importeTotalItem'));
-        $diferencia = abs($sumaDetalle - $documento['cabecera']['totalVenta']);
+        $sumaDetalle   = array_sum(array_column($documento['detalle'], 'importeTotalItem'));
+        $totalCabecera = (float) $documento['cabecera']['totalVenta'];
+        $diferencia    = round(abs($sumaDetalle - $totalCabecera), 4);
         if ($diferencia > self::TOLERANCIA_REDONDEO) {
             $errores[] = 'TOTALES_INCONSISTENTES';
+            $mensajes['TOTALES_INCONSISTENTES'] = sprintf(
+                'Suma líneas=%.2f, cabecera=%.2f, diferencia=%.4f (tolerancia=%.2f)',
+                $sumaDetalle, $totalCabecera, $diferencia, self::TOLERANCIA_REDONDEO
+            );
         }
 
-        return array_values(array_unique($errores));
+        return [
+            'errores'  => array_values(array_unique($errores)),
+            'mensajes' => $mensajes,
+        ];
     }
 
     /**
@@ -54,7 +66,7 @@ class ValidadorCapturaService
      * @param  array  $documento  Pasado por referencia: INSERTAR_CON_DEFAULT
      *                            puede completar campos faltantes.
      */
-    public function resolver(FeControlRegistro $registro, array &$documento, array $errores): bool
+    public function resolver(FeControlRegistro $registro, array &$documento, array $errores, array $mensajes = []): bool
     {
         $continuar = true;
 
@@ -67,10 +79,11 @@ class ValidadorCapturaService
             // defecto más seguro (ver Plan de Acción, sección 6).
             $accion = $regla->accion ?? 'CUARENTENA';
 
+            $detalle = $mensajes[$codigoError] ?? $codigoError;
             $registro->errores()->create([
-                'codigo_error' => $codigoError,
-                'mensaje_original' => "Error de validación en captura: {$codigoError}",
-                'resuelto' => $accion !== 'CUARENTENA',
+                'codigo_error'     => $codigoError,
+                'mensaje_original' => $detalle,
+                'resuelto'         => $accion !== 'CUARENTENA',
             ]);
 
             if ($accion === 'INSERTAR_CON_DEFAULT') {

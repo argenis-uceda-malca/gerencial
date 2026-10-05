@@ -31,17 +31,22 @@ class Kernel extends ConsoleKernel
 
         // Stock act+hst: bootstrap completo una vez al día a las 05:00
         // (full-recalculation para evitar drift por movimientos backdateados)
-        $schedule->command('etl:refrescar-stock')
-             ->dailyAt('05:00')
-             ->withoutOverlapping(30)
-             ->runInBackground()
-             ->appendOutputTo(storage_path('logs/stock-semanal.log'));
+        // $schedule->command('etl:refrescar-stock')
+        //      ->dailyAt('05:00')
+        //      ->withoutOverlapping(30)
+        //      ->runInBackground()
+        //      ->appendOutputTo(storage_path('logs/stock-semanal.log'));
 
         // Motor de Captura FE: corre cada minuto pero con mutex para que no
         // se solapen ejecuciones si una tienda tarda más de 60 s en procesar.
         $schedule->command('captura:ejecutar')
              ->everyMinute()
              ->withoutOverlapping(5)
+             ->runInBackground();
+
+        $schedule->command('captura:monitorear-bizlinks')
+             ->everyFiveMinutes()
+             ->withoutOverlapping(3)
              ->runInBackground();
 
         // Monitor de anomalías en ventas: cada 30 minutos en horario comercial.

@@ -54,16 +54,24 @@ class TransformadorDocumentoService
             : $venta->NUMERO_SERIE;
         $serieNumero = $this->armarSerieNumero($prefijo, $serieParaArmar, $venta->NUMERO_DOCUMENTO, $esNcNd);
 
-        $detalleTransformado = $detalle->map(function ($item) use ($conexion, $tipoDocumento, $serieNumero, $emisor, $pfx) {
+        $detalleTransformado = $detalle->map(function ($item) use ($conexion, $tipoDocumento, $serieNumero, $emisor, $esNcNd, $pfx) {
             $cantidad   = (float) $item->CANTIDAD;
-            $cantidad   = $cantidad !== 0.0 ? $cantidad : 1.0;
+            $cantidad   = $cantidad !== 0.0 ? abs($cantidad) : 1.0;
 
-            $subtotal   = (float) $item->IMPORTE_SUBTOTAL; // sin IGV
-            $total      = (float) $item->IMPORTE_TOTAL;    // con IGV
-            $igv        = round($total - $subtotal, 2);
-            $tasaIgv    = $subtotal > 0 ? '18' : '0';
+            // NC/ND: Soluflex guarda importes negativos; Bizlinks exige >= 0 en todos
+            // los campos de importe del detalle (error 7779 si son negativos).
+            // SUNAT ya sabe que es crédito/débito por el tipoDocumento (07/08).
+            $subtotal = abs((float)$item->IMPORTE_SUBTOTAL);
+            $total    = abs((float)$item->IMPORTE_TOTAL);
+            // max(0.0,...) previene IGV negativo por redondeo en Soluflex (error 2033).
+            $igv      = max(0.0, round($total - $subtotal, 2));
+            // Líneas de ICBPER (bolsa) tienen subtotal>0 pero igv=0: tratarlas como
+            // exoneradas (catálogo 07 = '20') con tasa 0, no como gravadas con IGV=0.
+            // Si mandamos tasaIgv='18' pero importeIgv=0 SUNAT devuelve error 2033.
+            $tieneIgv = $subtotal > 0 && $igv > 0;
+            $tasaIgv  = $tieneIgv ? '18' : '0';
             // Catálogo 07 SUNAT: '10' Gravado IGV, '20' Exonerado
-            $codigoRazonExoneracion = $subtotal > 0 ? '10' : '20';
+            $codigoRazonExoneracion = $tieneIgv ? '10' : '20';
 
             return [
                 'tipoDocumentoEmisor'            => '6',
@@ -81,17 +89,75 @@ class TransformadorDocumentoService
                 // Totales por línea — requeridos por Bizlinks para armar el XML SUNAT
                 'codigoRazonExoneracion'         => $codigoRazonExoneracion,
                 'importeTotalSinImpuesto'        => (string) round($subtotal, 2),
-                'importeIgv'                     => (string) $igv,
-                'montoBaseIgv'                   => (string) round($subtotal, 2),
+                'importeIgv'                     => number_format($igv, 2, '.', ''),
+                // Exonerados: montoBaseIgv = precio de la línea (no 0) para que Bizlinks
+                // genere el TaxSubtotal de exoneración en el UBL. Si se envía 0.00,
+                // Bizlinks omite el tributo y SUNAT rechaza con error 3105.
+                'montoBaseIgv'                   => number_format($subtotal, 2, '.', ''),
                 'tasaIgv'                        => $tasaIgv,
-                'importeTotalImpuestos'          => (string) $igv,
+                'importeTotalImpuestos'          => number_format($igv, 2, '.', ''),
                 // Uso interno para validación de totales de cabecera; descartado en InsercionBizlinksService.
                 'importeTotalItem'               => $total,
             ];
         })->values()->all();
 
         $sumaDetalleTotal = array_sum(array_column($detalleTransformado, 'importeTotalItem'));
-        $montoRedondeo = round(((float) $venta->IMPORTE_TOTAL) - $sumaDetalleTotal, 2);
+
+        // Descuento global en cabecera (Soluflex aplica el descuento al header pero no a las líneas).
+        // Si existe, escalamos los importes de cada línea proporcionalmente para que sumen al total
+        // de cabecera — SUNAT exige coherencia entre líneas y totales.
+        $descuentoGlobal = abs((float) ($venta->IMPORTE_DESCUENTO ?? 0));
+        if ($descuentoGlobal > 0.005 && $sumaDetalleTotal > 0) {
+            $totalCabecera = abs((float) $venta->IMPORTE_TOTAL);
+            $factor = $totalCabecera / $sumaDetalleTotal;
+            $acumulado = 0.0;
+            $ultimoIdx  = count($detalleTransformado) - 1;
+            foreach ($detalleTransformado as $idx => &$linea) {
+                if ($idx === $ultimoIdx) {
+                    // La última línea absorbe el residuo de redondeo
+                    $totalLinea    = round($totalCabecera - $acumulado, 2);
+                    $subtotalLinea = round($totalLinea / 1.18, 2);
+                } else {
+                    $totalLinea    = round((float) $linea['importeTotalItem'] * $factor, 2);
+                    $subtotalLinea = round($totalLinea / 1.18, 2);
+                    $acumulado    += $totalLinea;
+                }
+                $igvLinea = round($totalLinea - $subtotalLinea, 2);
+                $cantidad  = max((float) $linea['cantidad'], 1.0);
+                $linea['importeTotalItem']          = $totalLinea;
+                $linea['importeTotalSinImpuesto']   = (string) $subtotalLinea;
+                $linea['importeIgv']                = (string) $igvLinea;
+                $linea['montoBaseIgv']              = (string) $subtotalLinea;
+                $linea['importeTotalImpuestos']     = (string) $igvLinea;
+                $linea['importeUnitarioSinImpuesto']= (string) round($subtotalLinea / $cantidad, 6);
+                $linea['importeUnitarioConImpuesto']= (string) round($totalLinea    / $cantidad, 6);
+            }
+            unset($linea);
+            $sumaDetalleTotal = array_sum(array_column($detalleTransformado, 'importeTotalItem'));
+        }
+
+        // Subtotales por tipo de afectación para declarar en el cabecero.
+        // SUNAT error 2638 si hay líneas exoneradas y no se declara totalValorVentaNetoOpExonerada.
+        $subGravadas   = 0.0;
+        $subExoneradas = 0.0;
+        foreach ($detalleTransformado as $linea) {
+            if (($linea['codigoRazonExoneracion'] ?? '10') === '10') {
+                $subGravadas   += (float) $linea['importeTotalSinImpuesto'];
+            } else {
+                $subExoneradas += (float) $linea['importeTotalSinImpuesto'];
+            }
+        }
+        $subGravadas   = round($subGravadas, 2);
+        $subExoneradas = round($subExoneradas, 2);
+
+        // Bizlinks exige todos los campos de importe >= 0 (error 7779 si negativos).
+        // Soluflex guarda NC/ND con importes negativos — siempre aplicar abs().
+        // SUNAT ya sabe que es NC/ND por tipoDocumento (07/08).
+        $igvCab = abs((float)$venta->IMPORTE_IGV);
+        $subCab = abs((float)$venta->IMPORTE_SUBTOTAL);
+        $totCab = abs((float)$venta->IMPORTE_TOTAL);
+
+        $montoRedondeo = round($totCab - $sumaDetalleTotal, 2);
 
         // Formateamos la fecha como varchar YYYY-MM-DD (10 chars exactos que requiere Bizlinks).
         // Usamos date_create para evitar ambigüedad cuando SQL Server devuelve formatos regionales.
@@ -118,23 +184,35 @@ class TransformadorDocumentoService
             'numeroDocumentoAdquiriente'        => filled($cliente['numeroDocumento']) ? $cliente['numeroDocumento'] : '00000000',
             'razonSocialAdquiriente'            => filled($cliente['razonSocial']) ? $cliente['razonSocial'] : '-',
             'correoAdquiriente'                 => filled($cliente['correo'] ?? null) ? $cliente['correo'] : '-',
-            'totalImpuestos'                    => (string) round((float) $venta->IMPORTE_IGV, 2),
-            'totalValorVentaNetoOpGravadas'     => (string) round((float) $venta->IMPORTE_SUBTOTAL, 2),
-            'totalIgv'                          => (string) round((float) $venta->IMPORTE_IGV, 2),
-            'totalVenta'                        => (string) round((float) $venta->IMPORTE_TOTAL, 2),
+            'totalImpuestos'                    => (string) round($igvCab, 2),
+            'totalValorVentaNetoOpGravadas'     => (string) $subGravadas,
+            'totalIgv'                          => (string) round($igvCab, 2),
+            'totalVenta'                        => (string) round($totCab, 2),
             'montoRedondeoTotalVenta'           => (string) $montoRedondeo,
-            'totalMontoICBPER'                  => (string) round((float) ($venta->IMPORTE_ICBPER ?? 0), 2),
             'tipoOperacion'                     => '0101',
             'bl_estadoRegistro'                 => 'A',
             'bl_origen'                         => 'T',
             'bl_reintento'                      => '0',
         ];
 
+        // Operaciones exoneradas: solo declarar si existen en el documento.
+        if ($subExoneradas > 0.0) {
+            $cabecera['totalValorVentaNetoOpExonerada'] = (string) $subExoneradas;
+        }
+
+        // ICBPER: solo incluir si el importe es mayor a cero.
+        // Bizlinks genera un TaxSubtotal ICBPER en el UBL aunque el valor sea 0,
+        // y SUNAT rechaza ese TaxSubtotal vacío con error 2048.
+        $icbper = round((float) ($venta->IMPORTE_ICBPER ?? 0), 2);
+        if ($icbper > 0) {
+            $cabecera['totalMontoICBPER'] = (string) $icbper;
+        }
+
         // totalValorVenta y totalPrecioVenta son nullable en SPE_EINVOICEHEADER:
         // el manual los marca como no aplica ('-') para NC/ND.
         if (! $esNcNd) {
-            $cabecera['totalValorVenta']  = (string) round((float) $venta->IMPORTE_SUBTOTAL, 2);
-            $cabecera['totalPrecioVenta'] = (string) round((float) $venta->IMPORTE_TOTAL, 2);
+            $cabecera['totalValorVenta']  = (string) round($subCab, 2);
+            $cabecera['totalPrecioVenta'] = (string) round($totCab, 2);
         }
 
         // Campos exclusivos de NC (07) y ND (08) — columnas NULL en la tabla.
@@ -192,15 +270,42 @@ class TransformadorDocumentoService
         string $pfx
     ): array {
         $nc = $conexion->selectOne("
-            SELECT IDTRANSACCION_ORIGEN, CODIGO_MOTIVO_SUNAT, MOTIVO_SUNAT, DOCUMENTO_REFERENCIA
+            SELECT IDTRANSACCION_ORIGEN, MOTIVO_SUNAT, DOCUMENTO_REFERENCIA, GLOSA, TIPO_NOTACREDITO
             FROM {$pfx}[CABECERA_DOCUMENTO]
             WHERE IDTRANSACCION = ?
         ", [$idTransaccion]);
 
-        $codigoMotivo = $nc->CODIGO_MOTIVO_SUNAT ?? null;
-        $motivoTexto  = filled($nc->MOTIVO_SUNAT)
+        // Código de motivo SUNAT (Catálogo 09) mapeado desde TIPO_NOTACREDITO de Soluflex.
+        // 1=Cambio prenda, 2=Dev.dinero, 3=Acred.bancaria → '06' Devolución parcial
+        // 4=Cambio talla/color → '03' Corrección por error en descripción
+        // NULL (NCs de CENTRAL) → '06' por default
+        $mapaTipoNc = ['1' => '06', '2' => '06', '3' => '06', '4' => '03'];
+        $codigoMotivo = $mapaTipoNc[(string) $nc->TIPO_NOTACREDITO] ?? '06';
+
+        // Texto del motivo: MOTIVO_SUNAT > GLOSA > DOCUMENTO_REFERENCIA > default por código
+        // SUNAT exige cac:DiscrepancyResponse/cbc:Description no vacío (error 2136 si llega vacío).
+        $motivoTexto = filled($nc->MOTIVO_SUNAT)
             ? $nc->MOTIVO_SUNAT
-            : ($nc->DOCUMENTO_REFERENCIA ?? '');
+            : (filled($nc->GLOSA) ? $nc->GLOSA : ($nc->DOCUMENTO_REFERENCIA ?? ''));
+
+        if (! filled($motivoTexto)) {
+            $textosPorCodigo = [
+                '01' => 'Anulacion de la operacion',
+                '02' => 'Anulacion por error en el RUC',
+                '03' => 'Correccion por error en la descripcion',
+                '04' => 'Descuento global',
+                '05' => 'Descuento por item',
+                '06' => 'Devolucion total',
+                '07' => 'Devolucion por item',
+                '08' => 'Bonificacion',
+                '09' => 'Disminucion en el valor',
+                '10' => 'Otros conceptos',
+                '11' => 'Ajustes de operaciones de exportacion',
+                '12' => 'Ajustes afectos al IVAP',
+                '13' => 'Correccion del periodo tributario',
+            ];
+            $motivoTexto = $textosPorCodigo[$codigoMotivo] ?? 'Devolucion total';
+        }
 
         $idOrigen = (int) ($nc->IDTRANSACCION_ORIGEN ?? 0);
         $tipoDocOriginalSunat = '01'; // Factura como default si no se puede resolver
@@ -328,12 +433,24 @@ class TransformadorDocumentoService
     private function obtenerDatosCliente(ConnectionInterface $conexion, ?int $idPersona, ?string $identidadFallback, ?string $nombreFallback, string $pfx): array
     {
         if ($idPersona) {
-            $persona = $conexion->selectOne("
-                SELECT p.NUMERO_IDENTIDAD, p.PERSONA, p.EMAIL1, t.CODIGO_SUNAT
-                FROM {$pfx}[M_PERSONAS] p
-                LEFT JOIN {$pfx}[M_TIPO_IDENTIDAD] t ON t.TIPO_IDENTIDAD = p.TIPO_IDENTIDAD
-                WHERE p.IDPERSONA = ?
-            ", [$idPersona]);
+            // Algunos servidores usan M_TIPOIDENTIDAD (sin guión bajo) en lugar
+            // de M_TIPO_IDENTIDAD. Intentar ambas antes de rendirse.
+            $persona = null;
+            foreach (['M_TIPO_IDENTIDAD', 'M_TIPOIDENTIDAD'] as $tablaIdentidad) {
+                try {
+                    $persona = $conexion->selectOne("
+                        SELECT p.NUMERO_IDENTIDAD, p.PERSONA, p.EMAIL1, t.CODIGO_SUNAT
+                        FROM {$pfx}[M_PERSONAS] p
+                        LEFT JOIN {$pfx}[{$tablaIdentidad}] t ON t.TIPO_IDENTIDAD = p.TIPO_IDENTIDAD
+                        WHERE p.IDPERSONA = ?
+                    ", [$idPersona]);
+                    break;
+                } catch (\Throwable $e) {
+                    if ($tablaIdentidad === 'M_TIPOIDENTIDAD') {
+                        throw $e;
+                    }
+                }
+            }
 
             if ($persona) {
                 // M_TIPO_IDENTIDAD puede estar vacía en algunos ERPs: inferir

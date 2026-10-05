@@ -32,7 +32,11 @@ class DetectorVentasService
                AND ds.IDEMPRESA = c.IDEMPRESA
                AND ds.NUMERO_SERIE = c.NUMERO_SERIE
             WHERE c.IDTRANSACCION > ?
-              AND c.CODIGO_ESTADO = '12'
+              AND (
+                  -- NC/ND se emiten independientemente del estado de aplicación del canje
+                  d.CODIGO_SUNAT IN ('07', '08')
+                  OR c.CODIGO_ESTADO = '12'
+              )
               AND d.FLAG_FACT_ELECTRONICA = 'S'
               AND ds.FLAG_ELECTRONICO = 'S'
             ORDER BY c.IDTRANSACCION ASC
@@ -51,12 +55,65 @@ class DetectorVentasService
                AND ds.IDEMPRESA = c.IDEMPRESA
                AND ds.NUMERO_SERIE = c.NUMERO_SERIE
             WHERE c.IDTRANSACCION = ?
-              AND c.CODIGO_ESTADO = '12'
+              AND (d.CODIGO_SUNAT IN ('07', '08') OR c.CODIGO_ESTADO = '12')
               AND d.FLAG_FACT_ELECTRONICA = 'S'
               AND ds.FLAG_ELECTRONICO = 'S'
         ", [$idTransaccion]);
 
         return $row ?: null;
+    }
+
+    /**
+     * Documentos elegibles desde la BD central (sin cursor).
+     * Excluye solo las sucursales que tienen motor individual activo en fe_tiendas
+     * ($sucursalesConMotor). Así CENTRAL captura facturas Y NC/ND de las demás
+     * sucursales de iptiendas, permitiendo que SUNAT reciba el documento original
+     * antes (o junto a) la NC que lo modifica.
+     *
+     * @param array $sucursalesConMotor  idsucursal_soluflex de tiendas con motor propio
+     */
+    public function obtenerDocumentosCentral(
+        ConnectionInterface $conexion,
+        string $pfx,
+        ?string $fechaInicio,
+        array $sucursalesConMotor = []
+    ): Collection {
+        // SQL Server requiere formato YYYYMMDD para comparaciones de fecha seguras.
+        $filtroFecha = $fechaInicio ? "AND c.FECHA_DOCUMENTO >= ?" : '';
+        $fechaParam  = $fechaInicio ? [str_replace('-', '', $fechaInicio)] : [];
+
+        // Para documentos normales (facturas/boletas): excluir sucursales con motor
+        // propio (su motor local los captura, evitar duplicados).
+        // Para NC/ND: NUNCA excluir por sucursal — siempre se crean en la BD central
+        // aunque pertenezcan a una sucursal con motor propio.
+        if (! empty($sucursalesConMotor)) {
+            $placeholders   = implode(',', array_fill(0, count($sucursalesConMotor), '?'));
+            $filtroSucursal = "AND (d.CODIGO_SUNAT IN ('07', '08') OR c.IDSUCURSAL NOT IN ({$placeholders}))";
+            $params         = array_merge($sucursalesConMotor, $fechaParam);
+        } else {
+            $filtroSucursal = '';
+            $params         = $fechaParam;
+        }
+
+        return collect($conexion->select("
+            SELECT c.*
+            FROM {$pfx}[CABECERA_DOCUMENTO] c
+            INNER JOIN {$pfx}[DOCUMENTOS] d
+                ON d.CODIGO_DOCUMENTO = c.CODIGO_DOCUMENTO
+            INNER JOIN {$pfx}[DOCUMENTOS_SERIES] ds
+                ON ds.CODIGO_DOCUMENTO = c.CODIGO_DOCUMENTO
+               AND ds.IDEMPRESA        = c.IDEMPRESA
+               AND ds.NUMERO_SERIE     = c.NUMERO_SERIE
+            WHERE (
+                      d.CODIGO_SUNAT IN ('07', '08')
+                      OR c.CODIGO_ESTADO = '12'
+                  )
+              AND d.FLAG_FACT_ELECTRONICA = 'S'
+              AND ds.FLAG_ELECTRONICO     = 'S'
+              {$filtroSucursal}
+              {$filtroFecha}
+            ORDER BY c.IDTRANSACCION ASC
+        ", $params));
     }
 
     public function obtenerDetalle(ConnectionInterface $conexion, int $idTransaccion, string $pfx): Collection
