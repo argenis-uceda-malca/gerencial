@@ -1511,16 +1511,17 @@ function buildMergedData(act, hst, metas, stock){
   var semMes = {};
   act.forEach(function(row){ if(row['Semana'] && row['Mes']) semMes[row['Semana']] = row['Mes']; });
 
-  // Merge stock into act rows: sum stock by (Semana, Subcanal, Marca, Canal)
+  // Merge stock into act rows: por Subcanal+Marca+Canal (sin Semana, el
+  // snapshot puede ser de una semana distinta al rango de ventas consultado).
   var stockByKey = {};
   (stock || []).forEach(function(r){
-    var key = (r['Semana']||'') + '|' + (r['Subcanal']||'') + '|' + (r['Marca']||'') + '|' + (r['Canal']||'');
+    var key = (r['Subcanal']||'') + '|' + (r['Marca']||'') + '|' + (r['Canal']||'');
     if (!stockByKey[key]) stockByKey[key] = { inv_unds_act: 0, inv_costo_act: 0 };
     stockByKey[key].inv_unds_act += r['inv_unds_act'] || 0;
     stockByKey[key].inv_costo_act += r['inv_costo_act'] || 0;
   });
   act.forEach(function(row){
-    var key = (row['Semana']||'') + '|' + (row['Subcanal']||'') + '|' + (row['Marca']||'') + '|' + (row['Canal']||'');
+    var key = (row['Subcanal']||'') + '|' + (row['Marca']||'') + '|' + (row['Canal']||'');
     var s = stockByKey[key] || {};
     row['inv_unds_act'] = s.inv_unds_act || 0;
     row['inv_costo_act'] = s.inv_costo_act || 0;
