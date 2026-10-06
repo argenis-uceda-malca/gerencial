@@ -1699,8 +1699,8 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
           <td>${item.descripcionProducto||item.descripcionItem||item.descripcion||'—'}</td>
           <td class="text-center">${parseFloat(item.cantidad||0).toFixed(2)}</td>
           <td class="text-center">${item.unidadMedida||item.uom||'NIU'}</td>
-          <td class="text-end">S/ ${parseFloat(item.precioUnitario||item.valorUnitario||0).toFixed(2)}</td>
-          <td class="text-end fw-semibold">S/ ${parseFloat(item.importeTotal||item.subtotal||0).toFixed(2)}</td>
+          <td class="text-end">S/ ${parseFloat(item.importeUnitarioConImpuesto||item.precioUnitario||item.valorUnitario||0).toFixed(2)}</td>
+          <td class="text-end fw-semibold">S/ ${parseFloat(item.importeTotalSinImpuesto||item.importeTotal||item.subtotal||0).toFixed(2)}</td>
         </tr>`);
       });
 

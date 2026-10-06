@@ -403,8 +403,17 @@ class CapturaMonitorController extends Controller
         if ($r->estado === 'CAPTURADO' && $r->serie_numero_bizlinks) {
             $btns .= "<button class=\"ac-btn ac-btn-cpe btn-ver-cpe\" data-id=\"{$r->id}\" title=\"Ver CPE en Bizlinks\"><i class=\"bx bx-file-blank\"></i></button>";
         }
+        // CAPTURADO con estado Bizlinks de error/tránsito o atascado sin respuesta
+        // (NULL sin sync hace más de 15 min) → mostrar botón reintentar.
+        $capturadoAtascado = $r->estado === 'CAPTURADO'
+            && in_array($r->estado_bizlinks, ['E', 'L'], true);
+        $capturadoSinRespuesta = $r->estado === 'CAPTURADO'
+            && is_null($r->estado_bizlinks)
+            && $r->fecha_captura
+            && $r->fecha_captura->lt(now()->subMinutes(15));
         if (in_array($r->estado, ['ERROR_CAPTURA', 'CUARENTENA'], true)
-            || ($r->estado === 'CAPTURADO' && in_array($r->estado_bizlinks, ['E', 'L'], true))) {
+            || $capturadoAtascado
+            || $capturadoSinRespuesta) {
             $btns .= "<button class=\"ac-btn ac-btn-retry btn-reset\" data-id=\"{$r->id}\" title=\"Reintentar en Bizlinks\"><i class=\"bx bx-refresh\"></i></button>";
         }
         if (in_array($r->estado, ['PENDIENTE', 'ERROR_CAPTURA'], true)) {
