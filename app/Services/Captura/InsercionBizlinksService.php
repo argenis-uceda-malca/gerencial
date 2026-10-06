@@ -46,14 +46,18 @@ class InsercionBizlinksService
 
         // Limpiar registros anteriores si existen (reintento tras error en Bizlinks).
         // Incluye tablas de respuesta/error para que el monitor no lea el rechazo anterior.
+        // Limpiar solo por serieNumero: usar las 3 columnas juntas puede
+        // no coincidir si la captura anterior almacenó valores distintos
+        // (ej. tipoDocumento diferente), dejando filas huérfanas que
+        // causan PK violation en el siguiente intento de inserción.
         foreach ([
             "{$pfx}[SPE_EINVOICEDETAIL]",
             "{$pfx}[SPE_EINVOICEHEADER_ADD]",
             "{$pfx}[SPE_EINVOICEHEADER]",
         ] as $tabla) {
             $conexion->statement(
-                "DELETE FROM {$tabla} WHERE [serieNumero] = ? AND [numeroDocumentoEmisor] = ? AND [tipoDocumento] = ?",
-                [$serie, $ruc, $tipo]
+                "DELETE FROM {$tabla} WHERE [serieNumero] = ?",
+                [$serie]
             );
         }
 
@@ -87,18 +91,38 @@ class InsercionBizlinksService
 
             $this->insertarCabecera($conexion, $documento['cabecera'], $pfx);
         } catch (\Throwable $e) {
-            // Violación de PK (SQLSTATE 23000): el documento ya existe en Bizlinks
-            // aunque fe_control_registros lo marca como ERROR_CAPTURA (captura parcial
-            // previa donde el INSERT tuvo éxito pero el UPDATE de estado falló).
-            // En ese caso lo tratamos como ya capturado, no como error real.
             if ($this->esDuplicadoPk($e)) {
-                $yaExiste = $conexion->selectOne(
+                // Header completo → captura anterior exitosa, solo falló el UPDATE de estado.
+                $headerExiste = $conexion->selectOne(
                     "SELECT TOP 1 [serieNumero] FROM {$pfx}[SPE_EINVOICEHEADER] WHERE [serieNumero] = ?",
                     [$serie]
                 );
-                if ($yaExiste) {
+                if ($headerExiste) {
                     throw new DuplicadoEnBizlinksException("Documento {$serie} ya existe en Bizlinks (captura parcial previa).");
                 }
+
+                // Solo hay detalle huérfano (el DELETE anterior no lo limpió
+                // porque coincidía por serieNumero con otro valor en las otras
+                // columnas). Limpiar por serieNumero y reintentar una vez.
+                foreach ([
+                    "{$pfx}[SPE_EINVOICEDETAIL]",
+                    "{$pfx}[SPE_EINVOICEHEADER_ADD]",
+                    "{$pfx}[SPE_EINVOICEHEADER]",
+                ] as $tabla) {
+                    try {
+                        $conexion->statement("DELETE FROM {$tabla} WHERE [serieNumero] = ?", [$serie]);
+                    } catch (\Throwable $ignored) {}
+                }
+
+                // Reintento limpio
+                foreach ($documento['detalle'] as $item) {
+                    $this->insertarDetalleItem($conexion, $item, $pfx);
+                }
+                foreach ($documento['headerAdd'] ?? [] as $addRow) {
+                    $this->insertarFila($conexion, "{$pfx}[SPE_EINVOICEHEADER_ADD]", $addRow);
+                }
+                $this->insertarCabecera($conexion, $documento['cabecera'], $pfx);
+                return;
             }
             throw $e;
         }
