@@ -407,11 +407,12 @@ class CapturaMonitorController extends Controller
         // (NULL sin sync hace más de 15 min) → mostrar botón reintentar.
         $capturadoAtascado = $r->estado === 'CAPTURADO'
             && in_array($r->estado_bizlinks, ['E', 'L'], true);
-        // NULL fecha_captura = registro antiguo; lo tratamos como "ya pasó tiempo suficiente"
+        // empty() cubre tanto NULL como '' (cadena vacía en BD).
+        // NULL fecha_captura = registro antiguo; lo tratamos como "ya pasó tiempo suficiente".
         $capturadoSinRespuesta = $r->estado === 'CAPTURADO'
-            && is_null($r->estado_bizlinks)
+            && empty($r->estado_bizlinks)
             && (
-                is_null($r->fecha_captura)
+                empty($r->fecha_captura)
                 || $r->fecha_captura->lt(now()->subMinutes(5))
             );
         if (in_array($r->estado, ['ERROR_CAPTURA', 'CUARENTENA'], true)
