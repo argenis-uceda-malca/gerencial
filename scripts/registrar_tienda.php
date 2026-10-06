@@ -10,15 +10,15 @@
 // CONFIGURACIÓN — editar aquí antes de ejecutar
 // =============================================================================
 
-$CODIGO_TIENDA   = 'FINAJP';          // Código único, máx 10 chars (ej. LIM01, TRU01)
-$NOMBRE_TIENDA   = 'FINA JOCKEY PLAZA'; // Nombre completo de la tienda
-$IP_SERVIDOR     = '10.20.0.155';    // IP del servidor SQL Server de la tienda
+$CODIGO_TIENDA   = 'MCHPLS';          // Código único, máx 10 chars (ej. LIM01, TRU01)
+$NOMBRE_TIENDA   = 'MCH PLAZA LIMA SUR'; // Nombre completo de la tienda
+$IP_SERVIDOR     = '10.20.0.131';    // IP del servidor SQL Server de la tienda
 $BD_BIZLINKS     = 'BIZLINKS_PROD';  // Nombre de la BD Bizlinks en ese servidor
 $USUARIO_SQL     = 'sa';             // Usuario SQL Server
 $PASSWORD_SQL    = '123456789';      // Contraseña SQL Server (se cifra automáticamente)
 $DIAS_HISTORICO  = 2;                // Cuántos días hacia atrás capturar (0 = desde el inicio)
 
-$IDSUCURSAL      = 219;                // ID de sucursal en automatizacion_dm_sucursales_activas
+$IDSUCURSAL      = 245;                // ID de sucursal en automatizacion_dm_sucursales_activas
 
 // =============================================================================
 // EJECUCIÓN — no modificar
@@ -68,7 +68,7 @@ $tienda = FeTienda::create([
     'bd_bizlinks_nombre'             => $BD_BIZLINKS,
     'usuario_conexion'               => $USUARIO_SQL,
     'password_conexion_cifrado'      => $passCifrada,
-    'estado'                         => 'INACTIVA',
+    'estado'                         => 'ACTIVA',
     'tipo_fuente'                    => 'TIENDA',
     'numero_serie_nc'                => 1,
     'ultimo_idtransaccion_capturado' => 0,

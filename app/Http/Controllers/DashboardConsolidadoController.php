@@ -294,30 +294,13 @@ class DashboardConsolidadoController extends Controller
 
         /* ── STOCK ── */
         $stockRows = [];
-        // Semanas presentes en ventas_act para el rango solicitado
-        $actSemanas = $db->table('automatizacion_pla_reporte_consolidado')
-            ->where('origen', 'VENTAS')->where('tipo_fila', 'ventas_act')
-            ->whereBetween('fecha', [$ini, $fin])
-            ->distinct()->pluck('semana')->all();
-
-        // Stock: usar fecha <= $fin (no lower bound) para que si el snapshot de
-        // stock_act es del día anterior al rango (ej. Aug-31 vs Sep-01) igual aparezca.
-        // Se restringe a las mismas semanas de ventas para no traer historia extra.
-        $maxDatesByWeek = $db->table('automatizacion_pla_reporte_consolidado')
-            ->selectRaw('semana, MAX(fecha) as max_fecha')
-            ->where(function ($q) use ($ini, $fin) {
-                $q->where(function ($q2) use ($fin) {
-                    $q2->where('origen', 'VENTAS')->where('tipo_fila', 'stock_act')
-                       ->where('fecha', '<=', $fin);
-                })->orWhere(function ($q2) use ($ini, $fin) {
-                    $q2->where('origen', 'TXD')->where('tipo_fila', 'VENTA')
-                       ->whereBetween('fecha', [$ini, $fin]);
-                });
-            })
-            ->when(!empty($actSemanas), function ($q) use ($actSemanas) { return $q->whereIn('semana', $actSemanas); })
-            ->groupBy('semana')
-            ->get();
-        $stockDates = $maxDatesByWeek->pluck('max_fecha')->all();
+        // Tomar la última fecha de stock disponible <= fin, sin forzar coincidencia
+        // de semana con ventas (el snapshot puede ser de la semana anterior al rango).
+        $latestStock = $db->table('automatizacion_pla_reporte_consolidado')
+            ->where('origen', 'VENTAS')->where('tipo_fila', 'stock_act')
+            ->where('fecha', '<=', $fin)
+            ->max('fecha');
+        $stockDates = $latestStock ? [$latestStock] : [];
 
         if (!empty($stockDates)) {
             $stockGroupCols = "origen, mes, semana,
