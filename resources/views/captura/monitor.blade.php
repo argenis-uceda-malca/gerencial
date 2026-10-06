@@ -1757,24 +1757,51 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
   });
 
   // ── Estado del motor (polling cada 5 s) ─────────────────────
-  function aplicarEstadoMotor(corriendo) {
+  var motorCorriendoDesde = null;
+
+  function aplicarEstadoMotor(corriendo, desde) {
     const btn    = document.getElementById('btn-ejecutar');
     const status = document.getElementById('motor-status');
     if (corriendo) {
+      motorCorriendoDesde = desde || motorCorriendoDesde || new Date().toISOString();
+      // Si lleva más de 10 min corriendo, mostrar opción de limpiar estado
+      var minutos = desde ? Math.round((Date.now() - new Date(desde).getTime()) / 60000) : 0;
+      var resetLink = minutos >= 10
+        ? ' <a href="#" id="lnk-reset-motor" style="font-size:.75rem;vertical-align:middle" title="Limpiar estado atascado">limpiar</a>'
+        : '';
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Motor corriendo…';
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Motor corriendo…' + resetLink;
       status.style.display = 'none';
+      var lnk = document.getElementById('lnk-reset-motor');
+      if (lnk && !lnk._bound) {
+        lnk._bound = true;
+        lnk.addEventListener('click', function (e) {
+          e.preventDefault();
+          resetEstadoMotor();
+        });
+      }
     } else {
+      motorCorriendoDesde = null;
       btn.disabled = false;
       btn.innerHTML = '<i class="bx bx-play-circle me-1"></i>Ejecutar ahora';
       status.style.display = 'none';
     }
   }
 
+  function resetEstadoMotor() {
+    var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+    fetch('{{ route("captura.reset-estado-motor") }}', {
+      method: 'POST',
+      headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+    })
+    .then(function () { verificarEstadoMotor(); })
+    .catch(function () {});
+  }
+
   function verificarEstadoMotor() {
     fetch('{{ route("captura.estado-motor") }}', { headers: { 'Accept': 'application/json' } })
       .then(r => r.json())
-      .then(d => aplicarEstadoMotor(d.corriendo))
+      .then(d => aplicarEstadoMotor(d.corriendo, d.desde))
       .catch(() => {});
   }
 
@@ -1852,11 +1879,20 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify({ tiendas: seleccionadas }),
-      }).then(function(r) { return r.json(); }).then(function(d) {
-        if (d.ok) { toastr.success(d.output || 'Captura completada'); location.reload(); }
+      }).then(function(r) {
+        if (!r.ok) {
+          return r.text().then(function(t) {
+            throw new Error('HTTP ' + r.status + (t ? ': ' + t.substring(0,120).replace(/<[^>]+>/g,'') : ''));
+          });
+        }
+        return r.json();
+      }).then(function(d) {
+        if (d.ok) { toastr.success(d.output || 'Motor iniciado'); verificarEstadoMotor(); }
         else toastr.error(d.error || 'Error al ejecutar');
-      }).catch(function() { toastr.error('Error de comunicación'); })
-        .finally(function() { opEnd(); verificarEstadoMotor(); });
+      }).catch(function(e) {
+        console.error('[ejecutar]', e);
+        toastr.error(e && e.message ? e.message : 'Error de comunicación');
+      }).then(function() { opEnd(); verificarEstadoMotor(); });
     });
   });
 

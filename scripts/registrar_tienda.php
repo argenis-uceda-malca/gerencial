@@ -10,15 +10,15 @@
 // CONFIGURACIÓN — editar aquí antes de ejecutar
 // =============================================================================
 
-$CODIGO_TIENDA   = 'EXITCHI';          // Código único, máx 10 chars (ej. LIM01, TRU01)
-$NOMBRE_TIENDA   = 'EXIT RP CHICLAYO'; // Nombre completo de la tienda
-$IP_SERVIDOR     = '10.20.0.139';    // IP del servidor SQL Server de la tienda
+$CODIGO_TIENDA   = 'FINAJP';          // Código único, máx 10 chars (ej. LIM01, TRU01)
+$NOMBRE_TIENDA   = 'FINA JOCKEY PLAZA'; // Nombre completo de la tienda
+$IP_SERVIDOR     = '10.20.0.155';    // IP del servidor SQL Server de la tienda
 $BD_BIZLINKS     = 'BIZLINKS_PROD';  // Nombre de la BD Bizlinks en ese servidor
 $USUARIO_SQL     = 'sa';             // Usuario SQL Server
 $PASSWORD_SQL    = '123456789';      // Contraseña SQL Server (se cifra automáticamente)
 $DIAS_HISTORICO  = 2;                // Cuántos días hacia atrás capturar (0 = desde el inicio)
 
-$IDSUCURSAL      = 203;                // ID de sucursal en automatizacion_dm_sucursales_activas
+$IDSUCURSAL      = 219;                // ID de sucursal en automatizacion_dm_sucursales_activas
 
 // =============================================================================
 // EJECUCIÓN — no modificar

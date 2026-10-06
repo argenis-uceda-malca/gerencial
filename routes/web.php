@@ -79,6 +79,7 @@ Route::middleware('session.auth')->group(function () {
     Route::get('/captura/registros/{id}/errores', [\App\Http\Controllers\CapturaMonitorController::class, 'erroresRegistro'])->name('captura.errores');
     Route::post('/captura/registros/{id}/reset', [\App\Http\Controllers\CapturaMonitorController::class, 'resetRegistro'])->name('captura.reset');
     Route::get('/captura/estado-motor', [\App\Http\Controllers\CapturaMonitorController::class, 'estadoMotor'])->name('captura.estado-motor');
+    Route::post('/captura/reset-estado-motor', [\App\Http\Controllers\CapturaMonitorController::class, 'resetEstadoMotor'])->name('captura.reset-estado-motor');
     Route::post('/captura/ejecutar', [\App\Http\Controllers\CapturaMonitorController::class, 'ejecutar'])->name('captura.ejecutar');
     Route::get('/captura/cola-por-tienda', [\App\Http\Controllers\CapturaMonitorController::class, 'colaPorTienda'])->name('captura.cola-por-tienda');
     Route::post('/captura/forzar', [\App\Http\Controllers\CapturaMonitorController::class, 'forzarCaptura'])->name('captura.forzar');

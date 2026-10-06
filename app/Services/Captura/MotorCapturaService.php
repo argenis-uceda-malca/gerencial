@@ -5,6 +5,7 @@ namespace App\Services\Captura;
 use App\Models\FeControlRegistro;
 use App\Models\FeLogSistema;
 use App\Models\FeTienda;
+use App\Services\Captura\DuplicadoEnBizlinksException;
 use Illuminate\Database\ConnectionInterface;
 use Throwable;
 
@@ -213,6 +214,11 @@ class MotorCapturaService
         try {
             $this->insertarYConfirmar($tienda, $registro, $documento);
             $resumen['capturados']++;
+        } catch (DuplicadoEnBizlinksException $e) {
+            // El documento ya existía en Bizlinks — captura parcial previa.
+            // Marcarlo como CAPTURADO sin volver a insertar.
+            $this->marcarYaCapturado($registro, $e->getMessage());
+            $resumen['capturados']++;
         } catch (Throwable $e) {
             $this->marcarErrorCaptura($registro, $e->getMessage());
             $resumen['errores']++;
@@ -242,6 +248,21 @@ class MotorCapturaService
             'estado_anterior' => $estadoAnterior,
             'estado_nuevo'    => 'CAPTURADO',
             'origen'          => 'CAPTURA',
+        ]);
+    }
+
+    private function marcarYaCapturado(FeControlRegistro $registro, string $nota): void
+    {
+        $estadoAnterior = $registro->estado;
+        $registro->estado        = 'CAPTURADO';
+        $registro->fecha_captura = now();
+        $registro->save();
+
+        $registro->auditoria()->create([
+            'estado_anterior' => $estadoAnterior,
+            'estado_nuevo'    => 'CAPTURADO',
+            'origen'          => 'CAPTURA',
+            'detalle'         => mb_substr($nota, 0, 490),
         ]);
     }
 

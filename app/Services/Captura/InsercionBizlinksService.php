@@ -5,6 +5,12 @@ namespace App\Services\Captura;
 use Illuminate\Database\ConnectionInterface;
 
 /**
+ * Indica que el documento ya existe en Bizlinks (inserción parcial previa).
+ * El motor lo trata como CAPTURADO, no como ERROR_CAPTURA.
+ */
+class DuplicadoEnBizlinksException extends \RuntimeException {}
+
+/**
  * Inserta el documento ya transformado y validado en las tablas de la
  * base intermedia de Bizlinks (SPE_EINVOICEHEADER / SPE_EINVOICEDETAIL).
  *
@@ -26,6 +32,12 @@ use Illuminate\Database\ConnectionInterface;
  */
 class InsercionBizlinksService
 {
+    /**
+     * Inserta el documento en Bizlinks. Si el header ya existe (inserción
+     * parcial previa que dejó ERROR_CAPTURA sin limpiar), lanza
+     * DuplicadoEnBizlinksException para que el motor lo trate como CAPTURADO
+     * en lugar de reintentar y fallar de nuevo con PK violation.
+     */
     public function insertar(ConnectionInterface $conexion, array $documento, string $pfx): void
     {
         $serie = $documento['cabecera']['serieNumero'];
@@ -64,15 +76,42 @@ class InsercionBizlinksService
         // Detalle primero: Bizlinks monitorea SPE_EINVOICEHEADER con polling
         // muy rápido (< 2s). Si insertamos header antes que el detalle,
         // Bizlinks valida y reporta "no items" antes de que los ítems existan.
-        foreach ($documento['detalle'] as $item) {
-            $this->insertarDetalleItem($conexion, $item, $pfx);
-        }
+        try {
+            foreach ($documento['detalle'] as $item) {
+                $this->insertarDetalleItem($conexion, $item, $pfx);
+            }
 
-        foreach ($documento['headerAdd'] ?? [] as $addRow) {
-            $this->insertarFila($conexion, "{$pfx}[SPE_EINVOICEHEADER_ADD]", $addRow);
-        }
+            foreach ($documento['headerAdd'] ?? [] as $addRow) {
+                $this->insertarFila($conexion, "{$pfx}[SPE_EINVOICEHEADER_ADD]", $addRow);
+            }
 
-        $this->insertarCabecera($conexion, $documento['cabecera'], $pfx);
+            $this->insertarCabecera($conexion, $documento['cabecera'], $pfx);
+        } catch (\Throwable $e) {
+            // Violación de PK (SQLSTATE 23000): el documento ya existe en Bizlinks
+            // aunque fe_control_registros lo marca como ERROR_CAPTURA (captura parcial
+            // previa donde el INSERT tuvo éxito pero el UPDATE de estado falló).
+            // En ese caso lo tratamos como ya capturado, no como error real.
+            if ($this->esDuplicadoPk($e)) {
+                $yaExiste = $conexion->selectOne(
+                    "SELECT TOP 1 [serieNumero] FROM {$pfx}[SPE_EINVOICEHEADER] WHERE [serieNumero] = ?",
+                    [$serie]
+                );
+                if ($yaExiste) {
+                    throw new DuplicadoEnBizlinksException("Documento {$serie} ya existe en Bizlinks (captura parcial previa).");
+                }
+            }
+            throw $e;
+        }
+    }
+
+    private function esDuplicadoPk(\Throwable $e): bool
+    {
+        $msg = $e->getMessage();
+        // SQLSTATE 23000 = integrity constraint violation (PK, UNIQUE)
+        return strpos($msg, '23000') !== false
+            || strpos($msg, 'PRIMARY KEY') !== false
+            || strpos($msg, 'duplicate key') !== false
+            || strpos($msg, 'UNIQUE KEY') !== false;
     }
 
     private function insertarCabecera(ConnectionInterface $conexion, array $cabecera, string $pfx): void

@@ -325,6 +325,7 @@ class CapturaMonitorController extends Controller
     // Sincronizar estado de Bizlinks para todos los CAPTURADO sin estado final
     public function syncBizlinks(Request $request)
     {
+        @set_time_limit(300);
         try {
             $params = $request->filled('codigo_tienda')
                 ? ['--tienda' => $request->codigo_tienda]
@@ -347,20 +348,46 @@ class CapturaMonitorController extends Controller
         ]);
     }
 
-    // Ejecutar el motor manualmente (fire-and-forget con timeout largo)
+    // Limpiar estado "motor corriendo" si quedó colgado
+    public function resetEstadoMotor()
+    {
+        Cache::forget('captura:motor:corriendo');
+        return response()->json(['ok' => true]);
+    }
+
+    // Ejecutar el motor manualmente
     public function ejecutar(Request $request)
     {
         if (Cache::has('captura:motor:corriendo')) {
             return response()->json(['ok' => false, 'error' => 'El motor ya está corriendo.'], 409);
         }
 
+        $tiendas = $request->input('tiendas', []);
+        $filtro  = '';
+        if (is_array($tiendas) && count($tiendas)) {
+            $filtro = implode(',', array_filter($tiendas));
+        } elseif ($request->filled('codigo_tienda')) {
+            $filtro = $request->codigo_tienda;
+        }
+
+        $execDisponible = function_exists('exec')
+            && !in_array('exec', array_map('trim', explode(',', ini_get('disable_functions') ?: '')));
+
+        if ($execDisponible) {
+            // Background: retorna al instante, el motor corre por su cuenta.
+            // El comando setea y limpia la llave de caché él mismo.
+            $artisan   = PHP_BINARY . ' ' . base_path('artisan');
+            $tiendaArg = $filtro ? ' --tiendas=' . escapeshellarg($filtro) : '';
+            exec($artisan . ' captura:ejecutar' . $tiendaArg . ' > /dev/null 2>&1 &');
+            return response()->json(['ok' => true, 'output' => 'Motor iniciado']);
+        }
+
+        // Fallback síncrono (exec deshabilitado): extender timeout para no morir antes.
+        @set_time_limit(300);
         try {
             $params = [];
-            $tiendas = $request->input('tiendas', []);
-            if (is_array($tiendas) && count($tiendas)) {
-                $params['--tiendas'] = implode(',', array_filter($tiendas));
-            } elseif ($request->filled('codigo_tienda')) {
-                $params['--tiendas'] = $request->codigo_tienda;
+            if ($filtro) {
+                $params['--tiendas'] = $filtro;
             }
             Artisan::call('captura:ejecutar', $params);
             $output = Artisan::output();
