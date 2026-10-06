@@ -82,6 +82,26 @@ class MotorCapturaService
                 );
             }
 
+            // Reintentar documentos que quedaron PENDIENTE o ERROR_CAPTURA
+            // antes del cursor (captura parcial, fallo de red, etc.).
+            // Sin esto, el detector nunca los devuelve porque su IDTRANSACCION
+            // ya quedó por debajo de ultimo_idtransaccion_capturado.
+            $pendientes = FeControlRegistro::where('codigo_tienda', $tienda->codigo_tienda)
+                ->whereIn('estado', ['PENDIENTE', 'ERROR_CAPTURA'])
+                ->orderBy('idtransaccion_soluflex')
+                ->get();
+
+            foreach ($pendientes as $reg) {
+                $venta = $this->detector->obtenerVentaPorId(
+                    $conexionSoluflex,
+                    (int) $reg->idtransaccion_soluflex,
+                    $pfxSoluflex
+                );
+                if ($venta) {
+                    $this->procesarVenta($tienda, $conexionSoluflex, $pfxSoluflex, $venta, $resumen);
+                }
+            }
+
             foreach ($ventas as $venta) {
                 $this->procesarVenta($tienda, $conexionSoluflex, $pfxSoluflex, $venta, $resumen);
 
