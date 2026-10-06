@@ -201,13 +201,13 @@ class DashboardReporteController extends Controller
 
         $stockRows = [];
 
-        $maxDatesByWeek = $db->table('automatizacion_pla_reporte_ventas')
-            ->selectRaw('semana, MAX(fecha_documento) as max_fecha')
+        // Tomar la última fecha de stock disponible <= fin (el snapshot puede
+        // ser de la semana anterior al rango cuando se cambia de mes).
+        $latestStock = $db->table('automatizacion_pla_reporte_ventas')
             ->where('tipo_fila', 'stock_act')
-            ->whereBetween('fecha_documento', [$ini, $fin])
-            ->groupBy('semana')
-            ->get();
-        $stockDates = $maxDatesByWeek->pluck('max_fecha')->all();
+            ->where('fecha_documento', '<=', $fin)
+            ->max('fecha_documento');
+        $stockDates = $latestStock ? [$latestStock] : [];
 
         if (!empty($stockDates)) {
         foreach ($db->table('automatizacion_pla_reporte_ventas')
