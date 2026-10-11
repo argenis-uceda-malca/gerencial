@@ -19,10 +19,13 @@ class Kernel extends ConsoleKernel
         // $schedule->command('tbretail:guardar-conteos')
         //      ->dailyAt('02:00');
 
-        // Actualiza ventas cada 10 min (ventas_diarias + reporte_ventas, ultimos 3 dias)
+        // Actualiza ventas cada 30 min (ventas_diarias + reporte_ventas, ultimos 3 dias),
+        // alineado al volcado Pentaho de datamart_ventas_actual (cada 30 min).
+        // Se dispara a :08 y :38 para leer DESPUES de que el volcado termina
+        // (evita leer la tabla a medio TRUNCATE+INSERT del Pentaho).
         // $schedule->command('etl:refrescar-ultimos-dias')
-        //      ->everyTenMinutes()
-        //      ->withoutOverlapping(5);
+        //      ->cron('8,38 * * * *')
+        //      ->withoutOverlapping(20);
 
         // // Clasificacion SSS/NUEVO/CIERRE: una vez al dia (suficiente)
         // $schedule->command('etl:refrescar-filtro-sss')

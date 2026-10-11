@@ -111,6 +111,7 @@ class ConexionTiendaService
             'charset'                  => 'utf8',
             'prefix'                   => '',
             'trust_server_certificate' => true,
+            'login_timeout'            => 5,
         ]);
 
         return DB::connection($nombre);
@@ -130,6 +131,7 @@ class ConexionTiendaService
             'charset'                  => 'utf8',
             'prefix'                   => '',
             'trust_server_certificate' => true,
+            'login_timeout'            => 5,
         ]);
 
         return DB::connection($nombre);
