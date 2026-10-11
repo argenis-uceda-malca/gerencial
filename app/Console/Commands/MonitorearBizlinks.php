@@ -114,7 +114,16 @@ class MonitorearBizlinks extends Command
 
             $this->info("[{$tienda->codigo_tienda}] Sincronizados {$actualizados}/{$registros->count()} registros");
         } catch (Throwable $e) {
-            $this->error("[{$tienda->codigo_tienda}] Sin conexión a Bizlinks: {$e->getMessage()}");
+            $msg = $e->getMessage();
+            // Simplificar errores TCP/de red para no exponer nombres de tablas o queries
+            if (str_contains($msg, 'TCP') || str_contains($msg, 'connection') || str_contains($msg, 'conectado')) {
+                $msg = 'No se pudo conectar al servidor (timeout de red)';
+            } elseif (str_contains($msg, 'Login') || str_contains($msg, 'login')) {
+                $msg = 'Credenciales incorrectas o servidor no disponible';
+            } elseif (strlen($msg) > 120) {
+                $msg = mb_substr($msg, 0, 120) . '…';
+            }
+            $this->error("[{$tienda->codigo_tienda}] Sin conexión a Bizlinks: {$msg}");
         } finally {
             try { $conexionSvc->cerrar($tienda, 'bizlinks'); } catch (Throwable $e) {}
         }
