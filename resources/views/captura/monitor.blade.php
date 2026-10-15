@@ -964,6 +964,16 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
           <option value="CUARENTENA">⚠ Cuarentena</option>
         </select>
 
+        <select id="f-estado-biz" class="form-select form-select-sm" style="width:155px">
+          <option value="">Estado Bizlinks: todos</option>
+          <option value="R">✕ Rechazado SUNAT</option>
+          <option value="E">⚠ Error Bizlinks</option>
+          <option value="SIN_RESPUESTA">◷ Sin respuesta</option>
+          <option value="A">✓ Aceptado (A)</option>
+          <option value="P">✓ Aceptado (P)</option>
+          <option value="L">↻ En proceso</option>
+        </select>
+
         <select id="f-tienda" class="form-select form-select-sm" style="width:110px">
           <option value="">Todas</option>
           @foreach($tiendas as $t)
@@ -1489,11 +1499,12 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
     if (!gridApi) return;
     const p = new URLSearchParams({
       draw: 1, start: 0, length: 2000,
-      estado:     document.getElementById('f-estado').value,
-      tienda:     document.getElementById('f-tienda').value,
-      buscar:     document.getElementById('f-buscar').value,
-      fecha_ini:  document.getElementById('f-fecha-ini').value,
-      fecha_fin:  document.getElementById('f-fecha-fin').value,
+      estado:          document.getElementById('f-estado').value,
+      estado_bizlinks: document.getElementById('f-estado-biz').value,
+      tienda:          document.getElementById('f-tienda').value,
+      buscar:          document.getElementById('f-buscar').value,
+      fecha_ini:       document.getElementById('f-fecha-ini').value,
+      fecha_fin:       document.getElementById('f-fecha-fin').value,
     });
     fetch(`{{ route('captura.registros') }}?${p}`, { headers:{ 'Accept':'application/json' } })
       .then(r => r.json())
@@ -1540,7 +1551,7 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
 
   // ag-theme-quartz se adapta al tema vía CSS variables — no necesita swap de clase
 
-  ['f-estado','f-tienda','f-fecha-ini','f-fecha-fin'].forEach(id =>
+  ['f-estado','f-estado-biz','f-tienda','f-fecha-ini','f-fecha-fin'].forEach(id =>
     document.getElementById(id).addEventListener('change', cargarDatos)
   );
   let dbTimer;

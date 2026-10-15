@@ -120,6 +120,19 @@ class CapturaMonitorController extends Controller
                   ->orWhere('razon_social_cliente', 'ilike', "%{$b}%");
             });
         }
+        if ($request->filled('estado_bizlinks')) {
+            $val = $request->estado_bizlinks;
+            if ($val === 'SIN_RESPUESTA') {
+                // CAPTURADO pero sin respuesta de Bizlinks aún
+                $query->where('estado', 'CAPTURADO')
+                      ->where(function ($q) {
+                          $q->whereNull('estado_bizlinks')
+                            ->orWhere('estado_bizlinks', '');
+                      });
+            } else {
+                $query->where('estado_bizlinks', $val);
+            }
+        }
         if ($request->filled('fecha_ini')) {
             $query->whereDate('fecha_venta', '>=', $request->fecha_ini);
         }
