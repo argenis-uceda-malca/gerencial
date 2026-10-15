@@ -119,16 +119,22 @@ class TransformadorDocumentoService
             $acumulado = 0.0;
             $ultimoIdx  = count($detalleTransformado) - 1;
             foreach ($detalleTransformado as $idx => &$linea) {
+                $esGravada = ($linea['codigoRazonExoneracion'] ?? '10') === '10';
                 if ($idx === $ultimoIdx) {
-                    // La última línea absorbe el residuo de redondeo
-                    $totalLinea    = round($totalCabecera - $acumulado, 2);
-                    $subtotalLinea = round($totalLinea / 1.18, 2);
+                    $totalLinea = round($totalCabecera - $acumulado, 2);
                 } else {
-                    $totalLinea    = round((float) $linea['importeTotalItem'] * $factor, 2);
-                    $subtotalLinea = round($totalLinea / 1.18, 2);
-                    $acumulado    += $totalLinea;
+                    $totalLinea  = round((float) $linea['importeTotalItem'] * $factor, 2);
+                    $acumulado  += $totalLinea;
                 }
-                $igvLinea = round($totalLinea - $subtotalLinea, 2);
+                // Exoneradas: todo el importe es base, sin IGV (error 3110 si igv>0).
+                // Gravadas: descomponer por 1.18.
+                if ($esGravada) {
+                    $subtotalLinea = round($totalLinea / 1.18, 2);
+                    $igvLinea      = round($totalLinea - $subtotalLinea, 2);
+                } else {
+                    $subtotalLinea = $totalLinea;
+                    $igvLinea      = 0.0;
+                }
                 $cantidad  = max((float) $linea['cantidad'], 1.0);
                 $linea['importeTotalItem']          = $totalLinea;
                 $linea['importeTotalSinImpuesto']   = (string) $subtotalLinea;
