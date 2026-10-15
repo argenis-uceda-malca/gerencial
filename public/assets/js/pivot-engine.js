@@ -50,9 +50,28 @@
     meta_vta:   { label: 'Meta Vta',    type: 'raw',  field: 'meta_vta', fmt: 'money', allowAgg: true },
     cumpl_pct:  { label: '%Cumpl Meta', type: 'calc', fmt: 'pct',
                   calc: function (s) { return s.meta_vta > 0 ? s.vta26 / s.meta_vta * 100 : null; } },
-    inv_unds_act:  { label: 'Inv Unds 26',  type: 'raw',  field: 'inv_unds_act',  fmt: 'int',   allowAgg: true, defaultAgg: 'sum' },
-    inv_costo_act: { label: 'Inv Costo 26',  type: 'raw',  field: 'inv_costo_act', fmt: 'money', allowAgg: true, defaultAgg: 'sum' }
+    inv_unds_act:  { label: 'Inv Unds 26',  type: 'raw',  field: 'inv_unds_act',  fmt: 'int',   allowAgg: true, defaultAgg: 'sum', semi: true },
+    inv_costo_act: { label: 'Inv Costo 26',  type: 'raw',  field: 'inv_costo_act', fmt: 'money', allowAgg: true, defaultAgg: 'sum', semi: true }
   };
+
+  /* ── Medidas de saldo (inventario) ────────────────────────────────────
+     Un saldo no se suma en el tiempo: el stock de una semana es el de su
+     último día, no la suma de sus 7 días. Las filas que traen `_stk_fecha`
+     (YYYY-MM-DD) se agregan así: dentro de cada celda se suman solo las
+     filas de la fecha más reciente. Las filas sin `_stk_fecha` siguen
+     sumándose como siempre. */
+  var SEMI_FIELDS = ['inv_unds_act', 'inv_costo_act'];
+
+  function semiAdd(cell, fecha, src) {
+    var s = cell.__semi;
+    if (!s || fecha > s.fecha) {
+      s = cell.__semi = { fecha: fecha };
+      for (var i = 0; i < SEMI_FIELDS.length; i++) s[SEMI_FIELDS[i]] = 0;
+    } else if (fecha < s.fecha) {
+      return;
+    }
+    for (var j = 0; j < SEMI_FIELDS.length; j++) s[SEMI_FIELDS[j]] += (+src[SEMI_FIELDS[j]] || 0);
+  }
 
   var AGG_LABEL = { sum: 'Σ', avg: 'Prom', min: 'Mín', max: 'Máx', count: 'Cont' };
 
@@ -89,13 +108,18 @@
   }
   function accCell(cell, row) {
     for (var i = 0; i < BASE_FIELDS.length; i++) pushStat(cell[BASE_FIELDS[i]], row[BASE_FIELDS[i]]);
+    if (row._stk_fecha) semiAdd(cell, row._stk_fecha, row);
   }
   function mergeCell(dst, src) {
     for (var i = 0; i < BASE_FIELDS.length; i++) mergeStat(dst[BASE_FIELDS[i]], src[BASE_FIELDS[i]]);
+    if (src.__semi) semiAdd(dst, src.__semi.fecha, src.__semi);
   }
   function sumsOf(cell) {
     var s = {};
     for (var i = 0; i < BASE_FIELDS.length; i++) s[BASE_FIELDS[i]] = cell[BASE_FIELDS[i]].sum;
+    if (cell.__semi) {
+      for (var j = 0; j < SEMI_FIELDS.length; j++) s[SEMI_FIELDS[j]] = cell.__semi[SEMI_FIELDS[j]];
+    }
     return s;
   }
   function measureValue(cell, spec) {
@@ -103,7 +127,9 @@
     var def = MEASURES[spec.key];
     if (!def) return null;
     if (def.type === 'calc') return def.calc(sumsOf(cell));
-    return resolveAgg(cell[def.field], spec.aggFn || def.defaultAgg || 'sum');
+    var aggFn = spec.aggFn || def.defaultAgg || 'sum';
+    if (def.semi && aggFn === 'sum' && cell.__semi) return cell.__semi[def.field];
+    return resolveAgg(cell[def.field], aggFn);
   }
   function measureHeader(spec) {
     var def = MEASURES[spec.key];

@@ -40,6 +40,18 @@ class Kernel extends ConsoleKernel
         //      ->runInBackground()
         //      ->appendOutputTo(storage_path('logs/stock-semanal.log'));
 
+        // Stock diario: reemplaza a etl:refrescar-stock (que saturaba el servidor).
+        // Cada madrugada repasa los ultimos 3 dias, una consulta por dia:
+        //   - lunes a sabado: incremental sobre el dia anterior (~15-30 s)
+        //   - domingos: recalculo completo desde el saldo inicial (~70 s)
+        //   - resumen por almacen/marca/categoria (~4 s)
+        // Si un dia no se genera, el comando se detiene y devuelve error.
+        $schedule->command('etl:stock-diario')
+             ->dailyAt('05:00')
+             ->withoutOverlapping(30)
+             ->runInBackground()
+             ->appendOutputTo(storage_path('logs/stock-diario.log'));
+
         // Motor de Captura FE: corre cada minuto pero con mutex para que no
         // se solapen ejecuciones si una tienda tarda más de 60 s en procesar.
         $schedule->command('captura:ejecutar')

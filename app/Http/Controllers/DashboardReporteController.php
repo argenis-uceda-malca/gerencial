@@ -201,53 +201,94 @@ class DashboardReporteController extends Controller
 
         $stockRows = [];
 
-        // Tomar la última fecha de stock disponible <= fin (el snapshot puede
-        // ser de la semana anterior al rango cuando se cambia de mes).
-        $latestStock = $db->table('automatizacion_pla_reporte_ventas')
-            ->where('tipo_fila', 'stock_act')
-            ->where('fecha_documento', '<=', $fin)
-            ->max('fecha_documento');
-        $stockDates = $latestStock ? [$latestStock] : [];
+        // Stock diario: una fila por fecha × tienda × marca × categoría. Cada fila
+        // lleva su fecha; el pivot NO suma entre días, toma el último día de cada
+        // celda (stock de cierre del día, la semana o el mes).
+        $stockDates = $this->fechasStock($db, $ini, $fin);
 
         if (!empty($stockDates)) {
-        foreach ($db->table('automatizacion_pla_reporte_ventas')
-            ->selectRaw("
-                mes, semana::text AS semana,
-                sucursal_3_1 AS canal, sucursal_2_1 AS subcanal,
-                sucursal AS tienda, marca, categoria, filtro_sss, localidad,
-                linea, temporada,
-                SUM(inv_unds_act)  AS inv_unds_act,
-                SUM(inv_costo_act) AS inv_costo_act
-            ")
-            ->where('tipo_fila', 'stock_act')
-            ->whereIn('fecha_documento', $stockDates)
-            ->groupBy(DB::raw("mes, semana, sucursal_3_1, sucursal_2_1, sucursal,
-                marca, categoria, filtro_sss, localidad, linea, temporada"))
-            ->cursor() as $r) {
-            $s2 = $r->subcanal ?? '';
-            if (($r->canal ?? '') === 'BOUTIQUES' && isset($ml[$r->marca])) {
-                $s2 = 'BOUTIQUES ' . ($ml[$r->marca] ?? $r->marca);
-            }
-            $baseStock = [
-                'Mes'           => $r->mes        ?? '',
-                'Semana'        => $r->semana     ?? '',
-                'Canal'         => $r->canal      ?? '',
-                'Subcanal'      => $s2,
-                'Tienda'        => $r->tienda     ?? '',
-                'Marca'         => $ml[$r->marca] ?? $r->marca ?? '',
-                'Categoría'     => $r->categoria  ?? '',
-                'SSS'           => $r->filtro_sss ?? '',
-                'Localidad'     => $r->localidad  ?? '',
-                'Lineas'        => $r->linea      ?? '',
-                'Temporada'     => $r->temporada  ?? '',
-                'inv_unds_act'  => (int)$r->inv_unds_act,
-                'inv_costo_act' => round((float)$r->inv_costo_act, 2),
-            ];
-            $stockRows[] = $baseStock;
+            $diasSemana = [1 => 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+
+            foreach ($db->table('automatizacion_stock_diario_resumen as r')
+                ->join('automatizacion_dm_almacen_tipo as t', 't.idalmacen', '=', 'r.idalmacen')
+                ->leftJoin('datamart_calendario as c', 'c.fecha', '=', 'r.fecha')
+                ->selectRaw("
+                    r.fecha::text AS fecha, MAX(c.mes_nombre) AS mes, r.semana::text AS semana,
+                    t.tipo_almacen, r.sucursal_3_1 AS canal, r.sucursal_2_1 AS subcanal,
+                    r.sucursal AS tienda, r.marca, r.categoria, r.filtro_sss, r.localidad,
+                    SUM(r.inv_unds)  AS inv_unds_act,
+                    SUM(r.inv_costo) AS inv_costo_act
+                ")
+                // Solo almacenes de venta: tiendas, e-commerce y la consignación
+                // dentro de tienda. CD, tránsito, mayorista, TXD y merma no entran.
+                ->whereIn('t.tipo_almacen', ['TIENDA', 'ECOMMERCE', 'CONSIGNACION EN TIENDA'])
+                ->whereIn('r.fecha', $stockDates)
+                ->groupBy(DB::raw("r.fecha, r.semana, t.tipo_almacen, r.sucursal_3_1, r.sucursal_2_1,
+                    r.sucursal, r.marca, r.categoria, r.filtro_sss, r.localidad"))
+                ->cursor() as $r) {
+                $esWeb = $r->tipo_almacen === 'ECOMMERCE';
+                $canal = $esWeb ? 'WEB' : ($r->canal ?? '');
+                $s2    = $esWeb ? 'WEB' : ($r->subcanal ?? '');
+                if ($canal === 'BOUTIQUES' && isset($ml[$r->marca])) {
+                    $s2 = 'BOUTIQUES ' . ($ml[$r->marca] ?? $r->marca);
+                }
+                $f = Carbon::parse($r->fecha);
+                $stockRows[] = [
+                    'fecha'         => $r->fecha,
+                    'Mes'           => $r->mes        ?? '',
+                    'Semana'        => $r->semana     ?? '',
+                    'Día #'         => (string)$f->day,
+                    'Día'           => $diasSemana[$f->dayOfWeekIso],
+                    'Canal'         => $canal,
+                    'Subcanal'      => $s2,
+                    'Tienda'        => $r->tienda     ?? '',
+                    'Marca'         => $ml[$r->marca] ?? $r->marca ?? '',
+                    'Categoría'     => $r->categoria  ?? '',
+                    'SSS'           => $r->filtro_sss ?? '',
+                    'Localidad'     => $esWeb ? 'Online' : ($r->localidad ?? ''),
+                    'inv_unds_act'  => (int)$r->inv_unds_act,
+                    'inv_costo_act' => round((float)$r->inv_costo_act, 2),
+                ];
             }
         }
 
         return response()->json(['act' => $actRows, 'hst' => $hstRows, 'metas' => $metasRows, 'stock' => $stockRows]);
+    }
+
+    /**
+     * Fechas de stock a enviar al pivot para el rango pedido.
+     * - Hasta 62 días: todos los días cargados del rango.
+     * - Rangos más largos: solo los cierres (último día cargado de cada semana
+     *   y de cada mes) para no enviar cientos de miles de filas al navegador.
+     * - Si el rango no tiene ningún día cargado: la última foto anterior.
+     */
+    private function fechasStock($db, string $ini, string $fin): array
+    {
+        $fechas = $db->table('automatizacion_stock_diario_fechas')
+            ->whereBetween('fecha', [$ini, $fin])
+            ->orderBy('fecha')
+            ->pluck('fecha')
+            ->all();
+
+        if (empty($fechas)) {
+            $ultima = $db->table('automatizacion_stock_diario_fechas')
+                ->where('fecha', '<=', $fin)
+                ->max('fecha');
+            return $ultima ? [$ultima] : [];
+        }
+
+        if (count($fechas) <= 62) {
+            return $fechas;
+        }
+
+        // $fechas viene ordenado: el último valor de cada clave es su cierre.
+        $cierres = [];
+        foreach ($fechas as $f) {
+            $c = Carbon::parse($f);
+            $cierres['s' . $c->format('o-W')] = $f;
+            $cierres['m' . $c->format('Y-m')] = $f;
+        }
+        return array_values(array_unique($cierres));
     }
 
     private $marcaLabel = [

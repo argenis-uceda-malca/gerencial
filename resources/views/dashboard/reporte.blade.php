@@ -996,7 +996,7 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
 @endsection
 
 @section('footer')
-<script src="../assets/js/pivot-engine.js"></script>
+<script src="../assets/js/pivot-engine.js?v=20261013"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.2/dist/ag-grid-community.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -1511,20 +1511,31 @@ function buildMergedData(act, hst, metas, stock){
   var semMes = {};
   act.forEach(function(row){ if(row['Semana'] && row['Mes']) semMes[row['Semana']] = row['Mes']; });
 
-  // Merge stock into act rows: por Subcanal+Marca+Canal (sin Semana, el
-  // snapshot puede ser de una semana distinta al rango de ventas consultado).
-  var stockByKey = {};
-  (stock || []).forEach(function(r){
-    var key = (r['Subcanal']||'') + '|' + (r['Marca']||'') + '|' + (r['Canal']||'');
-    if (!stockByKey[key]) stockByKey[key] = { inv_unds_act: 0, inv_costo_act: 0 };
-    stockByKey[key].inv_unds_act += r['inv_unds_act'] || 0;
-    stockByKey[key].inv_costo_act += r['inv_costo_act'] || 0;
-  });
-  act.forEach(function(row){
-    var key = (row['Subcanal']||'') + '|' + (row['Marca']||'') + '|' + (row['Canal']||'');
-    var s = stockByKey[key] || {};
-    row['inv_unds_act'] = s.inv_unds_act || 0;
-    row['inv_costo_act'] = s.inv_costo_act || 0;
+  // El stock entra como filas propias (fecha × tienda × marca × categoría),
+  // no pegado a las filas de venta. `_stk_fecha` le dice al motor que es un
+  // saldo: en cada celda toma el último día, no la suma de los días.
+  var stockMerged = (stock || []).map(function(row){
+    return {
+      'Mes':      row['Mes'],
+      'Semana':   row['Semana'],
+      'Día #':    row['Día #'],
+      'Día':      row['Día'],
+      'Canal':    row['Canal'],
+      'Subcanal': row['Subcanal'],
+      'Tienda':   row['Tienda'],
+      'Marca':    row['Marca'],
+      'Marca Temporada': MARCA_TEMPORADA.includes(row['Marca']) ? row['Marca'] : '',
+      'Categoría':row['Categoría'],
+      'SSS':      row['SSS'],
+      'Localidad':row['Localidad'],
+      'Lineas':   '',
+      'Temporada':'',
+      'vta26': 0, 'gm26': 0, 'unds26': 0, 'tickets26': 0,
+      'vta25': 0, 'gm25': 0, 'unds25': 0,
+      'meta_vta': 0,
+      'inv_unds_act': row['inv_unds_act'], 'inv_costo_act': row['inv_costo_act'],
+      '_stk_fecha': row['fecha']
+    };
   });
 
   var actMerged = act.map(function(row){
@@ -1574,7 +1585,7 @@ function buildMergedData(act, hst, metas, stock){
       'inv_unds_act': 0, 'inv_costo_act': 0
     };
   });
-  return actMerged.concat(hstMerged).concat(metasMerged);
+  return actMerged.concat(hstMerged).concat(metasMerged).concat(stockMerged);
 }
 
 /* ══════════════════════════════════════════════════════════
