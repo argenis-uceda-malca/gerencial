@@ -72,6 +72,12 @@ class TransformadorDocumentoService
             $tasaIgv  = $tieneIgv ? '18' : '0';
             // Catálogo 07 SUNAT: '10' Gravado IGV, '20' Exonerado
             $codigoRazonExoneracion = $tieneIgv ? '10' : '20';
+            // SUNAT error 3110: para exoneradas/inafectas importeIgv DEBE ser 0.
+            // Caso: subtotal=0 pero total>0 → $igv calculado es >0 aunque el ítem
+            // se clasifique como exonerado. Forzar 0 para evitar el rechazo.
+            if (!$tieneIgv) {
+                $igv = 0.0;
+            }
 
             return [
                 'tipoDocumentoEmisor'            => '6',
