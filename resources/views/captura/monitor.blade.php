@@ -1986,13 +1986,62 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
     });
   });
 
-  // ── CSV ──────────────────────────────────────────────────────
-  $('#btn-csv').on('click', () => {
-    const p = new URLSearchParams({
-      estado: $('#f-estado').val(), tienda: $('#f-tienda').val(),
-      buscar: $('#f-buscar').val(), export: 1, length: 5000, start: 0,
+  // ── CSV / Excel ──────────────────────────────────────────────
+  document.getElementById('btn-csv').addEventListener('click', function () {
+    if (!gridApi) return;
+
+    var blBadgeText = { A:'Aceptado', P:'Aceptado', R:'Rechazado', E:'Error Bizlinks', L:'En proceso' };
+    var tipoMapText = { '01':'Factura','03':'Boleta','07':'Nota Crédito','08':'Nota Débito' };
+
+    var cols = [
+      'ID', 'Tienda', 'Serie / N°', 'Tipo', 'Fecha venta',
+      'Importe', 'Cliente', 'RUC/DNI', 'Estado', 'Estado Bizlinks',
+      'Código error BL', 'Mensaje Bizlinks', 'Intentos', 'Fecha captura'
+    ];
+
+    var rows = [];
+    gridApi.forEachNodeAfterFilterAndSort(function (node) {
+      var r = node.data;
+      rows.push([
+        r.id,
+        r.codigo_tienda,
+        r.serie_numero_bizlinks === '—' ? '' : (r.serie_numero_bizlinks || ''),
+        tipoMapText[r.tipo_documento_sunat] || r.tipo_documento_sunat || '',
+        r.fecha_venta === '—' ? '' : (r.fecha_venta || ''),
+        r.importe_total,
+        r.razon_social_cliente === '—' ? '' : (r.razon_social_cliente || ''),
+        r.numero_documento_cliente === '—' ? '' : (r.numero_documento_cliente || ''),
+        r.estado,
+        blBadgeText[r.estado_bizlinks] || (r.estado_bizlinks === '—' ? '' : (r.estado_bizlinks || '')),
+        r.codigo_error_bizlinks === '—' ? '' : (r.codigo_error_bizlinks || ''),
+        r.mensaje_bizlinks || '',
+        r.intentos_captura,
+        r.fecha_captura === '—' ? '' : (r.fecha_captura || ''),
+      ]);
     });
-    window.open(`{{ route('captura.registros') }}?${p}`);
+
+    // BOM UTF-8 para que Excel reconozca tildes y eñes
+    var bom = '﻿';
+    var escape = function (v) {
+      var s = v === null || v === undefined ? '' : String(v);
+      if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) {
+        s = '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    };
+    var csv = bom + [cols].concat(rows).map(function (row) {
+      return row.map(escape).join(',');
+    }).join('\r\n');
+
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'captura_fe_' + new Date().toISOString().slice(0,10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   });
 
   // ── Auto-ciclo: capturar → sync → tabla (cada 60 s) ──────────
