@@ -21,10 +21,43 @@ class MonitorearBizlinks extends Command
         }
 
         foreach ($query->get() as $tienda) {
+            $this->resetearAtascados($tienda);
             $this->sincronizarTienda($tienda, $conexionSvc);
         }
 
         return 0;
+    }
+
+    private function resetearAtascados(FeTienda $tienda): void
+    {
+        // Documentos CAPTURADO sin respuesta de Bizlinks después de 30 minutos:
+        // Bizlinks filtra por fecha al reiniciarse y no levanta registros viejos.
+        // Resetear a ERROR_CAPTURA para que el motor los re-inserte automáticamente.
+        $atascados = FeControlRegistro::where('codigo_tienda', $tienda->codigo_tienda)
+            ->where('estado', 'CAPTURADO')
+            ->whereNotNull('serie_numero_bizlinks')
+            ->where(function ($q) {
+                $q->whereNull('estado_bizlinks')
+                  ->orWhere('estado_bizlinks', '');
+            })
+            ->where('fecha_captura', '<', now()->subMinutes(30))
+            ->get();
+
+        foreach ($atascados as $reg) {
+            $reg->estado = 'ERROR_CAPTURA';
+            $reg->save();
+
+            $reg->auditoria()->create([
+                'estado_anterior' => 'CAPTURADO',
+                'estado_nuevo'    => 'ERROR_CAPTURA',
+                'origen'          => 'MONITOR',
+                'detalle'         => 'Reset automático: CAPTURADO sin respuesta de Bizlinks por más de 30 minutos.',
+            ]);
+        }
+
+        if ($atascados->count() > 0) {
+            $this->info("[{$tienda->codigo_tienda}] Reset automático: {$atascados->count()} documentos sin respuesta de Bizlinks → ERROR_CAPTURA");
+        }
     }
 
     private function sincronizarTienda(FeTienda $tienda, ConexionTiendaService $conexionSvc): void
