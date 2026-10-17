@@ -1441,7 +1441,7 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
     let b = '';
     if (r.estado === 'CAPTURADO' && r.serie_numero_bizlinks !== '—')
       b += `<button class="ac-btn ac-btn-cpe btn-ver-cpe" data-id="${r.id}" title="Ver CPE en Bizlinks"><i class="bx bx-file-blank"></i></button>`;
-    if (['ERROR_CAPTURA','CUARENTENA'].includes(r.estado) || (r.estado === 'CAPTURADO' && ['E','L'].includes(r.estado_bizlinks)))
+    if (['ERROR_CAPTURA','CUARENTENA'].includes(r.estado) || (r.estado === 'CAPTURADO' && !['A','P'].includes(r.estado_bizlinks)))
       b += `<button class="ac-btn ac-btn-retry btn-reset" data-id="${r.id}" title="Reintentar en Bizlinks"><i class="bx bx-refresh"></i></button>`;
     if (['PENDIENTE','ERROR_CAPTURA'].includes(r.estado))
       b += `<button class="ac-btn ac-btn-force btn-forzar-directo" data-id="${r.id}" title="Forzar captura ahora"><i class="bx bx-send"></i></button>`;
