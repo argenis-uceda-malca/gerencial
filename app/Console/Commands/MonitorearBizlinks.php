@@ -44,19 +44,19 @@ class MonitorearBizlinks extends Command
             ->get();
 
         foreach ($atascados as $reg) {
-            $reg->estado = 'ERROR_CAPTURA';
+            $reg->estado = 'PENDIENTE';
             $reg->save();
 
             $reg->auditoria()->create([
                 'estado_anterior' => 'CAPTURADO',
-                'estado_nuevo'    => 'ERROR_CAPTURA',
+                'estado_nuevo'    => 'PENDIENTE',
                 'origen'          => 'MONITOR',
-                'detalle'         => 'Reset automático: CAPTURADO sin respuesta de Bizlinks por más de 30 minutos.',
+                'detalle'         => 'Re-envío automático: sin respuesta de Bizlinks por más de 30 minutos.',
             ]);
         }
 
         if ($atascados->count() > 0) {
-            $this->info("[{$tienda->codigo_tienda}] Reset automático: {$atascados->count()} documentos sin respuesta de Bizlinks → ERROR_CAPTURA");
+            $this->info("[{$tienda->codigo_tienda}] Re-envío automático: {$atascados->count()} documentos sin respuesta de Bizlinks → PENDIENTE");
         }
     }
 
