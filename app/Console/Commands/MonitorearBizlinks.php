@@ -50,7 +50,7 @@ class MonitorearBizlinks extends Command
             $reg->auditoria()->create([
                 'estado_anterior' => 'CAPTURADO',
                 'estado_nuevo'    => 'PENDIENTE',
-                'origen'          => 'MONITOR',
+                'origen'          => 'MONITOREO',
                 'detalle'         => 'Re-envío automático: sin respuesta de Bizlinks por más de 30 minutos.',
             ]);
         }
