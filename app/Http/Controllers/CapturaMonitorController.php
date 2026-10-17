@@ -416,21 +416,12 @@ class CapturaMonitorController extends Controller
         if ($r->estado === 'CAPTURADO' && $r->serie_numero_bizlinks) {
             $btns .= "<button class=\"ac-btn ac-btn-cpe btn-ver-cpe\" data-id=\"{$r->id}\" title=\"Ver CPE en Bizlinks\"><i class=\"bx bx-file-blank\"></i></button>";
         }
-        // CAPTURADO con estado Bizlinks de error/tránsito o atascado sin respuesta
-        // (NULL sin sync hace más de 15 min) → mostrar botón reintentar.
-        $capturadoAtascado = $r->estado === 'CAPTURADO'
-            && in_array($r->estado_bizlinks, ['E', 'L'], true);
-        // empty() cubre tanto NULL como '' (cadena vacía en BD).
-        // NULL fecha_captura = registro antiguo; lo tratamos como "ya pasó tiempo suficiente".
-        $capturadoSinRespuesta = $r->estado === 'CAPTURADO'
-            && empty($r->estado_bizlinks)
-            && (
-                empty($r->fecha_captura)
-                || $r->fecha_captura->lt(now()->subMinutes(5))
-            );
-        if (in_array($r->estado, ['ERROR_CAPTURA', 'CUARENTENA'], true)
-            || $capturadoAtascado
-            || $capturadoSinRespuesta) {
+        // Reintentar: ERROR, CUARENTENA, o CAPTURADO que no esté aceptado
+        // definitivamente por SUNAT (A o P). Cubre E, L, R, NULL, '' y
+        // cualquier valor inesperado sin necesidad de enumerar cada caso.
+        $puedeReintentar = in_array($r->estado, ['ERROR_CAPTURA', 'CUARENTENA'], true)
+            || ($r->estado === 'CAPTURADO' && !in_array($r->estado_bizlinks, ['A', 'P'], true));
+        if ($puedeReintentar) {
             $btns .= "<button class=\"ac-btn ac-btn-retry btn-reset\" data-id=\"{$r->id}\" title=\"Reintentar en Bizlinks\"><i class=\"bx bx-refresh\"></i></button>";
         }
         if (in_array($r->estado, ['PENDIENTE', 'ERROR_CAPTURA'], true)) {
