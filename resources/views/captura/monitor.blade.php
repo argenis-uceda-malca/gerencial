@@ -832,6 +832,25 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
 
   </div>
 
+  {{-- ── Panel rezagados ───────────────────────────────────────── --}}
+  <div id="panel-rezagados" class="mb-4 ani" style="display:none">
+    <div class="alert alert-danger border-danger p-3 mb-0" style="border-left:4px solid #ff3e1d">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bx bx-error-circle fs-5 text-danger"></i>
+          <strong class="text-danger">
+            <span id="rez-total">0</span> comprobante(s) de días anteriores sin aceptación SUNAT
+          </strong>
+          <span class="text-muted small">— el componente Bizlinks pudo haberse detenido</span>
+        </div>
+        <button class="btn btn-sm btn-outline-danger" onclick="verTodosRezagados()">
+          <i class="bx bx-table me-1"></i>Ver todos
+        </button>
+      </div>
+      <div id="rez-lista" class="mt-2 d-flex flex-wrap gap-2"></div>
+    </div>
+  </div>
+
   {{-- ── Tiendas ─────────────────────────────────────────────── --}}
   @php
     $tiActivas  = $tiendas->where('estado','ACTIVA');
@@ -1515,8 +1534,50 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
         setTime();
       })
       .catch(e => console.error('[Monitor] cargarDatos error:', e));
+    actualizarRezagados();
   }
   window.cargarDatos = cargarDatos; // exponer para IIFEs externos
+
+  function actualizarRezagados() {
+    fetch('{{ route("captura.rezagados") }}', { headers: { 'Accept': 'application/json' } })
+      .then(r => r.json())
+      .then(d => {
+        const panel = document.getElementById('panel-rezagados');
+        const total = d.total || 0;
+        document.getElementById('rez-total').textContent = total;
+        panel.style.display = total > 0 ? '' : 'none';
+        if (total > 0) {
+          const lista = document.getElementById('rez-lista');
+          lista.innerHTML = (d.por_tienda || []).map(t =>
+            `<span class="badge bg-label-danger" style="font-size:.72rem;cursor:pointer"
+                   onclick="filtrarTiendaRezagada('${t.codigo_tienda}')">
+               ${t.codigo_tienda}: ${t.total} (desde ${t.fecha_mas_antigua})
+             </span>`
+          ).join('');
+        }
+      })
+      .catch(() => {});
+  }
+
+  function filtrarTiendaRezagada(tienda) {
+    document.getElementById('f-tienda').value = tienda;
+    document.getElementById('f-estado').value = '';
+    document.getElementById('f-estado-biz').value = '';
+    document.getElementById('f-fecha-ini').value = '';
+    document.getElementById('f-fecha-fin').value = '';
+    cargarDatos();
+    document.getElementById('ag-tabla-reg').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function verTodosRezagados() {
+    document.getElementById('f-tienda').value = '';
+    document.getElementById('f-estado').value = '';
+    document.getElementById('f-estado-biz').value = '';
+    document.getElementById('f-fecha-ini').value = '';
+    document.getElementById('f-fecha-fin').value = '';
+    cargarDatos();
+    document.getElementById('ag-tabla-reg').scrollIntoView({ behavior: 'smooth' });
+  }
 
   const gridDiv = document.getElementById('ag-tabla-reg');
   gridDiv.classList.add('ag-theme-quartz');

@@ -87,6 +87,7 @@ Route::middleware('session.auth')->group(function () {
     Route::get('/captura/registros/{id}/documento', [\App\Http\Controllers\CapturaMonitorController::class, 'verDocumento'])->name('captura.documento');
     Route::post('/captura/registros/reset-masivo', [\App\Http\Controllers\CapturaMonitorController::class, 'resetMasivo'])->name('captura.reset-masivo');
     Route::post('/captura/sync-bizlinks', [\App\Http\Controllers\CapturaMonitorController::class, 'syncBizlinks'])->name('captura.sync-bizlinks');
+    Route::get('/captura/rezagados', [\App\Http\Controllers\CapturaMonitorController::class, 'rezagados'])->name('captura.rezagados');
 
     Route::get('/dashboard/ventas', [App\Http\Controllers\DashboardVentasController::class, 'index'])->name('dashboard.ventas');
     Route::get('/dashboard/ventas/tiendas', [App\Http\Controllers\DashboardVentasController::class, 'tiendas'])->name('dashboard.ventas.tiendas');

@@ -410,6 +410,41 @@ class CapturaMonitorController extends Controller
         }
     }
 
+    // Documentos con fecha_venta de días anteriores que aún no fueron aceptados por SUNAT
+    public function rezagados()
+    {
+        $hoy = now()->startOfDay();
+
+        $porTienda = FeControlRegistro::where('fecha_venta', '<', $hoy)
+            ->where(function ($q) {
+                $q->whereIn('estado', ['PENDIENTE', 'ERROR_CAPTURA', 'CUARENTENA'])
+                  ->orWhere(function ($inner) {
+                      $inner->where('estado', 'CAPTURADO')
+                            ->where(function ($biz) {
+                                $biz->whereNull('estado_bizlinks')
+                                    ->orWhereNotIn('estado_bizlinks', ['A', 'P']);
+                            });
+                  });
+            })
+            ->selectRaw("codigo_tienda, COUNT(*) as total, MIN(fecha_venta) as fecha_mas_antigua")
+            ->groupBy('codigo_tienda')
+            ->orderByRaw('MIN(fecha_venta) ASC')
+            ->get();
+
+        return response()->json([
+            'total'      => $porTienda->sum('total'),
+            'por_tienda' => $porTienda->map(function ($r) {
+                return [
+                    'codigo_tienda'    => $r->codigo_tienda,
+                    'total'            => (int) $r->total,
+                    'fecha_mas_antigua'=> $r->fecha_mas_antigua
+                        ? \Carbon\Carbon::parse($r->fecha_mas_antigua)->format('d/m/Y')
+                        : null,
+                ];
+            })->values(),
+        ]);
+    }
+
     private function botonesAccion(FeControlRegistro $r): string
     {
         $btns = '';
