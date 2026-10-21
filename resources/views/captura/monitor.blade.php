@@ -832,22 +832,32 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
 
   </div>
 
-  {{-- ── Panel rezagados ───────────────────────────────────────── --}}
+  {{-- ── Panel rezagados + silenciosas ────────────────────────── --}}
   <div id="panel-rezagados" class="mb-4 ani" style="display:none">
-    <div class="alert alert-danger border-danger p-3 mb-0" style="border-left:4px solid #ff3e1d">
+    {{-- Rezagados --}}
+    <div id="rez-bloque" class="alert alert-danger border-0 p-3 mb-2" style="border-left:4px solid #ff3e1d !important;border:1px solid rgba(255,62,29,.3)">
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2">
           <i class="bx bx-error-circle fs-5 text-danger"></i>
           <strong class="text-danger">
             <span id="rez-total">0</span> comprobante(s) de días anteriores sin aceptación SUNAT
           </strong>
-          <span class="text-muted small">— el componente Bizlinks pudo haberse detenido</span>
+          <span class="text-muted small">— Bizlinks pudo haberse detenido</span>
         </div>
         <button class="btn btn-sm btn-outline-danger" onclick="verTodosRezagados()">
           <i class="bx bx-table me-1"></i>Ver todos
         </button>
       </div>
       <div id="rez-lista" class="mt-2 d-flex flex-wrap gap-2"></div>
+    </div>
+    {{-- Silenciosas --}}
+    <div id="sil-bloque" class="alert alert-warning border-0 p-3 mb-0" style="border-left:4px solid #ffab00 !important;border:1px solid rgba(255,171,0,.3);display:none">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bx bx-wifi-off fs-5 text-warning"></i>
+        <strong class="text-warning">Tiendas sin actividad en más de 1 día</strong>
+        <span class="text-muted small">— sin conexión o servicio detenido</span>
+      </div>
+      <div id="sil-lista" class="mt-2 d-flex flex-wrap gap-2"></div>
     </div>
   </div>
 
@@ -1542,19 +1552,34 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
     fetch('{{ route("captura.rezagados") }}', { headers: { 'Accept': 'application/json' } })
       .then(r => r.json())
       .then(d => {
-        const panel = document.getElementById('panel-rezagados');
-        const total = d.total || 0;
+        const total       = d.total || 0;
+        const silenciosas = d.silenciosas || [];
+        const panel       = document.getElementById('panel-rezagados');
+
+        // Rezagados
         document.getElementById('rez-total').textContent = total;
-        panel.style.display = total > 0 ? '' : 'none';
+        document.getElementById('rez-bloque').style.display = total > 0 ? '' : 'none';
         if (total > 0) {
-          const lista = document.getElementById('rez-lista');
-          lista.innerHTML = (d.por_tienda || []).map(t =>
+          document.getElementById('rez-lista').innerHTML = (d.por_tienda || []).map(t =>
             `<span class="badge bg-label-danger" style="font-size:.72rem;cursor:pointer"
                    onclick="filtrarTiendaRezagada('${t.codigo_tienda}')">
                ${t.codigo_tienda}: ${t.total} (desde ${t.fecha_mas_antigua})
              </span>`
           ).join('');
         }
+
+        // Silenciosas
+        document.getElementById('sil-bloque').style.display = silenciosas.length > 0 ? '' : 'none';
+        if (silenciosas.length > 0) {
+          document.getElementById('sil-lista').innerHTML = silenciosas.map(t =>
+            `<span class="badge bg-label-warning" style="font-size:.72rem;cursor:pointer"
+                   onclick="filtrarTiendaRezagada('${t.codigo_tienda}')">
+               ${t.codigo_tienda} — última: ${t.ultima_captura}
+             </span>`
+          ).join('');
+        }
+
+        panel.style.display = (total > 0 || silenciosas.length > 0) ? '' : 'none';
       })
       .catch(() => {});
   }

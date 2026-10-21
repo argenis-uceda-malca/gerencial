@@ -410,11 +410,14 @@ class CapturaMonitorController extends Controller
         }
     }
 
-    // Documentos con fecha_venta de días anteriores que aún no fueron aceptados por SUNAT
+    // Documentos con fecha_venta de días anteriores que aún no fueron aceptados por SUNAT,
+    // y tiendas activas que no han capturado nada en más de 1 día.
     public function rezagados()
     {
-        $hoy = now()->startOfDay();
+        $hoy      = now()->startOfDay();
+        $haceUnDia = now()->subDay();
 
+        // ── Rezagados: docs de días anteriores sin aceptación ────────────
         $porTienda = FeControlRegistro::where('fecha_venta', '<', $hoy)
             ->where(function ($q) {
                 $q->whereIn('estado', ['PENDIENTE', 'ERROR_CAPTURA', 'CUARENTENA'])
@@ -431,9 +434,33 @@ class CapturaMonitorController extends Controller
             ->orderByRaw('MIN(fecha_venta) ASC')
             ->get();
 
+        // ── Silenciosas: tiendas activas sin captura en >1 día ───────────
+        // Obtener última captura por tienda
+        $ultimasCaptura = FeControlRegistro::selectRaw("codigo_tienda, MAX(fecha_captura) as ultima_captura")
+            ->groupBy('codigo_tienda')
+            ->pluck('ultima_captura', 'codigo_tienda');
+
+        $silenciosas = FeTienda::where('estado', 'ACTIVA')
+            ->get()
+            ->filter(function ($t) use ($ultimasCaptura, $haceUnDia) {
+                $ultima = $ultimasCaptura->get($t->codigo_tienda);
+                // Sin captura nunca, o la última fue hace más de 1 día
+                return $ultima === null || \Carbon\Carbon::parse($ultima)->lt($haceUnDia);
+            })
+            ->map(function ($t) use ($ultimasCaptura) {
+                $ultima = $ultimasCaptura->get($t->codigo_tienda);
+                return [
+                    'codigo_tienda' => $t->codigo_tienda,
+                    'ultima_captura'=> $ultima
+                        ? \Carbon\Carbon::parse($ultima)->format('d/m/Y H:i')
+                        : 'Nunca',
+                ];
+            })
+            ->values();
+
         return response()->json([
-            'total'      => $porTienda->sum('total'),
-            'por_tienda' => $porTienda->map(function ($r) {
+            'total'       => $porTienda->sum('total'),
+            'por_tienda'  => $porTienda->map(function ($r) {
                 return [
                     'codigo_tienda'    => $r->codigo_tienda,
                     'total'            => (int) $r->total,
@@ -442,6 +469,7 @@ class CapturaMonitorController extends Controller
                         : null,
                 ];
             })->values(),
+            'silenciosas' => $silenciosas,
         ]);
     }
 
