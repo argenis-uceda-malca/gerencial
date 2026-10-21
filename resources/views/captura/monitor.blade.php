@@ -1578,6 +1578,8 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
     cargarDatos();
     document.getElementById('ag-tabla-reg').scrollIntoView({ behavior: 'smooth' });
   }
+  window.verTodosRezagados      = verTodosRezagados;
+  window.filtrarTiendaRezagada  = filtrarTiendaRezagada;
 
   const gridDiv = document.getElementById('ag-tabla-reg');
   gridDiv.classList.add('ag-theme-quartz');
