@@ -943,13 +943,22 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
                 @endif
               </div>
               @if($tienda->estado === 'ACTIVA')
-              <button class="btn-forzar"
-                      style="background:none;border:none;padding:0;cursor:pointer;line-height:1"
-                      data-tienda="{{ $tienda->codigo_tienda }}"
-                      data-nombre="{{ $tienda->nombre_tienda }}"
-                      title="Forzar captura de un ID específico">
-                <i class="bx bx-upload" style="font-size:.85rem;color:#696cff;opacity:.65"></i>
-              </button>
+              <div class="d-flex gap-1 align-items-center">
+                <button class="btn-forzar"
+                        style="background:none;border:none;padding:0;cursor:pointer;line-height:1"
+                        data-tienda="{{ $tienda->codigo_tienda }}"
+                        data-nombre="{{ $tienda->nombre_tienda }}"
+                        title="Forzar captura de un ID específico">
+                  <i class="bx bx-upload" style="font-size:.85rem;color:#696cff;opacity:.65"></i>
+                </button>
+                <button class="btn-reset-correlativo"
+                        style="background:none;border:none;padding:0;cursor:pointer;line-height:1"
+                        data-tienda="{{ $tienda->codigo_tienda }}"
+                        data-nombre="{{ $tienda->nombre_tienda }}"
+                        title="Reiniciar correlativo (Soluflex reinstalado)">
+                  <i class="bx bx-rotate-left" style="font-size:.85rem;color:#ff9f43;opacity:.65"></i>
+                </button>
+              </div>
               @endif
             </div>
 
@@ -1317,6 +1326,41 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button type="button" class="btn btn-sm btn-primary" id="btn-forzar-submit">
           <i class="bx bx-send me-1"></i>Capturar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{-- ── Modal: Reset correlativo ────────────────────────────── --}}
+<div class="modal fade" id="modal-reset-correlativo" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content" style="border-radius:12px;border:none">
+      <div class="modal-header py-2" style="border-bottom:1px solid rgba(0,0,0,.06)">
+        <h6 class="modal-title fw-semibold">
+          <i class="bx bx-rotate-left me-2" style="color:#ff9f43"></i>Reiniciar correlativo
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert py-2 px-3 mb-3" style="font-size:.75rem;border-radius:8px;background:rgba(255,159,67,.08);border:1px solid rgba(255,159,67,.3)">
+          <i class="bx bx-error-circle me-1" style="color:#ff9f43"></i>
+          Usar solo cuando <strong>Soluflex fue reinstalado</strong> y el IDTRANSACCION volvió a empezar desde 1.
+          Los registros históricos se desplazan con un offset para preservarlos.
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold mb-1">Tienda</label>
+          <input type="text" id="rc-tienda-label" class="form-control form-control-sm" readonly
+                 style="background:rgba(255,159,67,.06);color:#ff9f43;font-weight:600">
+          <input type="hidden" id="rc-tienda-codigo">
+        </div>
+        <div id="rc-res" class="d-none p-2 rounded small mt-2" style="word-break:break-word"></div>
+      </div>
+      <div class="modal-footer py-2 gap-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm" id="btn-rc-submit"
+                style="background:#ff9f43;color:#fff;border:none">
+          <i class="bx bx-rotate-left me-1"></i>Confirmar reset
         </button>
       </div>
     </div>
@@ -2343,6 +2387,54 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
     if (e.key === 'Enter') document.getElementById('btn-forzar-submit').click();
   });
 })();
+
+// ── Reset correlativo ─────────────────────────────────────────
+(function () {
+  const modal = new bootstrap.Modal(document.getElementById('modal-reset-correlativo'));
+  const csrf  = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.btn-reset-correlativo');
+    if (!btn) return;
+    document.getElementById('rc-tienda-codigo').value = btn.dataset.tienda;
+    document.getElementById('rc-tienda-label').value  = btn.dataset.tienda + ' — ' + btn.dataset.nombre;
+    document.getElementById('rc-res').className = 'd-none';
+    modal.show();
+  });
+
+  document.getElementById('btn-rc-submit').addEventListener('click', function () {
+    const tienda = document.getElementById('rc-tienda-codigo').value;
+    const res    = document.getElementById('rc-res');
+    const btn    = this;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Procesando…';
+    res.className = 'd-none';
+
+    fetch('/captura/tiendas/' + encodeURIComponent(tienda) + '/reset-correlativo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+      body: '{}',
+    }).then(r => r.json()).then(d => {
+      res.className = 'p-2 rounded small';
+      if (d.ok) {
+        res.style.cssText = 'background:rgba(113,221,55,.1);color:#2d8a3e;word-break:break-word';
+        res.innerHTML = '<i class="bx bx-check-circle me-1"></i>' + d.mensaje;
+        setTimeout(() => { modal.hide(); cargarDatos(); }, 2000);
+      } else {
+        res.style.cssText = 'background:rgba(255,62,29,.08);color:#c0392b;word-break:break-word';
+        res.innerHTML = '<i class="bx bx-error-circle me-1"></i>' + (d.mensaje || 'Error desconocido.');
+      }
+    }).catch(() => {
+      res.className = 'p-2 rounded small';
+      res.style.cssText = 'background:rgba(255,62,29,.08);color:#c0392b';
+      res.textContent = 'Error de comunicación.';
+    }).finally(() => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bx bx-rotate-left me-1"></i>Confirmar reset';
+    });
+  });
+})();
+window.resetCorrelativo = function () {};
 
 // ── Detalle respuesta Bizlinks ────────────────────────────────
 (function () {

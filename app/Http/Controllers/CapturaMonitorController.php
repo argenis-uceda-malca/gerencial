@@ -473,6 +473,30 @@ class CapturaMonitorController extends Controller
         ]);
     }
 
+    // Reset de correlativo: desplaza IDs históricos +1M y pone cursor en 0.
+    // Usar cuando la tienda reinstaló Soluflex y el IDTRANSACCION se reinició.
+    public function resetCorrelativo(string $codigo)
+    {
+        $tienda = FeTienda::where('codigo_tienda', $codigo)->firstOrFail();
+
+        $desplazados = FeControlRegistro::where('codigo_tienda', $codigo)
+            ->where('idtransaccion_soluflex', '<', 1000000)
+            ->count();
+
+        FeControlRegistro::where('codigo_tienda', $codigo)
+            ->where('idtransaccion_soluflex', '<', 1000000)
+            ->update(['idtransaccion_soluflex' => \DB::raw('idtransaccion_soluflex + 1000000')]);
+
+        $tienda->ultimo_idtransaccion_capturado = 0;
+        $tienda->save();
+
+        return response()->json([
+            'ok'          => true,
+            'desplazados' => $desplazados,
+            'mensaje'     => "Cursor reiniciado. {$desplazados} registros históricos desplazados. El motor captará los nuevos documentos en el próximo ciclo.",
+        ]);
+    }
+
     private function botonesAccion(FeControlRegistro $r): string
     {
         $btns = '';
