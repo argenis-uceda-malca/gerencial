@@ -1348,11 +1348,22 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
           Usar solo cuando <strong>Soluflex fue reinstalado</strong> y el IDTRANSACCION volvió a empezar desde 1.
           Los registros históricos se desplazan con un offset para preservarlos.
         </div>
-        <div class="mb-2">
+        <div class="mb-3">
           <label class="form-label small fw-semibold mb-1">Tienda</label>
           <input type="text" id="rc-tienda-label" class="form-control form-control-sm" readonly
                  style="background:rgba(255,159,67,.06);color:#ff9f43;font-weight:600">
           <input type="hidden" id="rc-tienda-codigo">
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold mb-1">
+            Escribe el código de la tienda para confirmar
+          </label>
+          <input type="text" id="rc-confirmar" class="form-control form-control-sm"
+                 placeholder="Ej. FINAJP" autocomplete="off"
+                 style="font-weight:600;letter-spacing:.05em">
+          <div class="form-text" style="font-size:.7rem;color:#ff9f43">
+            Esta acción no se puede deshacer.
+          </div>
         </div>
         <div id="rc-res" class="d-none p-2 rounded small mt-2" style="word-break:break-word"></div>
       </div>
@@ -2398,14 +2409,25 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
     if (!btn) return;
     document.getElementById('rc-tienda-codigo').value = btn.dataset.tienda;
     document.getElementById('rc-tienda-label').value  = btn.dataset.tienda + ' — ' + btn.dataset.nombre;
+    document.getElementById('rc-confirmar').value = '';
     document.getElementById('rc-res').className = 'd-none';
     modal.show();
+    setTimeout(() => document.getElementById('rc-confirmar').focus(), 400);
   });
 
   document.getElementById('btn-rc-submit').addEventListener('click', function () {
-    const tienda = document.getElementById('rc-tienda-codigo').value;
-    const res    = document.getElementById('rc-res');
-    const btn    = this;
+    const tienda    = document.getElementById('rc-tienda-codigo').value;
+    const confirmar = document.getElementById('rc-confirmar').value.trim().toUpperCase();
+    const res       = document.getElementById('rc-res');
+
+    if (confirmar !== tienda.toUpperCase()) {
+      res.className = 'p-2 rounded small';
+      res.style.cssText = 'background:rgba(255,62,29,.08);color:#ff3e1d;word-break:break-word';
+      res.textContent = 'El código no coincide. Escríbelo exactamente como aparece arriba.';
+      return;
+    }
+
+    const btn = this;
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Procesando…';
     res.className = 'd-none';
@@ -2432,6 +2454,9 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
       btn.disabled = false;
       btn.innerHTML = '<i class="bx bx-rotate-left me-1"></i>Confirmar reset';
     });
+  });
+  document.getElementById('rc-confirmar').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('btn-rc-submit').click();
   });
 })();
 window.resetCorrelativo = function () {};
