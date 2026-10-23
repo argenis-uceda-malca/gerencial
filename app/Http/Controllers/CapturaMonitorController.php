@@ -479,21 +479,17 @@ class CapturaMonitorController extends Controller
     {
         $tienda = FeTienda::where('codigo_tienda', $codigo)->firstOrFail();
 
-        $desplazados = FeControlRegistro::where('codigo_tienda', $codigo)
-            ->where('idtransaccion_soluflex', '<', 1000000)
-            ->count();
+        $eliminados = FeControlRegistro::where('codigo_tienda', $codigo)->count();
 
-        FeControlRegistro::where('codigo_tienda', $codigo)
-            ->where('idtransaccion_soluflex', '<', 1000000)
-            ->update(['idtransaccion_soluflex' => \DB::raw('idtransaccion_soluflex + 1000000')]);
+        FeControlRegistro::where('codigo_tienda', $codigo)->delete();
 
         $tienda->ultimo_idtransaccion_capturado = 0;
         $tienda->save();
 
         return response()->json([
-            'ok'          => true,
-            'desplazados' => $desplazados,
-            'mensaje'     => "Cursor reiniciado. {$desplazados} registros históricos desplazados. El motor captará los nuevos documentos en el próximo ciclo.",
+            'ok'        => true,
+            'eliminados' => $eliminados,
+            'mensaje'   => "Cursor reiniciado. {$eliminados} registros históricos eliminados. El motor captará los nuevos documentos en el próximo ciclo.",
         ]);
     }
 

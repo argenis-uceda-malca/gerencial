@@ -1345,8 +1345,8 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
       <div class="modal-body">
         <div class="alert py-2 px-3 mb-3" style="font-size:.75rem;border-radius:8px;background:rgba(255,159,67,.08);border:1px solid rgba(255,159,67,.3)">
           <i class="bx bx-error-circle me-1" style="color:#ff9f43"></i>
-          Usar solo cuando <strong>Soluflex fue reinstalado</strong> y el IDTRANSACCION volvió a empezar desde 1.
-          Los registros históricos se desplazan con un offset para preservarlos.
+          Usar solo cuando el <strong>IDTRANSACCION de Soluflex se reinició desde 1</strong>.
+          Se eliminarán todos los registros históricos de esta tienda y el cursor quedará en 0.
         </div>
         <div class="mb-3">
           <label class="form-label small fw-semibold mb-1">Tienda</label>
