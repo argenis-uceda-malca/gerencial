@@ -675,6 +675,12 @@
                 const tr = num(r.total_anterior) || 0;
                 return tr === 0 ? 0 : ((num(r.ticket_anterior) || 0) / tr);
             } },
+            { h: 'Crec Conversión VS AA', w: 18, t: 'pct', color: true, g: 'Tráfico de Clientes', f: r => {
+                const t = num(r.total) || 0, ta = num(r.total_anterior) || 0;
+                const conv = t === 0 ? 0 : (num(r.ticket) || 0) / t;
+                const convAA = ta === 0 ? 0 : (num(r.ticket_anterior) || 0) / ta;
+                return convAA === 0 ? 0 : (conv / convAA - 1);
+            } },
         ];
 
         const wb = new ExcelJS.Workbook();
@@ -821,6 +827,13 @@
     function calculo_convercion_aa(params) {
         if (!params.data || !params.data.total_anterior || params.data.total_anterior == 0) return 0;
         return ((params.data.ticket_anterior || 0) / params.data.total_anterior) * 100;
+    }
+
+    function convCrecValueGetter(params) {
+        const actual = calculo_convercion(params);
+        const anterior = calculo_convercion_aa(params);
+        if (!anterior) return 0;
+        return ((actual / anterior) - 1) * 100;
     }
 
     // ================================================================
@@ -1341,6 +1354,19 @@
                         filter: true,
                         floatingFilter: true,
                         valueFormatter: params => params.value ? parseFloat(params.value).toFixed(2) : ''
+                    },
+                    {
+                        headerName: 'Crec Converión VS AA',
+                        colId: 'crec_conversion_aa',
+                        valueGetter: convCrecValueGetter,
+                        width: 150,
+                        cellStyle: { textAlign: "left" },
+                        filter: true,
+                        floatingFilter: true,
+                        cellRenderer: function(params) {
+                            const val = parseFloat(params.value);
+                            return getTrendIcon(val) + getStyledNumber(val, true);
+                        }
                     }
                 ]
             },
