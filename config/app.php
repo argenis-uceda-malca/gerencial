@@ -16,6 +16,13 @@ return [
     'name' => env('APP_NAME', 'Laravel'),
 
     /*
+    | Slug secreto de la URL pública de FF vs TO (/p/{slug}). Se define solo
+    | en .env para que no quede en el repositorio. Sin valor, la vista
+    | pública no se registra (404). Para rotarla basta con cambiarlo.
+    */
+    'ffto_public_slug' => env('FFTO_PUBLIC_SLUG'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------

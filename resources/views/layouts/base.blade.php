@@ -549,7 +549,7 @@
             </li>
             @endif
 
-            @if (in_array('acceso_ff_to', session('permisos', [])))
+            @if (in_array('acceso_ff_to', session('permisos', [])) && Route::has('dashboard.ffto'))
             <li class="menu-item{{ request()->routeIs('dashboard.ffto') ? ' active' : '' }}">
                 <a href="{{ route('dashboard.ffto') }}" class="menu-link">
                   <i class="menu-icon tf-icons bx bx-walk"></i>

@@ -112,9 +112,12 @@ Route::middleware('session.auth')->group(function () {
     Route::get('/monitor/ventas', [\App\Http\Controllers\MonitorVentasController::class, 'index'])->name('monitor.ventas');
 });
 
-// FF vs TO: única vista pública (no requiere login)
-Route::get('/dashboard/ff-to', [App\Http\Controllers\DashboardFfToController::class, 'index'])->name('dashboard.ffto');
-Route::get('/dashboard/ff-to/data', [App\Http\Controllers\DashboardFfToController::class, 'data'])->name('dashboard.ffto.data');
+// FF vs TO: única vista pública (no requiere login). La URL lleva un slug
+// secreto (FFTO_PUBLIC_SLUG en .env) para que no sea adivinable.
+if ($fftoSlug = config('app.ffto_public_slug')) {
+    Route::get('/p/' . $fftoSlug, [App\Http\Controllers\DashboardFfToController::class, 'index'])->name('dashboard.ffto');
+    Route::get('/p/' . $fftoSlug . '/data', [App\Http\Controllers\DashboardFfToController::class, 'data'])->name('dashboard.ffto.data');
+}
 
 
 Route::get('/probar-tbretail', function (TbRetailService $tbRetailService) {
