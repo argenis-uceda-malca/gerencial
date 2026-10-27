@@ -169,6 +169,11 @@ class TransformadorDocumentoService
         $subCab = abs((float)$venta->IMPORTE_SUBTOTAL);
         $totCab = abs((float)$venta->IMPORTE_TOTAL);
 
+        // IGV calculado desde líneas (no desde el header) para garantizar coherencia
+        // con SUNAT. Cuando Soluflex redondea distinto en cabecera vs líneas (diferencia
+        // de S/0.01), SUNAT rechaza con error 3277 si totalIgv + totalValorVenta ≠ suma líneas.
+        $igvCalculado = round($totCab - $subGravadas - $subExoneradas, 2);
+
         $montoRedondeo = round($totCab - $sumaDetalleTotal, 2);
 
         // Formateamos la fecha como varchar YYYY-MM-DD (10 chars exactos que requiere Bizlinks).
@@ -196,9 +201,9 @@ class TransformadorDocumentoService
             'numeroDocumentoAdquiriente'        => filled($cliente['numeroDocumento']) ? $cliente['numeroDocumento'] : '00000000',
             'razonSocialAdquiriente'            => filled($cliente['razonSocial']) ? $cliente['razonSocial'] : '-',
             'correoAdquiriente'                 => filled($cliente['correo'] ?? null) ? $cliente['correo'] : '-',
-            'totalImpuestos'                    => (string) round($igvCab, 2),
+            'totalImpuestos'                    => (string) $igvCalculado,
             'totalValorVentaNetoOpGravadas'     => (string) $subGravadas,
-            'totalIgv'                          => (string) round($igvCab, 2),
+            'totalIgv'                          => (string) $igvCalculado,
             'totalVenta'                        => (string) round($totCab, 2),
             'montoRedondeoTotalVenta'           => (string) $montoRedondeo,
             'tipoOperacion'                     => '0101',
@@ -223,7 +228,7 @@ class TransformadorDocumentoService
         // totalValorVenta y totalPrecioVenta son nullable en SPE_EINVOICEHEADER:
         // el manual los marca como no aplica ('-') para NC/ND.
         if (! $esNcNd) {
-            $cabecera['totalValorVenta']  = (string) round($subCab, 2);
+            $cabecera['totalValorVenta']  = (string) round($subGravadas + $subExoneradas, 2);
             $cabecera['totalPrecioVenta'] = (string) round($totCab, 2);
         }
 
@@ -465,6 +470,24 @@ class TransformadorDocumentoService
             }
 
             if ($persona) {
+                $identidadDoc    = trim($identidadFallback ?? '');
+                $identidadPadron = trim($persona->NUMERO_IDENTIDAD ?? '');
+
+                // Si CABECERA_DOCUMENTO.IDENTIDAD tiene 11 dígitos (RUC) pero
+                // M_PERSONAS registra solo el DNI de la misma persona (8 dígitos),
+                // la factura debe enviarse con el RUC del comprobante, no con el
+                // DNI del padrón. Ocurre cuando una empresa ingresa su RUC en
+                // Soluflex pero la ficha de cliente está creada con su DNI personal.
+                if (strlen($identidadDoc) === 11 && ctype_digit($identidadDoc)
+                    && strlen($identidadPadron) !== 11) {
+                    return [
+                        'tipoDocumentoSunat' => '6',
+                        'numeroDocumento'    => $identidadDoc,
+                        'razonSocial'        => $persona->PERSONA,
+                        'correo'             => $persona->EMAIL1,
+                    ];
+                }
+
                 // M_TIPO_IDENTIDAD puede estar vacía en algunos ERPs: inferir
                 // el tipo SUNAT por longitud del número de identidad.
                 $tipoSunat = filled($persona->CODIGO_SUNAT)

@@ -628,16 +628,115 @@
     // ================================================================
     // EXPORTAR A EXCEL
     // ================================================================
-    document.getElementById('exportar').addEventListener('click', function() {
-        if (typeof gridApi !== 'undefined' && gridApi) {
-            const jsonData = gridApi.getModel().rowsToDisplay.map(row => row.data);
-            const worksheet = XLSX.utils.json_to_sheet(jsonData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte');
-            const today = new Date();
-            const formattedDate = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
-            XLSX.writeFile(workbook, 'datos_' + formattedDate + '.xlsx');
+    document.getElementById('exportar').addEventListener('click', async function() {
+        if (typeof gridApi === 'undefined' || !gridApi) return;
+
+        const rows = gridApi.getModel().rowsToDisplay.map(r => r.data).filter(d => d);
+        const num = v => { const n = parseFloat(v); return isNaN(n) ? null : n; };
+
+        const COLOR_POS = 'FF00503C';
+        const COLOR_NEG = 'FFDC2626';
+        const BRAND = 'FF1F2A44';
+        const FMT_NUM = '#,##0.00';
+        const FMT_INT = '#,##0';
+        const FMT_PCT = '0.00%';
+
+        // type: txt | num | int | pct (pct se guarda como fracción) ; color: pinta verde/rojo según signo
+        const cols = [
+            { h: 'Marca', w: 24, t: 'txt', g: '', f: r => r.nombre },
+            { h: 'Venta', w: 16, t: 'num', g: 'Ventas', f: r => num(r.importe_total_sum) },
+            { h: 'Venta AA', w: 16, t: 'num', g: 'Ventas', f: r => num(r.anterior) },
+            { h: 'Crec VS AA', w: 14, t: 'pct', color: true, g: 'Ventas', f: r => {
+                const a = num(r.anterior), v = num(r.importe_total_sum);
+                return (!a || v === null) ? 0 : (v / a - 1);
+            } },
+            { h: 'GM %', w: 12, t: 'pct', color: true, g: 'Ventas', f: r => {
+                if (r.nombre === 'Suma Total:') return null;
+                const t = num(r.importe_total_sum) || 0, c = num(r.costo_venta_neta) || 0;
+                return t === 0 ? null : (t - c) / t;
+            } },
+            { h: 'Meta', w: 16, t: 'num', g: 'Ventas', f: r => num(r.meta) },
+            { h: 'Logro (%)', w: 12, t: 'pct', color: true, g: 'Ventas', f: r => { const n = num(r.logro); return n === null ? null : n / 100; } },
+            { h: 'Unidades', w: 12, t: 'int', color: true, g: 'Transacciones', f: r => num(r.unidades) },
+            { h: 'Precio promedio', w: 16, t: 'num', g: 'Transacciones', f: r => num(r.precio_promedio) },
+            { h: '# Tickets', w: 12, t: 'int', color: true, g: 'Transacciones', f: r => num(r.ticket) },
+            { h: 'Tickets promedio', w: 16, t: 'num', g: 'Transacciones', f: r => num(r.ticket_promedio) },
+            { h: 'Tráfico', w: 12, t: 'int', color: true, g: 'Tráfico de Clientes', f: r => num(r.total) },
+            { h: 'Conversión (%)', w: 14, t: 'pct', g: 'Tráfico de Clientes', f: r => {
+                const tr = num(r.total) || 0;
+                return tr === 0 ? 0 : ((num(r.ticket) || 0) / tr);
+            } },
+        ];
+
+        const wb = new ExcelJS.Workbook();
+        wb.creator = 'Smart Brands';
+        const ws = wb.addWorksheet('Reporte', {
+            views: [{ state: 'frozen', xSplit: 1, ySplit: 2, showGridLines: false }]
+        });
+        ws.columns = cols.map(c => ({ width: c.w }));
+
+        const thin = { style: 'thin', color: { argb: 'FFE5E7EB' } };
+        const border = { top: thin, left: thin, bottom: thin, right: thin };
+
+        // Fila 1: grupos (combinados)  |  Fila 2: encabezados
+        const g1 = ws.getRow(1), g2 = ws.getRow(2);
+        cols.forEach((c, i) => { g1.getCell(i + 1).value = c.g; g2.getCell(i + 1).value = c.h; });
+        let start = 0;
+        for (let i = 1; i <= cols.length; i++) {
+            if (i === cols.length || cols[i].g !== cols[start].g) {
+                if (i - 1 > start) ws.mergeCells(1, start + 1, 1, i);
+                start = i;
+            }
         }
+        [g1, g2].forEach((row, idx) => {
+            row.height = idx === 0 ? 22 : 26;
+            row.eachCell({ includeEmpty: true }, cell => {
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: idx === 0 ? 11 : 10, name: 'Calibri' };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: idx === 0 ? BRAND : 'FF34426B' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.border = border;
+            });
+        });
+
+        // Datos (Suma Total al final)
+        const sorted = rows.filter(r => r.nombre !== 'Suma Total:').concat(rows.filter(r => r.nombre === 'Suma Total:'));
+        sorted.forEach((r, ri) => {
+            const isTotal = r.nombre === 'Suma Total:';
+            const row = ws.addRow(cols.map(c => c.f(r)));
+            row.height = 20;
+            row.eachCell({ includeEmpty: true }, (cell, ci) => {
+                const c = cols[ci - 1];
+                const v = cell.value;
+                cell.border = border;
+                cell.alignment = { vertical: 'middle', horizontal: c.t === 'txt' ? 'left' : 'right' };
+                if (c.t === 'num') cell.numFmt = FMT_NUM;
+                if (c.t === 'int') cell.numFmt = FMT_INT;
+                if (c.t === 'pct') cell.numFmt = FMT_PCT;
+                let color = 'FF111827';
+                if (c.color && typeof v === 'number') color = v < 0 ? COLOR_NEG : COLOR_POS;
+                cell.font = { name: 'Calibri', size: 10, bold: isTotal || ci === 1, color: { argb: color } };
+                if (isTotal) {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E7FF' } };
+                    cell.border = { ...border, top: { style: 'medium', color: { argb: BRAND } } };
+                } else if (ri % 2 === 1) {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9FAFB' } };
+                }
+            });
+        });
+
+        ws.autoFilter = { from: { row: 2, column: 1 }, to: { row: 2, column: cols.length } };
+
+        const buf = await wb.xlsx.writeBuffer();
+        const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const today = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'reporte_' + today.getFullYear() + '-' + pad(today.getMonth() + 1) + '-' + pad(today.getDate()) + '.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     });
 </script>
 
@@ -645,7 +744,7 @@
 <!-- SCRIPTS - SECCIÓN 3: AG-GRID Y LÓGICA PRINCIPAL (BABEL) -->
 <!-- ============================================================ -->
 <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.1.1/dist/ag-grid-community.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.2/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 
 <script type="text/babel">
     // ================================================================
