@@ -996,7 +996,7 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
 @endsection
 
 @section('footer')
-<script src="../assets/js/pivot-engine.js"></script>
+<script src="../assets/js/pivot-engine.js?v=20261027"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.2/dist/ag-grid-community.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

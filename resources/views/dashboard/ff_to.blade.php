@@ -73,6 +73,16 @@ body { background:var(--c-bg) !important; }
 .periodo-pill.active { background:#fff !important; color:var(--c-teal) !important; border-color:#fff !important;
                        font-weight:700; box-shadow:0 3px 10px rgba(0,0,0,.14); }
 
+/* ══ AVISOS ══ */
+.ff-notes { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+.ff-notes:empty { display:none; }
+.ff-note { display:flex; align-items:flex-start; gap:8px; font-size:.76rem; line-height:1.4; padding:9px 14px;
+           border-radius:var(--radius-sm); background:var(--c-blue-bg); color:var(--c-slate); border:1px solid var(--c-border); }
+.ff-note i { font-size:1rem; color:var(--c-teal); margin-top:1px; }
+.ff-note.warn { background:#fef3c7; border-color:#fde68a; color:#78350f; }
+.ff-note.warn i { color:var(--c-amber-dk); }
+[data-theme="dark"] .ff-note.warn { background:#3a2f12; border-color:#5c4a17; color:#fde68a; }
+
 /* ══ KPI CARDS — icono grande centrado (estilo slide 2) ══ */
 .kpi-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:16px; }
 @media (max-width:1200px){ .kpi-grid{ grid-template-columns:repeat(3,1fr);} }
@@ -408,8 +418,8 @@ body { background:var(--c-bg) !important; }
     <div class="d-flex flex-wrap align-items-center gap-2">
       @foreach($meses as $m)
         @php
-          $ini  = \Carbon\Carbon::create(2026,$m['n'],1)->startOfMonth()->toDateString();
-          $finM = \Carbon\Carbon::create(2026,$m['n'],1)->endOfMonth();
+          $ini  = \Carbon\Carbon::create($anio,$m['n'],1)->startOfMonth()->toDateString();
+          $finM = \Carbon\Carbon::create($anio,$m['n'],1)->endOfMonth();
           $fin  = $finM->gt(\Carbon\Carbon::today()) ? $today : $finM->toDateString();
         @endphp
         <button class="btn periodo-pill {{ $loop->last ? 'active' : '' }}"
@@ -421,6 +431,9 @@ body { background:var(--c-bg) !important; }
     </div>
   </div>
 
+  {{-- AVISOS de alcance / calidad de datos --}}
+  <div class="ff-notes ff-anim" id="ff-notes"></div>
+
   {{-- KPIs GLOBALES (slide 2) --}}
   <div class="kpi-grid mb-4 ff-anim" id="kpi-grid">
     <div class="kpi-card">
@@ -429,7 +442,7 @@ body { background:var(--c-bg) !important; }
       <div class="kpi-value" id="kpi-ff">-</div>
       <div class="kpi-sub" id="kpi-ff-sub">vs -</div>
       <div class="kpi-var" id="kpi-ff-var"></div>
-      <div class="kpi-tag">visitas</div>
+      <div class="kpi-tag" id="kpi-ff-tag">visitas</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-icon"><i class="bx bx-dollar-circle"></i></div>
@@ -461,7 +474,7 @@ body { background:var(--c-bg) !important; }
       <div class="kpi-value" id="kpi-cr">-</div>
       <div class="kpi-sub" id="kpi-cr-sub">vs -</div>
       <div class="kpi-var" id="kpi-cr-var"></div>
-      <div class="kpi-tag">conversión</div>
+      <div class="kpi-tag" id="kpi-cr-tag">conversión</div>
     </div>
   </div>
 
@@ -570,11 +583,42 @@ function setKpi(prefix, actual, anterior, fmt, isPctPoints){
   varEl.textContent = (v>=0?'▲ +':'▼ ')+v.toFixed(1)+(isPctPoints?' pp':'%');
 }
 function renderKpis(g){
+  g = g || {};
   setKpi('ff',  g.ff_act,  g.ff_hst,  nfInt,   false);
   setKpi('to',  g.to_act,  g.to_hst,  nfMoneyK, false);
   setKpi('tk',  g.tickets_act, g.tickets_hst, nfInt, false);
   setKpi('atv', g.atv_act, g.atv_hst, nfMoney, false);
   setKpi('cr',  g.cr_act,  g.cr_hst,  function(v){ return nfPct(v,2); }, true);
+  var tagFf = g.n_ff!=null ? 'visitas · '+g.n_ff+' tiendas con contador' : 'visitas';
+  document.getElementById('kpi-ff-tag').textContent = tagFf;
+  document.getElementById('kpi-cr-tag').textContent = g.n_ff!=null ? 'conversión · '+g.n_ff+' tiendas' : 'conversión';
+}
+
+/* ══ AVISOS: período real comparado y alcance de los KPIs ══ */
+function fmtFecha(s){ if(!s) return '-'; var p = s.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+function renderNotes(meta, g){
+  var el = document.getElementById('ff-notes');
+  var notes = [];
+  if(meta.aviso){
+    notes.push({warn:true, icon:'bx-info-circle', html:escHtml(meta.aviso)});
+  } else {
+    var txt = 'Comparando <b>'+fmtFecha(meta.ini)+' – '+fmtFecha(meta.fin)+'</b> vs <b>'+fmtFecha(meta.ini_ant)+' – '+fmtFecha(meta.fin_ant)+'</b> según el calendario comercial de fechas equivalentes ('+meta.dias_act+' vs '+meta.dias_ant+' días). Solo días cerrados';
+    if(meta.fin_solicitado && meta.fin_solicitado !== meta.fin) txt += ': el período llega hasta '+fmtFecha(meta.fin)+' porque los días posteriores aún no están completos';
+    notes.push({icon:'bx-calendar', html:txt+'.'});
+    if(g){
+      var alc = 'Ventas, tickets y ATV: '+g.n_comp+' tiendas comparables (operaron los mismos días en ambos años).';
+      if(g.n_tiendas > g.n_comp) alc += ' '+(g.n_tiendas-g.n_comp)+' tienda(s) que abrieron, cerraron o se remodelaron en el período ('+nfMoneyK(g.to_sin_comp)+' en '+fmtFecha(meta.ini).slice(-4)+') se muestran abajo pero no entran al total.';
+      if(meta.cerradas && meta.cerradas.n > 0) alc += ' '+meta.cerradas.n+' tienda(s) cerrada(s) excluidas ('+nfMoneyK(meta.cerradas.to_hst)+' en '+(fmtFecha(meta.ini_ant).slice(-4))+').';
+      alc += ' FF, CR y TO/FF: '+g.n_ff+' tiendas con contador de tráfico completo en ambos años.';
+      notes.push({icon:'bx-store', html:escHtml(alc)});
+    }
+    if(meta.dias_sin_ff > 0){
+      notes.push({warn:true, icon:'bx-error', html:'Faltan datos de tráfico de <b>'+meta.dias_sin_ff+' día(s)</b> en este período; se están completando desde TB Retail. Recarga en unos minutos: FF, CR y TO/FF pueden estar subestimados.'});
+    }
+  }
+  el.innerHTML = notes.map(function(n){
+    return '<div class="ff-note'+(n.warn?' warn':'')+'"><i class="bx '+n.icon+'"></i><div>'+n.html+'</div></div>';
+  }).join('');
 }
 
 /* ══ GAP CHART — barras verticales pareadas 2025 vs 2026 (slide 3) ══ */
@@ -607,20 +651,29 @@ function renderGapChart(sucursales){
 }
 
 /* ══ DETALLE POR SUCURSAL — tarjetas 2 por fila ══ */
-function storeStatus(toVar){
+function storeStatus(toVar, r){
+  if(r && r.to_hst==null) return {cls:'flat', label:'Sin comparativo'};
+  if(r && !r.comparable)  return {cls:'flat', label:'Período parcial'};
   if(toVar==null) return {cls:'flat', label:'Sin comparativo'};
   if(toVar > 5)  return {cls:'up',   label:'TO en alza'};
   if(toVar < -5) return {cls:'down', label:'TO en caída'};
   return {cls:'flat', label:'TO estable'};
 }
-function statTile(label, val, varv){
+function statTile(label, val, varv, unidad){
   var x = varv==null
     ? '<div class="stat-x na">–</div>'
-    : '<div class="stat-x '+(varv>=0?'pos':'neg')+'">'+(varv>=0?'▲+':'▼')+varv.toFixed(1)+'%</div>';
+    : '<div class="stat-x '+(varv>=0?'pos':'neg')+'">'+(varv>=0?'▲+':'▼')+varv.toFixed(1)+(unidad||'%')+'</div>';
   return '<div class="stat"><div class="stat-l">'+label+'</div><div class="stat-v">'+val+'</div>'+x+'</div>';
 }
+function motivoSinRatio(r){
+  if(r.to_hst==null) return 'Sin venta 2025 comparable en este período.';
+  if(!r.tiene_contador) return 'Tienda sin contador de tráfico.';
+  return 'Contador de tráfico incompleto en uno de los períodos.';
+}
 function storeSummary(r){
-  if(r.to_var==null || r.gap==null) return 'Sin comparativo 2025 cargado para este período.';
+  if(r.to_var==null) return 'Sin venta 2025 comparable en este período.';
+  if(!r.comparable) return 'Operó '+r.dias_act+' días del período vs '+r.dias_hst+' el año anterior (apertura, cierre o remodelación): la variación no es comparable y no entra al total.';
+  if(r.gap==null) return 'TO '+(r.to_var>=0?'creció +':'cayó ')+r.to_var.toFixed(1)+'%. '+motivoSinRatio(r);
   var toTxt  = (r.to_var>=0?'creció +':'cayó ')+r.to_var.toFixed(1)+'%';
   var ffTxt  = r.ff_var==null ? 'sin dato' : ((r.ff_var>=0?'subió +':'bajó ')+r.ff_var.toFixed(1)+'%');
   var gapTxt = (r.gap>=0?'mejoró +':'se deterioró ')+r.gap.toFixed(2);
@@ -631,7 +684,7 @@ var allStores = [];
 var storeFilter = { q:'', canal:'', estado:'' };
 
 function normTxt(s){ return (''+(s||'')).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
-function enCaida(r){ return storeStatus(r.to_var).cls === 'down'; }
+function enCaida(r){ return storeStatus(r.to_var, r).cls === 'down'; }
 
 function setStores(sucursales){
   allStores = sucursales || [];
@@ -682,7 +735,7 @@ function renderStores(sucursales){
     return;
   }
   sucursales.slice().sort(function(a,b){ return b.to_act - a.to_act; }).forEach(function(r){
-    var st = storeStatus(r.to_var);
+    var st = storeStatus(r.to_var, r);
     var hasRatio = (r.ratio_act!=null && r.ratio_hst!=null);
     var maxR = hasRatio ? Math.max(r.ratio_act, r.ratio_hst, 0.01) : 1;
     var w25 = hasRatio ? (r.ratio_hst/maxR*100) : 0;
@@ -698,7 +751,7 @@ function renderStores(sucursales){
             '<div class="hbar-fill y25" style="width:'+w25.toFixed(1)+'%">S/ '+r.ratio_hst.toFixed(2)+'</div></div></div>'+
         '</div>'
       : '<div class="store-bars"><div class="store-bars-title">Ratio TO / FF — soles por visitante</div>'+
-        '<div class="text-muted" style="font-size:.74rem;padding:6px 0">Sin comparativo 2025 disponible.</div></div>';
+        '<div class="text-muted" style="font-size:.74rem;padding:6px 0">'+motivoSinRatio(r)+'</div></div>';
 
     var footHtml = '<div class="store-foot">'+
         '<div class="store-gap">'+
@@ -721,7 +774,7 @@ function renderStores(sucursales){
         statTile('TO', nfMoneyK(r.to_act), r.to_var) +
         statTile('Tickets', nfInt(r.tickets_act), r.tickets_var) +
         statTile('ATV', nfMoney(r.atv_act), r.atv_var) +
-        statTile('CR', nfPct(r.cr_act,1), r.cr_var) +
+        statTile('CR', nfPct(r.cr_act,1), r.cr_var, ' pp') +
       '</div>'+
       barsHtml + footHtml;
     el.appendChild(card);
@@ -747,7 +800,7 @@ function renderRanking(sucursales){
   var conGap = sucursales.filter(function(r){ return r.gap!=null; });
   var porGapAsc  = conGap.slice().sort(function(a,b){ return b.gap - a.gap; });
   var porGapDesc = conGap.slice().sort(function(a,b){ return a.gap - b.gap; });
-  var conCrec = sucursales.filter(function(r){ return r.to_var!=null; }).sort(function(a,b){ return b.to_var - a.to_var; });
+  var conCrec = sucursales.filter(function(r){ return r.to_var!=null && r.comparable; }).sort(function(a,b){ return b.to_var - a.to_var; });
   renderRankingList('rank-up',   porGapAsc.slice(0,5),  'gap', function(v){ return (v>=0?'+':'')+v.toFixed(2); });
   renderRankingList('rank-down', porGapDesc.slice(0,5), 'gap', function(v){ return (v>=0?'+':'')+v.toFixed(2); });
   renderRankingList('rank-growth', conCrec.slice(0,5),  'to_var', function(v){ return (v>=0?'+':'')+v.toFixed(1)+'%'; });
@@ -756,15 +809,23 @@ function renderRanking(sucursales){
 /* ══ CARGA ══ */
 async function loadData(){
   document.getElementById('ffto-loader').classList.add('show');
-  document.getElementById('lbl-rango').textContent = activeIni + ' → ' + activeFin;
+  document.getElementById('lbl-rango').textContent = fmtFecha(activeIni) + ' → ' + fmtFecha(activeFin);
   try {
     var r = await fetch('{{ route('dashboard.ffto.data') }}?' + new URLSearchParams({ini:activeIni, fin:activeFin}));
+    if(!r.ok) throw new Error('HTTP '+r.status);
     var json = await r.json();
+    var meta = json.meta || {};
+    if(meta.ini && !meta.aviso) document.getElementById('lbl-rango').textContent = fmtFecha(meta.ini) + ' → ' + fmtFecha(meta.fin);
+    renderNotes(meta, json.global);
     renderKpis(json.global);
     renderGapChart(json.sucursales);
     setStores(json.sucursales);
     renderRanking(json.sucursales);
-  } catch(e){ console.error(e); }
+  } catch(e){
+    console.error(e);
+    renderNotes({aviso:'No se pudieron cargar los datos. Intenta nuevamente en unos minutos.'}, null);
+    renderKpis(null); renderGapChart([]); setStores([]); renderRanking([]);
+  }
   finally { document.getElementById('ffto-loader').classList.remove('show'); }
 }
 

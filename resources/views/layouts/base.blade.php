@@ -1145,7 +1145,8 @@
         // Obtén una referencia al botón de cerrar
         const botonCerrar = document.getElementById('botonCerrar');
         // Agrega un evento de clic al botón
-        botonCerrar.addEventListener('click', function() {
+        // (no existe en vistas públicas sin sesión)
+        if (botonCerrar) botonCerrar.addEventListener('click', function() {
             // Elimina la fecha seleccionada del localStorage
             // localStorage.removeItem('fechainicioSeleccionada');
             // localStorage.removeItem('fechaSeleccionada');

@@ -19,7 +19,7 @@
   var SEP = '';   // separador interno de claves
 
   /* ── Campos base que se agregan en cada celda ─────────────────────────── */
-  var BASE_FIELDS = ['vta26', 'vta25', 'gm26', 'gm25', 'unds26', 'unds25', 'tickets26', 'meta_vta', 'inv_unds_act', 'inv_costo_act', 'vta_si26', 'vta_si25'];
+  var BASE_FIELDS = ['vta26', 'vta25', 'gm26', 'gm25', 'unds26', 'unds25', 'tickets26', 'vta_tk26', 'meta_vta', 'inv_unds_act', 'inv_costo_act', 'vta_si26', 'vta_si25'];
 
   /* ── Catálogo de medidas ──────────────────────────────────────────────
      type 'raw'  → agrega un campo base con la aggFn elegida (sum/avg/min/max/count)
@@ -46,7 +46,9 @@
     pprom26:    { label: 'P.Prom 26',   type: 'calc', fmt: 'money',
                   calc: function (s) { return s.unds26 > 0 ? s.vta26 / s.unds26 : null; } },
     ticket_prom:{ label: 'Ticket Prom', type: 'calc', fmt: 'money',
-                  calc: function (s) { return s.tickets26 > 0 ? s.vta26 / s.tickets26 : null; } },
+                  // vta_tk26 = venta solo de filas con tickets (en el consolidado
+                  // excluye TXD). Reportes que no lo envían usan vta26.
+                  calc: function (s) { return s.tickets26 > 0 ? (s.vta_tk26 || s.vta26) / s.tickets26 : null; } },
     meta_vta:   { label: 'Meta Vta',    type: 'raw',  field: 'meta_vta', fmt: 'money', allowAgg: true },
     cumpl_pct:  { label: '%Cumpl Meta', type: 'calc', fmt: 'pct',
                   calc: function (s) { return s.meta_vta > 0 ? s.vta26 / s.meta_vta * 100 : null; } },

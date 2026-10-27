@@ -147,7 +147,8 @@ class DashboardConsolidadoController extends Controller
                 SUM(vta_act)              AS vta26,
                 SUM(vta_act - costo_act)  AS gm26,
                 SUM(vta_unds_act)         AS unds26,
-                SUM(nro_tickets)          AS tickets26,
+                SUM(v_flag_tickets_act)   AS tickets26,
+                SUM(CASE WHEN origen = 'VENTAS' THEN vta_act ELSE 0 END) AS vta_tk26,
                 SUM(t_vta_soles_si_act)   AS vta_si26
             ")
             ->where(function ($q) {
@@ -178,7 +179,13 @@ class DashboardConsolidadoController extends Controller
                 'vta26'     => round((float)$r->vta26, 2),
                 'gm26'      => round((float)$r->gm26,  2),
                 'unds26'    => (int)$r->unds26,
+                // Tickets = v_flag_tickets_act (1 por documento de venta, sin NC).
+                // nro_tickets NO es un conteo: es el ROW_NUMBER de la línea dentro
+                // del ticket. TXD (tiendas por departamento) no tiene tickets.
                 'tickets26' => (int)$r->tickets26,
+                // Venta de las filas que sí tienen tickets (origen VENTAS), para
+                // que el Ticket Prom no divida venta TXD entre tickets de tienda.
+                'vta_tk26'  => round((float)$r->vta_tk26, 2),
                 'vta_si26'  => round((float)($r->vta_si26 ?? 0), 2),
             ];
         }
