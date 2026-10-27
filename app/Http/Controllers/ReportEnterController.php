@@ -241,6 +241,12 @@ class ReportEnterController extends Controller
             } else {
                 $entradas = $this->getLocatioIdMarcas($fecha_inicio, $fecha_fin, $marcas_seleccionadas);
             }
+            if (!(!$filtroonline && $filtroincluironline)) {
+                list($ant_ini, $ant_fin) = $this->rangoAnioAnterior($fecha_inicio, $fecha_fin);
+                $entradas_anterior = $this->getTraficoAnterior($ant_ini, $ant_fin, 'marca', $marcas_seleccionadas);
+            } else {
+                $entradas_anterior = [];
+            }
 
             //var_dump(json_encode($anio_anterior));
             //var_dump(json_encode($reporte));
@@ -265,8 +271,17 @@ class ReportEnterController extends Controller
                 // Fusionar con los datos de $anio_anterior si hay coincidencia
                 foreach ($anio_anterior as $anterior) {
                     if ($item->id == $anterior->id) {
-                        $item->anterior = $anterior->anterior; // Fusionar el dato "total" del $anio_anterior en el $item
+                        $item->anterior = $anterior->anterior; $item->ticket_anterior = $anterior->ticket_anterior ?? 0; // Fusionar el dato "total" del $anio_anterior en el $item
                         $entradaCoincidente2 = true;
+                        break;
+                    }
+                }
+
+                // Tráfico del año anterior
+                $item->total_anterior = 0;
+                foreach ($entradas_anterior as $ea) {
+                    if ($item->id == $ea->id) {
+                        $item->total_anterior = $ea->total;
                         break;
                     }
                 }
@@ -279,6 +294,7 @@ class ReportEnterController extends Controller
                 // Si no hay coincidencia con $anio_anterior, establecer "anterior" en cero
                 if (!$entradaCoincidente2) {
                     $item->anterior = 0;
+                    $item->ticket_anterior = 0;
                 }
 
                 // Agregar el item al array de resultados fusionados
@@ -303,6 +319,8 @@ class ReportEnterController extends Controller
 
             $anio_anterior = $this->getImporteAnioAnteriorTiendas($fecha_inicio, $fecha_fin, $this->getIDMarcas($marcas), $filtroonline, $filtroincluironline, $filtrotxd);
             $entradas  = $this->getLocatioIdTiendas($fecha_inicio, $fecha_fin, $idsTiendas);
+            list($ant_ini, $ant_fin) = $this->rangoAnioAnterior($fecha_inicio, $fecha_fin);
+            $entradas_anterior = $this->getTraficoAnterior($ant_ini, $ant_fin, 'tienda', $idsTiendas);
             //dd($entradas);
             Log::info("COTTROL resultadosFusionados");
 
@@ -323,8 +341,17 @@ class ReportEnterController extends Controller
                 // Fusionar con los datos de $anio_anterior si hay coincidencia
                 foreach ($anio_anterior as $anterior) {
                     if ($item->id == $anterior->id) {
-                        $item->anterior = $anterior->anterior; // Fusionar el dato "total" del $anio_anterior en el $item
+                        $item->anterior = $anterior->anterior; $item->ticket_anterior = $anterior->ticket_anterior ?? 0; // Fusionar el dato "total" del $anio_anterior en el $item
                         $entradaCoincidente2 = true;
+                        break;
+                    }
+                }
+
+                // Tráfico del año anterior
+                $item->total_anterior = 0;
+                foreach ($entradas_anterior as $ea) {
+                    if ($item->id == $ea->id) {
+                        $item->total_anterior = $ea->total;
                         break;
                     }
                 }
@@ -337,6 +364,7 @@ class ReportEnterController extends Controller
                 // Si no hay coincidencia con $anio_anterior, establecer "anterior" en cero
                 if (!$entradaCoincidente2) {
                     $item->anterior = 0;
+                    $item->ticket_anterior = 0;
                 }
 
                 // Agregar el item al array de resultados fusionados
@@ -398,6 +426,8 @@ class ReportEnterController extends Controller
             $anio_anterior = $this->getImporteAnioAnteriorTiendas($fecha_inicio, $fecha_fin, $this->getIDMarcas($marcas), $filtroonline, $filtroincluironline, $filtrotxd);
 
             $entradas  = $this->getLocatioIdTiendas($fecha_inicio, $fecha_fin, $idsTiendas);
+            list($ant_ini, $ant_fin) = $this->rangoAnioAnterior($fecha_inicio, $fecha_fin);
+            $entradas_anterior = $this->getTraficoAnterior($ant_ini, $ant_fin, 'tienda', $idsTiendas);
 
             foreach ($reporte as $item) {
                 $entradaCoincidente = false; // Bandera para controlar si se encontró una entrada coincidente en $entradas
@@ -415,8 +445,17 @@ class ReportEnterController extends Controller
                 // Fusionar con los datos de $anio_anterior si hay coincidencia
                 foreach ($anio_anterior as $anterior) {
                     if ($item->id == $anterior->id) {
-                        $item->anterior = $anterior->anterior; // Fusionar el dato "total" del $anio_anterior en el $item
+                        $item->anterior = $anterior->anterior; $item->ticket_anterior = $anterior->ticket_anterior ?? 0; // Fusionar el dato "total" del $anio_anterior en el $item
                         $entradaCoincidente2 = true;
+                        break;
+                    }
+                }
+
+                // Tráfico del año anterior
+                $item->total_anterior = 0;
+                foreach ($entradas_anterior as $ea) {
+                    if ($item->id == $ea->id) {
+                        $item->total_anterior = $ea->total;
                         break;
                     }
                 }
@@ -429,6 +468,7 @@ class ReportEnterController extends Controller
                 // Si no hay coincidencia con $anio_anterior, establecer "anterior" en cero
                 if (!$entradaCoincidente2) {
                     $item->anterior = 0;
+                    $item->ticket_anterior = 0;
                 }
 
                 // Agregar el item al array de resultados fusionados
@@ -676,7 +716,8 @@ class ReportEnterController extends Controller
         $resultados = $bi_conexion->table('datamart_ventas_2025 as dv')
             ->select(
                 'dv.sucursal_marca_id AS id',
-                DB::raw('SUM(dv.importe_subtotal) AS anterior')
+                DB::raw('SUM(dv.importe_subtotal) AS anterior'),
+                DB::raw('COUNT(DISTINCT dv.idtransaccion) AS ticket_anterior')
             )
             ->leftJoin('pla_fechas_equivalentes as f', DB::raw('COALESCE(dv.fecha_documento, dv.fecha_documento)'), '=', 'f.fecha')
             ->leftJoin('datamart_calendario as c', DB::raw('COALESCE(f.fecha_equivalente, dv.fecha_documento)'), '=', 'c.fecha')
@@ -740,7 +781,8 @@ class ReportEnterController extends Controller
             $filaWebAnterior = $bi_conexion->table('datamart_ventas_2025 as dv')
                 ->select(
                     DB::raw("'WEB' AS id"),
-                    DB::raw('SUM(dv.importe_subtotal) AS anterior')
+                    DB::raw('SUM(dv.importe_subtotal) AS anterior'),
+                    DB::raw('COUNT(DISTINCT dv.idtransaccion) AS ticket_anterior')
                 )
                 ->leftJoin('pla_fechas_equivalentes as f', DB::raw('COALESCE(dv.fecha_documento, dv.fecha_documento)'), '=', 'f.fecha')
                 ->leftJoin('datamart_calendario as c', DB::raw('COALESCE(f.fecha_equivalente, dv.fecha_documento)'), '=', 'c.fecha')
@@ -772,8 +814,10 @@ class ReportEnterController extends Controller
                 $filaWebAnterior = new \stdClass();
                 $filaWebAnterior->id = 'WEB';
                 $filaWebAnterior->anterior = 0;
+                $filaWebAnterior->ticket_anterior = 0;
             } elseif ($filaWebAnterior->anterior === null) {
                 $filaWebAnterior->anterior = 0;
+                $filaWebAnterior->ticket_anterior = 0;
             }
 
             $resultados->push($filaWebAnterior);
@@ -804,7 +848,8 @@ class ReportEnterController extends Controller
         $resultados = $bi_conexion->table('datamart_ventas_2025 as dv')
             ->select(
                 'dv.idsucursal AS id',
-                DB::raw('SUM(dv.importe_subtotal) AS anterior')
+                DB::raw('SUM(dv.importe_subtotal) AS anterior'),
+                DB::raw('COUNT(DISTINCT dv.idtransaccion) AS ticket_anterior')
                 //'fecha_documento as fecha'
             )
             ->leftJoin('pla_fechas_equivalentes as f', DB::raw('COALESCE(dv.fecha_documento, dv.fecha_documento)'), '=', 'f.fecha')
@@ -1807,6 +1852,36 @@ class ReportEnterController extends Controller
         //var_dump($entradas);
         //var_dump($prueba);
         return view('ver_mas2', compact('marcas', 'option', 'fecha', 'titulo', 'anio_anterior', 'entradas', 'filtroonline', 'filtroincluironline', 'filtrotxd'));
+    }
+
+    /**
+     * Tráfico histórico (tbretail_conteos, tipo='tienda') agrupado por tienda o marca.
+     * report_enter solo llega hasta 2024-09, por eso no sirve para el año anterior.
+     */
+    private function getTraficoAnterior($fecha_inicio, $fecha_fin, $tipo, $ids)
+    {
+        $ids = (array) $ids;
+        if (!$ids) return collect([]);
+        $col = $tipo === 'marca' ? 'l.idmarca' : 'l.idtienda';
+        return DB::connection('pgsql')
+            ->table('tbretail_conteos as t')
+            ->join('location_id_tienda as l', 'l.idtienda', '=', 't.entidad_id')
+            ->where('t.tipo', 'tienda')
+            ->whereBetween('t.fecha', [$fecha_inicio, $fecha_fin])
+            ->whereIn($col, $ids)
+            ->groupBy($col)
+            ->selectRaw($col . ' AS id, SUM(t.conteo) AS total')
+            ->get();
+    }
+
+    /**
+     * Rango equivalente del año anterior (usa pla_fechas_equivalentes; si no hay, resta 1 año).
+     */
+    private function rangoAnioAnterior($fecha_inicio, $fecha_fin)
+    {
+        $ini = $this->getfechaequivalente($fecha_inicio) ?: Carbon::parse($fecha_inicio)->subYear()->format('Y-m-d');
+        $fin = $this->getfechaequivalente($fecha_fin) ?: Carbon::parse($fecha_fin)->subYear()->format('Y-m-d');
+        return [Carbon::parse($ini)->format('Y-m-d'), Carbon::parse($fin)->format('Y-m-d')];
     }
 
     public function getfechaequivalente($fecha){

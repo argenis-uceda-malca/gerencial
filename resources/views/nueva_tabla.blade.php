@@ -662,9 +662,14 @@
             { h: '# Tickets', w: 12, t: 'int', color: true, g: 'Transacciones', f: r => num(r.ticket) },
             { h: 'Tickets promedio', w: 16, t: 'num', g: 'Transacciones', f: r => num(r.ticket_promedio) },
             { h: 'Tráfico', w: 12, t: 'int', color: true, g: 'Tráfico de Clientes', f: r => num(r.total) },
+            { h: 'Tráfico AA', w: 12, t: 'int', color: true, g: 'Tráfico de Clientes', f: r => num(r.total_anterior) },
             { h: 'Conversión (%)', w: 14, t: 'pct', g: 'Tráfico de Clientes', f: r => {
                 const tr = num(r.total) || 0;
                 return tr === 0 ? 0 : ((num(r.ticket) || 0) / tr);
+            } },
+            { h: 'Conversión AA (%)', w: 16, t: 'pct', g: 'Tráfico de Clientes', f: r => {
+                const tr = num(r.total_anterior) || 0;
+                return tr === 0 ? 0 : ((num(r.ticket_anterior) || 0) / tr);
             } },
         ];
 
@@ -802,6 +807,11 @@
     function calculo_convercion(params) {
         if (params.data.total == 0) return 0;
         return (params.data.ticket / params.data.total) * 100;
+    }
+
+    function calculo_convercion_aa(params) {
+        if (!params.data || !params.data.total_anterior || params.data.total_anterior == 0) return 0;
+        return ((params.data.ticket_anterior || 0) / params.data.total_anterior) * 100;
     }
 
     // ================================================================
@@ -1024,6 +1034,8 @@
         let unidadesSum = 0;
         let ticketSum = 0;
         let visitantesSum = 0;
+        let visitantesAASum = 0;
+        let ticketAASum = 0;
         let costoVentaNeta = 0;
 
         dataNodes.forEach(node => {
@@ -1033,6 +1045,8 @@
             unidadesSum += parseFloat(node.data.unidades || 0);
             ticketSum += parseFloat(node.data.ticket || 0);
             visitantesSum += parseFloat(node.data.total || 0);
+            visitantesAASum += parseFloat(node.data.total_anterior || 0);
+            ticketAASum += parseFloat(node.data.ticket_anterior || 0);
             costoVentaNeta += parseFloat(node.data.costo_venta_neta || 0);
         });
 
@@ -1069,6 +1083,8 @@
                 unidades: unidadesSum,
                 ticket: ticketSum,
                 total: visitantesSum,
+                total_anterior: visitantesAASum,
+                ticket_anterior: ticketAASum,
                 costo_venta_neta: costoVentaNeta,
                 logro: metaSum > 0 ? (totalSum / metaSum) * 100 : 0,
             }]
@@ -1276,11 +1292,30 @@
                         cellRenderer: params => getStyledInteger(params.value)
                     },
                     {
+                        field: 'total_anterior',
+                        headerName: 'Tráfico AA',
+                        width: 110,
+                        cellStyle: { textAlign: "right" },
+                        filter: true,
+                        floatingFilter: true,
+                        cellRenderer: params => getStyledInteger(params.value)
+                    },
+                    {
                         headerName: 'Converión (%)',
                         width: 120,
                         cellStyle: { textAlign: "right" },
                         colId: 'ticket&total',
                         valueGetter: calculo_convercion,
+                        filter: true,
+                        floatingFilter: true,
+                        valueFormatter: params => params.value ? parseFloat(params.value).toFixed(2) : ''
+                    },
+                    {
+                        headerName: 'Converión AA (%)',
+                        width: 130,
+                        cellStyle: { textAlign: "right" },
+                        colId: 'ticket&total_aa',
+                        valueGetter: calculo_convercion_aa,
                         filter: true,
                         floatingFilter: true,
                         valueFormatter: params => params.value ? parseFloat(params.value).toFixed(2) : ''
