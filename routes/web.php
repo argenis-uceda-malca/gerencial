@@ -107,12 +107,14 @@ Route::middleware('session.auth')->group(function () {
     Route::get('/dashboard/reporte-txd/pivot', [App\Http\Controllers\DashboardTxdController::class, 'pivot'])->name('dashboard.reporte.txd.pivot');
     Route::get('/dashboard/reporte-txd/dia', [App\Http\Controllers\DashboardTxdController::class, 'dia'])->name('dashboard.reporte.txd.dia');
     Route::get('/dashboard/reporte-txd/detalle', [App\Http\Controllers\DashboardTxdController::class, 'detalle'])->name('dashboard.reporte.txd.detalle');
-    Route::get('/dashboard/ff-to', [App\Http\Controllers\DashboardFfToController::class, 'index'])->name('dashboard.ffto');
-    Route::get('/dashboard/ff-to/data', [App\Http\Controllers\DashboardFfToController::class, 'data'])->name('dashboard.ffto.data');
 
     // Monitor de ventas y ETL
     Route::get('/monitor/ventas', [\App\Http\Controllers\MonitorVentasController::class, 'index'])->name('monitor.ventas');
 });
+
+// FF vs TO: única vista pública (no requiere login)
+Route::get('/dashboard/ff-to', [App\Http\Controllers\DashboardFfToController::class, 'index'])->name('dashboard.ffto');
+Route::get('/dashboard/ff-to/data', [App\Http\Controllers\DashboardFfToController::class, 'data'])->name('dashboard.ffto.data');
 
 
 Route::get('/probar-tbretail', function (TbRetailService $tbRetailService) {

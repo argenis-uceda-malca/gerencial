@@ -11,15 +11,8 @@ use Carbon\CarbonPeriod;
 
 class DashboardFfToController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware(function ($request, $next) {
-            if (!in_array('acceso_ff_to', session('permisos', []))) {
-                return redirect('/')->with('error', 'No tienes permiso para acceder.');
-            }
-            return $next($request);
-        });
-    }
+    // Vista pública: sin login ni chequeo de permisos (ver routes/web.php).
+
     /**
      * Tope de días que se backfillean en vivo contra la API de TB Retail
      * por request. Evita que una ventana con muchos días sin cargar

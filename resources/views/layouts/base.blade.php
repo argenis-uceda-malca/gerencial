@@ -497,12 +497,12 @@
 
           <ul class="menu-inner py-1">
             <!-- Dashboard -->
-            <!-- @if (in_array('acceso_gerencial', session('permisos')) &&
-                    in_array('acceso_cubicaje', session('permisos')) &&
-                    //in_array('particiopacion_linea_temporal', session('permisos')) ||
-                    in_array('acceso_top_venta', session('permisos')) &&
-                    in_array('acceso_vta_acumulada', session('permisos')) &&
-                    in_array('reporte_vta_mensual', session('permisos')))
+            <!-- @if (in_array('acceso_gerencial', session('permisos', [])) &&
+                    in_array('acceso_cubicaje', session('permisos', [])) &&
+                    //in_array('particiopacion_linea_temporal', session('permisos', [])) ||
+                    in_array('acceso_top_venta', session('permisos', [])) &&
+                    in_array('acceso_vta_acumulada', session('permisos', [])) &&
+                    in_array('reporte_vta_mensual', session('permisos', [])))
                         <li class="menu-item{{ request()->routeIs('entradas.index') ? ' active' : '' }}">
                             <a href="{{ route('entradas.index') }}" class="menu-link">
                               <i class="menu-icon tf-icons bx bx-home-circle"></i>
@@ -513,7 +513,7 @@
 
             
 
-            @if (in_array('acceso_gerencial', session('permisos')))
+            @if (in_array('acceso_gerencial', session('permisos', [])))
               <li class="menu-item{{ request()->routeIs('tabla') ? ' active' : '' }}">
                   {{-- <a href="{{ route('reportesb.index') }}" class="menu-link"> --}}
                   <a href="{{ route('tabla') }}" class="menu-link">
@@ -595,46 +595,46 @@
             </li> --}}
 
 
-            <!-- @if (in_array('reporte_vta_mensual', session('permisos')) ||
-                    in_array('acceso_cubicaje', session('permisos')) ||
-                    //in_array('particiopacion_linea_temporal', session('permisos')) ||
-                    in_array('acceso_top_venta', session('permisos')) ||
-                    in_array('acceso_vta_acumulada', session('permisos')))
+            <!-- @if (in_array('reporte_vta_mensual', session('permisos', [])) ||
+                    in_array('acceso_cubicaje', session('permisos', [])) ||
+                    //in_array('particiopacion_linea_temporal', session('permisos', [])) ||
+                    in_array('acceso_top_venta', session('permisos', [])) ||
+                    in_array('acceso_vta_acumulada', session('permisos', [])))
 <li class="menu-item">
                 <a href="javascript:void(0);" class="menu-link menu-toggle">
                   <i class="menu-icon tf-icons bx bx-dock-top"></i>
                   <div data-i18n="Account Settings">Gestión de tiendas</div>
                 </a>
                 <ul class="menu-sub">
-                  @if (in_array('reporte_vta_mensual', session('permisos')))
+                  @if (in_array('reporte_vta_mensual', session('permisos', [])))
 <li class="menu-item">
                     <a href="" class="menu-link">
                       <div data-i18n="Account">Ventas Mensuales</div>
                     </a>
                   </li>
 @endif
-                  @if (in_array('acceso_cubicaje', session('permisos')))
+                  @if (in_array('acceso_cubicaje', session('permisos', [])))
 <li class="menu-item">
                     <a href="" class="menu-link">
                       <div data-i18n="Notifications">Cubicaje por Linea/Temporada</div>
                     </a>
                   </li>
 @endif
-                  @if (in_array('particiopacion_linea_temporal', session('permisos')))
+                  @if (in_array('particiopacion_linea_temporal', session('permisos', [])))
 <li class="menu-item">
                     <a href="" class="menu-link">
                       <div data-i18n="Connections">Participación por Linea/Temporada</div>
                     </a>
                   </li>
 @endif
-                  @if (in_array('acceso_top_venta', session('permisos')))
+                  @if (in_array('acceso_top_venta', session('permisos', [])))
 <li class="menu-item">
                     <a href="" class="menu-link">
                       <div data-i18n="reportes_top">Reportes Top</div>
                     </a>
                   </li>
 @endif
-                  @if (in_array('acceso_vta_acumulada', session('permisos')))
+                  @if (in_array('acceso_vta_acumulada', session('permisos', [])))
 <li class="menu-item">
                     <a href="entradas" class="menu-link">
                       <div data-i18n="venta_acumulada">Venta Acumulada</div>
@@ -679,7 +679,7 @@
 </li>
 @endif
 
-<!-- @if (in_array('acceso_social', session('permisos')))
+<!-- @if (in_array('acceso_social', session('permisos', [])))
 <li class="menu-item">
             <a
               href=""
@@ -691,7 +691,7 @@
             </a>
           </li>
 @endif -->
-@if (in_array('acceso_rfm', session('permisos')))
+@if (in_array('acceso_rfm', session('permisos', [])))
 <li class="menu-item">
             <a
               href="{{ route('rfm') }}"
@@ -703,7 +703,7 @@
             </a>
           </li>
 @endif
-<!-- @if (in_array('acceso_stock_tiendas', session('permisos')))
+<!-- @if (in_array('acceso_stock_tiendas', session('permisos', [])))
 <li class="menu-item">
             <a
               href=""
