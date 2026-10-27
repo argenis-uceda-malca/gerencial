@@ -157,6 +157,36 @@ body { background:var(--c-bg) !important; }
 .store-nav:hover { background:var(--c-teal); color:#fff; }
 .store-nav.prev { left:-8px; } .store-nav.next { right:-8px; }
 
+/* Filtros del carrusel */
+.store-filters { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:12px; }
+.sf-search { position:relative; flex:1 1 220px; max-width:320px; }
+.sf-search i { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--c-muted2); font-size:1rem; }
+.sf-search input, .sf-select {
+  width:100%; height:36px; border:1px solid var(--c-border); border-radius:10px; background:var(--c-card);
+  color:var(--c-ink); font-size:.8rem; padding:0 12px; outline:none; transition:border-color .15s var(--ease);
+}
+.sf-search input { padding-left:32px; }
+.sf-search input:focus, .sf-select:focus { border-color:var(--c-teal); box-shadow:0 0 0 3px var(--c-teal-lt); }
+.sf-select { flex:0 1 190px; width:auto; cursor:pointer; }
+.sf-seg { display:inline-flex; background:#F1F5F9; border-radius:10px; padding:3px; gap:2px; }
+.sf-seg button {
+  border:0; background:transparent; color:var(--c-muted); font-size:.76rem; font-weight:700;
+  padding:6px 12px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+  transition:all .15s var(--ease);
+}
+.sf-seg button .sf-n { font-size:.66rem; background:rgba(100,116,139,.14); padding:1px 7px; border-radius:9px; }
+.sf-seg button.active { background:var(--c-card); color:var(--c-ink); box-shadow:0 1px 4px rgba(15,23,42,.12); }
+.sf-seg button[data-st="down"].active { color:var(--c-red-dark); }
+.sf-seg button[data-st="down"].active .sf-n { background:var(--c-red-bg); color:var(--c-red-tx); }
+.sf-seg button[data-st="nodown"].active { color:var(--c-green-tx); }
+.sf-seg button[data-st="nodown"].active .sf-n { background:var(--c-green-bg); color:var(--c-green-tx); }
+.sf-count { font-size:.74rem; color:var(--c-muted); margin-left:auto; white-space:nowrap; }
+.sf-clear { border:0; background:none; color:var(--c-teal); font-size:.74rem; font-weight:700; cursor:pointer; padding:0; display:none; }
+.sf-clear.show { display:inline; }
+.store-empty { flex:1 0 100%; text-align:center; padding:40px 10px; color:var(--c-muted); font-size:.84rem; }
+.store-empty i { font-size:2rem; display:block; margin-bottom:6px; color:var(--c-muted2); }
+@media (max-width:640px){ .sf-search, .sf-select { max-width:none; flex-basis:100%; } .sf-count{ margin-left:0; } }
+
 .store-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:16px 20px; }
 .store-top.up   { background:linear-gradient(180deg,var(--c-green-bg),#fff 88%); }
 .store-top.down { background:linear-gradient(180deg,var(--c-red-bg),#fff 88%); }
@@ -337,6 +367,8 @@ body { background:var(--c-bg) !important; }
   background:var(--c-teal);
   color:#fff;
 }
+[data-theme="dark"] .sf-seg { background:#2E3450; }
+[data-theme="dark"] .sf-seg button.active { box-shadow:0 1px 4px rgba(0,0,0,.4); }
 [data-theme="dark"] .hbar-track {
   background:#2E3450;
 }
@@ -460,6 +492,21 @@ body { background:var(--c-bg) !important; }
     <div class="ff-card-head">
       <div class="ff-card-title">Detalle por sucursal</div>
       <div class="ff-card-desc">FF · TO · Tickets · ATV · CR y ratio de eficiencia, comparados contra 2025.</div>
+      <div class="store-filters">
+        <div class="sf-search">
+          <i class="bx bx-search"></i>
+          <input type="text" id="sf-q" placeholder="Buscar sucursal…" autocomplete="off">
+        </div>
+        <select class="sf-select" id="sf-canal">
+          <option value="">Todos los canales</option>
+        </select>
+        <div class="sf-seg" id="sf-estado">
+          <button type="button" data-st="" class="active">Todas <span class="sf-n" id="sf-n-all">0</span></button>
+          <button type="button" data-st="down"><i class="bx bx-trending-down"></i>En caída <span class="sf-n" id="sf-n-down">0</span></button>
+          <button type="button" data-st="nodown"><i class="bx bx-trending-up"></i>Sin caída <span class="sf-n" id="sf-n-nodown">0</span></button>
+        </div>
+        <span class="sf-count"><span id="sf-count"></span> <button type="button" class="sf-clear" id="sf-clear">Limpiar</button></span>
+      </div>
     </div>
     <div class="ff-card-body store-carousel-wrap">
       <button class="store-nav prev" id="store-prev" type="button"><i class="bx bx-chevron-left"></i></button>
@@ -579,9 +626,61 @@ function storeSummary(r){
   var gapTxt = (r.gap>=0?'mejoró +':'se deterioró ')+r.gap.toFixed(2);
   return 'TO '+toTxt+', FF '+ffTxt+'. Eficiencia TO/FF '+gapTxt+'.';
 }
+/* Filtros del carrusel: se conservan al cambiar de período */
+var allStores = [];
+var storeFilter = { q:'', canal:'', estado:'' };
+
+function normTxt(s){ return (''+(s||'')).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+function enCaida(r){ return storeStatus(r.to_var).cls === 'down'; }
+
+function setStores(sucursales){
+  allStores = sucursales || [];
+  // Opciones de canal según los datos del período
+  var sel = document.getElementById('sf-canal');
+  var canales = [];
+  allStores.forEach(function(r){ if(r.canal && canales.indexOf(r.canal) < 0) canales.push(r.canal); });
+  canales.sort();
+  if(storeFilter.canal && canales.indexOf(storeFilter.canal) < 0) storeFilter.canal = '';
+  sel.innerHTML = '<option value="">Todos los canales</option>' + canales.map(function(c){
+    return '<option value="'+escHtml(c)+'"'+(c===storeFilter.canal?' selected':'')+'>'+escHtml(c)+'</option>';
+  }).join('');
+  applyStoreFilters();
+}
+
+function applyStoreFilters(){
+  var q = normTxt(storeFilter.q.trim());
+  // Base para los contadores del estado: respeta búsqueda y canal
+  var base = allStores.filter(function(r){
+    if(storeFilter.canal && r.canal !== storeFilter.canal) return false;
+    if(q && normTxt(r.sucursal).indexOf(q) < 0 && normTxt(r.subcanal).indexOf(q) < 0) return false;
+    return true;
+  });
+  var nDown = base.filter(enCaida).length;
+  document.getElementById('sf-n-all').textContent    = base.length;
+  document.getElementById('sf-n-down').textContent   = nDown;
+  document.getElementById('sf-n-nodown').textContent = base.length - nDown;
+
+  var list = base.filter(function(r){
+    if(storeFilter.estado === 'down')   return enCaida(r);
+    if(storeFilter.estado === 'nodown') return !enCaida(r);
+    return true;
+  });
+  document.getElementById('sf-count').textContent = 'Mostrando '+list.length+' de '+allStores.length;
+  document.getElementById('sf-clear').classList.toggle('show', !!(storeFilter.q || storeFilter.canal || storeFilter.estado));
+  renderStores(list);
+  document.getElementById('store-carousel').scrollLeft = 0;
+}
+
 function renderStores(sucursales){
   var el = document.getElementById('store-carousel');
   el.innerHTML = '';
+  var hayVarias = sucursales.length > 2;
+  document.getElementById('store-prev').style.display = hayVarias ? '' : 'none';
+  document.getElementById('store-next').style.display = hayVarias ? '' : 'none';
+  if(!sucursales.length){
+    el.innerHTML = '<div class="store-empty"><i class="bx bx-filter-alt"></i>Ninguna sucursal coincide con los filtros.</div>';
+    return;
+  }
   sucursales.slice().sort(function(a,b){ return b.to_act - a.to_act; }).forEach(function(r){
     var st = storeStatus(r.to_var);
     var hasRatio = (r.ratio_act!=null && r.ratio_hst!=null);
@@ -663,7 +762,7 @@ async function loadData(){
     var json = await r.json();
     renderKpis(json.global);
     renderGapChart(json.sucursales);
-    renderStores(json.sucursales);
+    setStores(json.sucursales);
     renderRanking(json.sucursales);
   } catch(e){ console.error(e); }
   finally { document.getElementById('ffto-loader').classList.remove('show'); }
@@ -685,6 +784,31 @@ function storeScroll(dir){
 }
 document.getElementById('store-prev').addEventListener('click', function(){ storeScroll(-1); });
 document.getElementById('store-next').addEventListener('click', function(){ storeScroll(1); });
+
+/* Filtros del carrusel */
+var sfTimer = null;
+document.getElementById('sf-q').addEventListener('input', function(){
+  var v = this.value;
+  clearTimeout(sfTimer);
+  sfTimer = setTimeout(function(){ storeFilter.q = v; applyStoreFilters(); }, 150);
+});
+document.getElementById('sf-canal').addEventListener('change', function(){
+  storeFilter.canal = this.value; applyStoreFilters();
+});
+document.querySelectorAll('#sf-estado button').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('#sf-estado button').forEach(function(b){ b.classList.remove('active'); });
+    this.classList.add('active');
+    storeFilter.estado = this.dataset.st; applyStoreFilters();
+  });
+});
+document.getElementById('sf-clear').addEventListener('click', function(){
+  storeFilter = { q:'', canal:'', estado:'' };
+  document.getElementById('sf-q').value = '';
+  document.getElementById('sf-canal').value = '';
+  document.querySelectorAll('#sf-estado button').forEach(function(b){ b.classList.toggle('active', b.dataset.st === ''); });
+  applyStoreFilters();
+});
 
 document.addEventListener('DOMContentLoaded', function(){
   var a = document.querySelector('.periodo-pill.active');

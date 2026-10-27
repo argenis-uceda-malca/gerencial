@@ -8,7 +8,7 @@
 <!-- beautify ignore:start -->
 <html
   lang="en"
-  class="light-style layout-menu-fixed"
+  class="light-style {{ session('username') ? 'layout-menu-fixed' : 'layout-without-menu' }}"
   dir="ltr"
   data-theme="theme-default"
   data-assets-path="../assets/"
@@ -424,8 +424,8 @@
     <!-- Layout wrapper -->
     <div class="layout-wrapper layout-content-navbar">
       <div class="layout-container">
-        <!-- Menu -->
-
+        <!-- Menu (solo con sesión: las vistas públicas no muestran sidebar) -->
+        @if (session('username'))
         <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
           <div class="app-brand demo">
             <a href="{{ route('inicio.index') }}" class="app-brand-link">
@@ -760,6 +760,7 @@
 @endif
           </ul>
         </aside>
+        @endif
         <!-- / Menu -->
 
         <!-- Layout container -->
@@ -772,11 +773,13 @@
                 <i class="bx bx-menu bx-sm"></i>
               </a>
             </div> --}}
+            @if (session('username'))
             <div class="navbar-nav align-items-xl-center me-3 me-xl-0">
               <a class="nav-item nav-link px-0 me-xl-4 toggle-sidebar-btn" href="javascript:void(0)" onclick="toggleSidebar()">
                   <i class="bx bx-menu bx-sm"></i>
               </a>
             </div>
+            @endif
 
             <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
               <!-- Search -->
@@ -811,6 +814,13 @@
                 </li>
 
                 <!-- User -->
+                @if (!session('username'))
+                <li class="nav-item">
+                  <a class="btn btn-sm btn-outline-primary" href="{{ route('login.index') }}">
+                    <i class="bx bx-log-in me-1"></i>Iniciar sesión
+                  </a>
+                </li>
+                @else
                 <li class="nav-item navbar-dropdown dropdown-user dropdown">
                   <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
                     <div class="avatar avatar-online">
@@ -868,6 +878,7 @@
                     </li>
                   </ul>
                 </li>
+                @endif
                 <!--/ User -->
               </ul>
             </div>
