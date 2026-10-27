@@ -663,6 +663,10 @@
             { h: 'Tickets promedio', w: 16, t: 'num', g: 'Transacciones', f: r => num(r.ticket_promedio) },
             { h: 'Tráfico', w: 12, t: 'int', color: true, g: 'Tráfico de Clientes', f: r => num(r.total) },
             { h: 'Tráfico AA', w: 12, t: 'int', color: true, g: 'Tráfico de Clientes', f: r => num(r.total_anterior) },
+            { h: 'Crec Tráfico VS AA', w: 16, t: 'pct', color: true, g: 'Tráfico de Clientes', f: r => {
+                const a = num(r.total_anterior), v = num(r.total);
+                return (!a || v === null) ? 0 : (v / a - 1);
+            } },
             { h: 'Conversión (%)', w: 14, t: 'pct', g: 'Tráfico de Clientes', f: r => {
                 const tr = num(r.total) || 0;
                 return tr === 0 ? 0 : ((num(r.ticket) || 0) / tr);
@@ -802,6 +806,11 @@
     function abValueGetter(params) {
         if (params.data.anterior == 0) return 0;
         return ((params.data.importe_total_sum / params.data.anterior) - 1) * 100;
+    }
+
+    function traficoCrecValueGetter(params) {
+        if (!params.data || !params.data.total_anterior || params.data.total_anterior == 0) return 0;
+        return ((params.data.total / params.data.total_anterior) - 1) * 100;
     }
 
     function calculo_convercion(params) {
@@ -1299,6 +1308,19 @@
                         filter: true,
                         floatingFilter: true,
                         cellRenderer: params => getStyledInteger(params.value)
+                    },
+                    {
+                        headerName: 'Crec Tráfico VS AA',
+                        colId: 'crec_trafico_aa',
+                        valueGetter: traficoCrecValueGetter,
+                        width: 140,
+                        cellStyle: { textAlign: "left" },
+                        filter: true,
+                        floatingFilter: true,
+                        cellRenderer: function(params) {
+                            const val = parseFloat(params.value);
+                            return getTrendIcon(val) + getStyledNumber(val, true);
+                        }
                     },
                     {
                         headerName: 'Converión (%)',
