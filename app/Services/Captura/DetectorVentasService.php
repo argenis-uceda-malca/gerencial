@@ -39,6 +39,7 @@ class DetectorVentasService
               )
               AND d.FLAG_FACT_ELECTRONICA = 'S'
               AND ds.FLAG_ELECTRONICO = 'S'
+              AND c.NUMERO_SERIE >= 400
             ORDER BY c.IDTRANSACCION ASC
         ", [$cursor]));
     }
@@ -110,6 +111,7 @@ class DetectorVentasService
                   )
               AND d.FLAG_FACT_ELECTRONICA = 'S'
               AND ds.FLAG_ELECTRONICO     = 'S'
+              AND c.NUMERO_SERIE >= 400
               {$filtroSucursal}
               {$filtroFecha}
             ORDER BY c.IDTRANSACCION ASC
