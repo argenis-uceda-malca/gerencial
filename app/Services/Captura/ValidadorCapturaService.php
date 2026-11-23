@@ -51,6 +51,25 @@ class ValidadorCapturaService
             );
         }
 
+        // Detecta discrepancia entre la suma de subtotales de línea y
+        // IMPORTE_SUBTOTAL de CABECERA_DOCUMENTO. Si difieren, SUNAT rechaza
+        // con error 3277 ("sumatoria total valor venta gravadas de línea no
+        // corresponde al total"). El documento debe corregirse en Soluflex
+        // antes de enviarse.
+        $subtotalCabecera = (float) ($documento['_meta']['subtotalCabecera'] ?? 0);
+        if ($subtotalCabecera > 0) {
+            $sumaSubtotales  = round(array_sum(array_column($documento['detalle'], 'importeTotalSinImpuesto')), 2);
+            $difSubtotal     = round(abs($sumaSubtotales - $subtotalCabecera), 4);
+            if ($difSubtotal > self::TOLERANCIA_REDONDEO) {
+                $errores[] = 'SUBTOTAL_INCONSISTENTE';
+                $mensajes['SUBTOTAL_INCONSISTENTE'] = sprintf(
+                    'Suma subtotales líneas=%.2f, IMPORTE_SUBTOTAL cabecera=%.2f, diferencia=%.4f. ' .
+                    'Corregir CABECERA_DOCUMENTO.IMPORTE_SUBTOTAL en Soluflex (error SUNAT 3277).',
+                    $sumaSubtotales, $subtotalCabecera, $difSubtotal
+                );
+            }
+        }
+
         return [
             'errores'  => array_values(array_unique($errores)),
             'mensajes' => $mensajes,

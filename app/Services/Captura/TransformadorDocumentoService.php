@@ -258,7 +258,13 @@ class TransformadorDocumentoService
             ];
         }
 
-        return ['cabecera' => $cabecera, 'detalle' => $detalleTransformado, 'headerAdd' => $headerAdd];
+        return [
+            'cabecera'  => $cabecera,
+            'detalle'   => $detalleTransformado,
+            'headerAdd' => $headerAdd,
+            // Metadatos internos (no van a Bizlinks). Usados solo por el validador.
+            '_meta'     => ['subtotalCabecera' => $subCab],
+        ];
     }
 
     /**
