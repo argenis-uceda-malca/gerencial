@@ -78,6 +78,7 @@ Route::middleware('session.auth')->group(function () {
     Route::get('/captura/registros', [\App\Http\Controllers\CapturaMonitorController::class, 'registros'])->name('captura.registros');
     Route::get('/captura/registros/{id}/errores', [\App\Http\Controllers\CapturaMonitorController::class, 'erroresRegistro'])->name('captura.errores');
     Route::post('/captura/registros/{id}/reset', [\App\Http\Controllers\CapturaMonitorController::class, 'resetRegistro'])->name('captura.reset');
+    Route::post('/captura/registros/{id}/reintentar-bizlinks', [\App\Http\Controllers\CapturaMonitorController::class, 'reintentarBizlinks'])->name('captura.reintentar-bizlinks');
     Route::get('/captura/estado-motor', [\App\Http\Controllers\CapturaMonitorController::class, 'estadoMotor'])->name('captura.estado-motor');
     Route::post('/captura/reset-estado-motor', [\App\Http\Controllers\CapturaMonitorController::class, 'resetEstadoMotor'])->name('captura.reset-estado-motor');
     Route::post('/captura/ejecutar', [\App\Http\Controllers\CapturaMonitorController::class, 'ejecutar'])->name('captura.ejecutar');
@@ -98,6 +99,7 @@ Route::middleware('session.auth')->group(function () {
     Route::get('/dashboard/reporte/dia', [App\Http\Controllers\DashboardReporteController::class, 'dia'])->name('dashboard.reporte.dia');
     Route::get('/dashboard/reporte/detalle', [App\Http\Controllers\DashboardReporteController::class, 'detalle'])->name('dashboard.reporte.detalle');
     Route::get('/dashboard/reporte/pivot', [App\Http\Controllers\DashboardReporteController::class, 'pivot'])->name('dashboard.reporte.pivot');
+    Route::post('/dashboard/reporte/enviar-ejecutivo', [App\Http\Controllers\DashboardReporteController::class, 'enviarEjecutivo'])->name('dashboard.reporte.enviar-ejecutivo');
 
     Route::get('/dashboard/reporte-consolidado', [App\Http\Controllers\DashboardConsolidadoController::class, 'index'])->name('dashboard.reporte.consolidado');
     Route::get('/dashboard/reporte-consolidado/pivot', [App\Http\Controllers\DashboardConsolidadoController::class, 'pivot'])->name('dashboard.reporte.consolidado.pivot');

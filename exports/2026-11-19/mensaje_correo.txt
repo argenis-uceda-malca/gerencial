@@ -1,0 +1,43 @@
+Asunto: Reporte de ventas 2026 al 18/11/2026 - Smart Brands
+
+Buenos días,
+
+Te comparto el resumen de ventas 2026 del 01/01 al 18/11, con el detalle por tienda, por mes y por día en el Excel adjunto.
+
+TOTAL DEL PERIODO
+- Venta neta 2026: S/ 34.72 M
+- Venta neta 2025 (día equivalente): S/ 47.67 M (-27.2%)
+- Meta: S/ 44.13 M (cumplimiento 78.7%)
+- Unidades: 488,472 | Tickets: 263,511 | GM: 40.5%
+- Tiendas que cumplen su meta: 6 de 56
+
+POR MES (venta neta 2026 | cumplimiento | variación vs 2025)
+- Ene: S/ 2.88 M | 93.2% | -35.7%
+- Feb: S/ 2.87 M | 106.1% | -16.3%
+- Mar: S/ 3.22 M | 89.2% | -17.4%
+- Abr: S/ 3.70 M | 82.1% | -16.3%
+- May: S/ 5.11 M | 75.7% | -19.2%
+- Jun: S/ 3.41 M | 74.9% | -21.4%
+- Jul: S/ 3.95 M | 77.5% | -26.5%
+- Ago: S/ 3.04 M | 69.6% | -34.2%
+- Sep: S/ 2.61 M | 69.0% | -38.3%
+- Oct: S/ 2.24 M | 64.3% | -42.7%
+- Nov (al 18): S/ 1.68 M | 77.2% | -36.0%
+
+POR CANAL (venta neta 2026 | cumplimiento | variación vs 2025)
+- Boutiques: S/ 27.87 M | 77.1% | -27.4%
+- Outlets: S/ 3.69 M | 101.8% | -28.7%
+- Web: S/ 3.17 M | 72.7% | -23.2%
+
+TOP 5 TIENDAS POR VENTA (venta | cumplimiento | variación vs 2025)
+1. MCH Plaza San Miguel: S/ 1.95 M | 82.9% | -10.0%
+2. MCH Jockey Plaza: S/ 1.76 M | 74.6% | -20.9%
+3. MCH RP Salaverry: S/ 1.76 M | 79.0% | -11.4%
+4. MCH Online: S/ 1.33 M | 77.1% | -15.6%
+5. MCH Caminos del Inca: S/ 1.31 M | 79.7% | +24.0%
+
+Notas: cifras en soles. La comparación con 2025 es por día equivalente. La meta se toma hasta la fecha de corte. No incluye tiendas por departamento.
+
+Adjunto el Excel con el detalle diario por tienda y las imágenes del resumen.
+
+Saludos.

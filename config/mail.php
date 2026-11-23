@@ -18,6 +18,9 @@ return [
     // Destinatarios de alertas del monitor de ventas (CSV: a@x.com,b@x.com)
     'monitor_destinatarios' => env('MAIL_MONITOR_DESTINATARIOS', ''),
 
+    // Destinatarios del reporte ejecutivo de ventas (CSV: a@x.com,b@x.com)
+    'reporte_ejecutivo_destinatarios' => env('MAIL_REPORTE_EJECUTIVO_DESTINATARIOS', ''),
+
     /*
     |--------------------------------------------------------------------------
     | Mailer Configurations

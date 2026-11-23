@@ -1,0 +1,45 @@
+-- ============================================================
+-- MCHRPSALA B419-71 a B419-98 (1-2 nov): eliminar del motor
+-- Ejecutar DESPUÉS de la Parte 1
+-- ============================================================
+
+BEGIN;
+
+DELETE FROM fe_auditoria_estados    WHERE id_control_registro IN (
+  15684,15685,15687,15688,15691,15693,15695,15699,15700,15702,
+  15703,15705,15706,15707,15708,15709,15710,15711,15713,15715,
+  15717,15718,15719,15720,15721,15722,15724,15725
+);
+DELETE FROM fe_historial_errores    WHERE id_control_registro IN (
+  15684,15685,15687,15688,15691,15693,15695,15699,15700,15702,
+  15703,15705,15706,15707,15708,15709,15710,15711,15713,15715,
+  15717,15718,15719,15720,15721,15722,15724,15725
+);
+DELETE FROM fe_notificaciones       WHERE id_control_registro IN (
+  15684,15685,15687,15688,15691,15693,15695,15699,15700,15702,
+  15703,15705,15706,15707,15708,15709,15710,15711,15713,15715,
+  15717,15718,15719,15720,15721,15722,15724,15725
+);
+DELETE FROM fe_historial_reintentos WHERE id_control_registro IN (
+  15684,15685,15687,15688,15691,15693,15695,15699,15700,15702,
+  15703,15705,15706,15707,15708,15709,15710,15711,15713,15715,
+  15717,15718,15719,15720,15721,15722,15724,15725
+);
+DELETE FROM fe_control_registros    WHERE id IN (
+  15684,15685,15687,15688,15691,15693,15695,15699,15700,15702,
+  15703,15705,15706,15707,15708,15709,15710,15711,15713,15715,
+  15717,15718,15719,15720,15721,15722,15724,15725
+);
+
+-- Resetear cursor: min IDTRANSACCION=266 → cursor=265
+UPDATE fe_tiendas SET ultimo_idtransaccion_capturado = 265 WHERE codigo_tienda = 'MCHRPSALA';
+
+-- Verificar
+SELECT COUNT(*) AS quedaron FROM fe_control_registros
+WHERE codigo_tienda = 'MCHRPSALA'
+  AND serie_numero_bizlinks LIKE 'B419-%'
+  AND fecha_venta < '2026-11-06';
+
+SELECT codigo_tienda, ultimo_idtransaccion_capturado FROM fe_tiendas WHERE codigo_tienda = 'MCHRPSALA';
+
+COMMIT;

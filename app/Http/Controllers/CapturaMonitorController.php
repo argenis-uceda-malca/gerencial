@@ -210,6 +210,29 @@ class CapturaMonitorController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    // Reintentar inmediatamente un documento CAPTURADO con error en Bizlinks (estado_bizlinks=E).
+    // Resetea a ERROR_CAPTURA y llama al motor de inmediato, sin esperar el próximo ciclo.
+    public function reintentarBizlinks(int $id, MotorCapturaService $motor)
+    {
+        $registro = FeControlRegistro::with('tienda')->findOrFail($id);
+
+        if ($registro->estado !== 'CAPTURADO' || $registro->estado_bizlinks !== 'E') {
+            return response()->json(['ok' => false, 'mensaje' => 'Estado no válido para reintento directo.'], 422);
+        }
+
+        $registro->update([
+            'estado'                => 'ERROR_CAPTURA',
+            'estado_bizlinks'       => null,
+            'codigo_error_bizlinks' => null,
+            'mensaje_bizlinks'      => null,
+            'fecha_sync_bizlinks'   => null,
+        ]);
+
+        $result = $motor->forzarDocumento($registro->tienda, (int) $registro->idtransaccion_soluflex);
+
+        return response()->json($result, $result['ok'] ? 200 : 422);
+    }
+
     // Reset masivo: errores/cuarentena o rechazados por Bizlinks/SUNAT
     public function resetMasivo(Request $request)
     {
@@ -505,7 +528,8 @@ class CapturaMonitorController extends Controller
         $puedeReintentar = in_array($r->estado, ['ERROR_CAPTURA', 'CUARENTENA'], true)
             || ($r->estado === 'CAPTURADO' && !in_array($r->estado_bizlinks, ['A', 'P'], true));
         if ($puedeReintentar) {
-            $btns .= "<button class=\"ac-btn ac-btn-retry btn-reset\" data-id=\"{$r->id}\" title=\"Reintentar en Bizlinks\"><i class=\"bx bx-refresh\"></i></button>";
+            $esBizlinksError = ($r->estado === 'CAPTURADO' && $r->estado_bizlinks === 'E') ? 'true' : 'false';
+            $btns .= "<button class=\"ac-btn ac-btn-retry btn-reset\" data-id=\"{$r->id}\" data-bizlinks-error=\"{$esBizlinksError}\" title=\"Reintentar en Bizlinks\"><i class=\"bx bx-refresh\"></i></button>";
         }
         if (in_array($r->estado, ['PENDIENTE', 'ERROR_CAPTURA'], true)) {
             $btns .= "<button class=\"ac-btn ac-btn-force btn-forzar-directo\" data-id=\"{$r->id}\" title=\"Forzar captura ahora\"><i class=\"bx bx-send\"></i></button>";

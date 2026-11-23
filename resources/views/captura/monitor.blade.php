@@ -1525,8 +1525,10 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
     let b = '';
     if (r.estado === 'CAPTURADO' && r.serie_numero_bizlinks !== '—')
       b += `<button class="ac-btn ac-btn-cpe btn-ver-cpe" data-id="${r.id}" title="Ver CPE en Bizlinks"><i class="bx bx-file-blank"></i></button>`;
-    if (['ERROR_CAPTURA','CUARENTENA'].includes(r.estado) || (r.estado === 'CAPTURADO' && !['A','P'].includes(r.estado_bizlinks)))
-      b += `<button class="ac-btn ac-btn-retry btn-reset" data-id="${r.id}" title="Reintentar en Bizlinks"><i class="bx bx-refresh"></i></button>`;
+    if (['ERROR_CAPTURA','CUARENTENA'].includes(r.estado) || (r.estado === 'CAPTURADO' && !['A','P'].includes(r.estado_bizlinks))) {
+      const esBizlinksError = r.estado === 'CAPTURADO' && r.estado_bizlinks === 'E';
+      b += `<button class="ac-btn ac-btn-retry btn-reset" data-id="${r.id}" data-bizlinks-error="${esBizlinksError}" title="Reintentar en Bizlinks"><i class="bx bx-refresh"></i></button>`;
+    }
     if (['PENDIENTE','ERROR_CAPTURA'].includes(r.estado))
       b += `<button class="ac-btn ac-btn-force btn-forzar-directo" data-id="${r.id}" title="Forzar captura ahora"><i class="bx bx-send"></i></button>`;
     b += `<button class="ac-btn ac-btn-info btn-errores" data-id="${r.id}" title="Ver historial de errores"><i class="bx bx-info-circle"></i></button>`;
@@ -1716,24 +1718,48 @@ code.mn { font-size:.76rem;background:rgba(105,108,255,.07);padding:1px 5px;bord
 
   // ── Botón: Reintentar ────────────────────────────────────────
   function handleReset(id, btn) {
-    Swal.fire({
-      title: '¿Reintentar?',
-      text: `El registro #${id} vuelve a PENDIENTE y se procesa en el próximo ciclo.`,
-      icon: 'question', showCancelButton: true,
-      confirmButtonText: 'Sí, reintentar', cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#696cff',
-    }).then(r => {
-      if (!r.isConfirmed) return;
-      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; }
-      opStart('Reintentando registro #' + id + '…');
-      fetch(`{{ url('/captura/registros') }}/${id}/reset`, {
-        method: 'POST', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
-      }).then(r => r.json()).then(d => {
-        if (d.ok) toastr.success('Registro listo para reintento');
-        else toastr.error('No se pudo resetear');
-      }).catch(() => toastr.error('Error de comunicación'))
-        .finally(() => { opEnd(); cargarDatos(); });
-    });
+    const esBizlinksError = btn && btn.dataset.bizlinksError === 'true';
+    if (esBizlinksError) {
+      // CAPTURADO+E: procesar de inmediato (limpia Bizlinks y reinserta ahora)
+      Swal.fire({
+        title: '¿Reintentar en Bizlinks?',
+        text: 'Se eliminará el registro con error y se reenviará a Bizlinks ahora mismo.',
+        icon: 'question', showCancelButton: true,
+        confirmButtonText: 'Sí, reintentar', cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#696cff',
+      }).then(r => {
+        if (!r.isConfirmed) return;
+        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; }
+        opStart('Reintentando en Bizlinks…');
+        fetch(`{{ url('/captura/registros') }}/${id}/reintentar-bizlinks`, {
+          method: 'POST', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
+        }).then(r => r.json()).then(d => {
+          if (d.ok) toastr.success('Documento enviado a Bizlinks correctamente');
+          else toastr.error(d.mensaje || 'Error al reintentar en Bizlinks');
+        }).catch(() => toastr.error('Error de comunicación'))
+          .finally(() => { opEnd(); cargarDatos(); });
+      });
+    } else {
+      // Otros estados: resetear a PENDIENTE, motor lo procesa en el próximo ciclo
+      Swal.fire({
+        title: '¿Reintentar?',
+        text: `El registro #${id} vuelve a PENDIENTE y se procesa en el próximo ciclo.`,
+        icon: 'question', showCancelButton: true,
+        confirmButtonText: 'Sí, reintentar', cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#696cff',
+      }).then(r => {
+        if (!r.isConfirmed) return;
+        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; }
+        opStart('Reintentando registro #' + id + '…');
+        fetch(`{{ url('/captura/registros') }}/${id}/reset`, {
+          method: 'POST', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
+        }).then(r => r.json()).then(d => {
+          if (d.ok) toastr.success('Registro listo para reintento');
+          else toastr.error('No se pudo resetear');
+        }).catch(() => toastr.error('Error de comunicación'))
+          .finally(() => { opEnd(); cargarDatos(); });
+      });
+    }
   }
 
   // ── Botón: Forzar captura directa desde fila ────────────────

@@ -73,6 +73,14 @@ class Kernel extends ConsoleKernel
              ->withoutOverlapping(10)
              ->runInBackground()
              ->appendOutputTo(storage_path('logs/monitor-ventas.log'));
+
+        // Reporte ejecutivo de ventas por correo (Excel + imágenes), acumulado del año hasta ayer.
+        // Destinatarios: MAIL_REPORTE_EJECUTIVO_DESTINATARIOS en .env.
+        $schedule->command('reporte:ejecutivo')
+             ->dailyAt('07:30')
+             ->withoutOverlapping(30)
+             ->runInBackground()
+             ->appendOutputTo(storage_path('logs/reporte-ejecutivo.log'));
     }
 
     /**

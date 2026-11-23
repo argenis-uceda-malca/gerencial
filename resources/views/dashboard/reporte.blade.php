@@ -181,6 +181,17 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
   box-shadow:0 4px 16px rgba(52,199,89,.35);
 }
 
+#btn-enviar-ejecutivo {
+  background:linear-gradient(135deg,#2F6FED,#1F55C9) !important;
+  color:#fff !important;border:none !important;
+  border-radius:8px !important;
+  font-size:.76rem;font-weight:600;padding:6px 16px;margin-left:6px;
+  transition:all .2s var(--sb-ease);
+  display:inline-flex;align-items:center;gap:6px;
+}
+#btn-enviar-ejecutivo:hover { transform:translateY(-1px);box-shadow:0 4px 16px rgba(47,111,237,.35); }
+#btn-enviar-ejecutivo:disabled { opacity:.6;cursor:wait;transform:none;box-shadow:none; }
+
 /* ══ FILTROS DE DIMENSIÓN ══ */
 .filter-bar {
   margin-top:14px;
@@ -880,6 +891,7 @@ body { font-family:'Inter','Public Sans',-apple-system,BlinkMacSystemFont,sans-s
             </select>
           </div>
           <button id="btn-excel"><i class="bx bx-file"></i>Excel</button>
+          <button id="btn-enviar-ejecutivo" title="Envía por correo el Excel y las imágenes del resumen (acumulado del año hasta ayer)"><i class="bx bx-envelope"></i>Enviar por correo</button>
         </div>
       </div>
 
@@ -1721,6 +1733,29 @@ document.getElementById('btn-excel').addEventListener('click', function(){
   var grid   = active==='#tab-pivot' ? gridPivot : gridDetalle;
   var file   = active==='#tab-pivot' ? 'Reporte_Tabla_Dinamica' : 'Reporte_Detalle';
   exportToExcel(grid, file + '_' + activeIni + '_' + activeFin);
+});
+
+document.getElementById('btn-enviar-ejecutivo').addEventListener('click', function(){
+  var btn = this;
+  if(!confirm('¿Enviar por correo el reporte ejecutivo (Excel + imágenes) a los destinatarios configurados?\nIncluye el acumulado del año hasta ayer. Puede tardar ~1 minuto.')) return;
+  var html = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i>Enviando…';
+  var tok = document.querySelector('meta[name="csrf-token"]');
+  fetch('{{ route('dashboard.reporte.enviar-ejecutivo') }}', {
+    method: 'POST',
+    headers: {'X-CSRF-TOKEN': tok ? tok.content : '', 'Accept': 'application/json'},
+    credentials: 'same-origin'
+  }).then(function(r){
+    return r.json().catch(function(){ return {ok:false, msg:'Respuesta inesperada del servidor ('+r.status+').'}; });
+  }).then(function(j){
+    alert((j.ok ? '✔ ' : '✖ ') + j.msg);
+  }).catch(function(e){
+    alert('✖ Error de red: ' + e.message);
+  }).then(function(){
+    btn.disabled = false;
+    btn.innerHTML = html;
+  });
 });
 
 /* ══════════════════════════════════════════════════════════

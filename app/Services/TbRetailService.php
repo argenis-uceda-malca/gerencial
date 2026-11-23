@@ -8,8 +8,29 @@ use Carbon\Carbon;
 
 class TbRetailService
 {
-    public function guardarConteosTbRetail($tipo = 'marca', $fecha = null)
+    /**
+     * @param string     $tipo          'marca' | 'tienda'
+     * @param string|null $fecha        Y-m-d (default: ayer)
+     * @param int[]|null $soloTiendas   Solo para tipo 'tienda': limita la consulta y el guardado
+     *                                  a estos idtienda (backfill de tiendas puntuales).
+     */
+    public function guardarConteosTbRetail($tipo = 'marca', $fecha = null, $soloTiendas = null)
     {
+        if ($soloTiendas !== null && $tipo !== 'tienda') {
+            throw new \InvalidArgumentException('soloTiendas solo aplica a tipo tienda (los totales de marca quedarían parciales).');
+        }
+
+        // Locations desde la tabla de mapeo (ya no hardcodeadas): alta de tienda = fila nueva en location_id_tienda
+        $mapeoQuery = DB::connection('pgsql')->table('location_id_tienda');
+        if ($soloTiendas !== null) {
+            $mapeoQuery->whereIn('idtienda', $soloTiendas);
+        }
+        $mapeos = $mapeoQuery->get();
+        $locationsCsv = $mapeos->pluck('location')->unique()->implode(', ');
+        if ($locationsCsv === '') {
+            return [];
+        }
+
         // Si no se envía fecha, usar ayer
         $fecha = $fecha
             ? Carbon::parse($fecha)->format('Y-m-d')
@@ -77,7 +98,7 @@ class TbRetailService
                 getData(
                     companies: []
                     brands: []
-                    locations: [1566, 1569, 1570, 1571, 1572, 1573, 1575, 1577, 1578, 1579, 1580, 1581, 1586, 1587, 1588, 1617, 1618, 1619, 1620, 1630, 1631, 1632, 1633, 1634, 1635, 1636, 1637, 1638, 1639, 1640, 1643, 1644, 1645, 1646, 1647, 1648, 1651, 1652, 1653, 1655, 1657, 1658, 1661, 1662, 1663, 1665, 1666, 1672, 1674, 1678, 1696, 1697, 1699, 1709]
+                    locations: [' . $locationsCsv . ']
                     zones: []
                     start_date: "' . $fecha_inicio . '"
                     end_date: "' . $fecha_fin . '"
@@ -136,10 +157,6 @@ class TbRetailService
         | 4. MAPEAR LOCATION => MARCA / TIENDA
         |--------------------------------------------------------------------------
         */
-        $mapeos = DB::connection('pgsql')
-            ->table('location_id_tienda')
-            ->get();
-
         $resultado = [];
 
         foreach ($mapeos as $mapeo) {

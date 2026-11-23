@@ -17,6 +17,38 @@ class DashboardReporteController extends Controller
             return $next($request);
         });
     }
+    /**
+     * Envía por correo el reporte ejecutivo (Excel + imágenes), acumulado del año hasta ayer.
+     * Destinatarios: MAIL_REPORTE_EJECUTIVO_DESTINATARIOS (los mismos del envío automático diario).
+     */
+    public function enviarEjecutivo(Request $request)
+    {
+        $csv  = (string)config('mail.reporte_ejecutivo_destinatarios', '');
+        $dest = array_values(array_filter(array_map('trim', explode(',', $csv))));
+        if (empty($dest)) {
+            return response()->json(['ok' => false, 'msg' => 'No hay destinatarios configurados (MAIL_REPORTE_EJECUTIVO_DESTINATARIOS).'], 422);
+        }
+
+        // Evita envíos duplicados por doble clic o varios usuarios a la vez
+        if (!\Illuminate\Support\Facades\Cache::add('reporte_ejecutivo_enviando', 1, 300)) {
+            return response()->json(['ok' => false, 'msg' => 'Ya hay un envío en curso. Espera unos segundos e inténtalo de nuevo.'], 429);
+        }
+
+        try {
+            @set_time_limit(300);
+            $svc = app(\App\Services\ReporteEjecutivoService::class);
+            list($ini, $fin) = $svc->rangoPorDefecto();
+            $svc->ejecutar($ini, $fin, $dest, false);
+            \Illuminate\Support\Facades\Log::info('[REPORTE-EJECUTIVO] Enviado desde la web', ['para' => $dest, 'ini' => $ini, 'fin' => $fin]);
+            return response()->json(['ok' => true, 'msg' => 'Reporte enviado a ' . count($dest) . ' destinatario(s), con datos del ' . $ini . ' al ' . $fin . '.']);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('[REPORTE-EJECUTIVO] Falló desde la web', ['error' => $e->getMessage()]);
+            return response()->json(['ok' => false, 'msg' => 'No se pudo enviar: ' . $e->getMessage()], 500);
+        } finally {
+            \Illuminate\Support\Facades\Cache::forget('reporte_ejecutivo_enviando');
+        }
+    }
+
     private $dayOrder = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
 
     private function dayKey(string $dia): string
