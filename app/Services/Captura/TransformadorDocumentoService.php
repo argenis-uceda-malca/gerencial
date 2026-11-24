@@ -107,6 +107,16 @@ class TransformadorDocumentoService
             ];
         })->values()->all();
 
+        // Líneas con subtotal=0 y total=0 (ej. bolsa absorbida en ajuste de cabecera)
+        // generan PriceAmount=0 que Bizlinks rechaza con error 2367.
+        $detalleTransformado = array_values(array_filter(
+            $detalleTransformado,
+            function ($linea) {
+                return (float) $linea['importeTotalSinImpuesto'] > 0.0
+                    || (float) $linea['importeTotalItem'] > 0.0;
+            }
+        ));
+
         $sumaDetalleTotal = array_sum(array_column($detalleTransformado, 'importeTotalItem'));
 
         // Descuento global en cabecera (Soluflex aplica el descuento al header pero no a las líneas).

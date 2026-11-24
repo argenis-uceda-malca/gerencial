@@ -1,0 +1,16 @@
+-- Restaurar fecha original F404-00000007 MILKJP (10.20.0.158)
+-- Solo ejecutar si FECHA_DOCUMENTO fue cambiada a hoy (20261123).
+-- Para este documento NO se cambió la fecha (error fue 3277, no 1079),
+-- así que este script probablemente no sea necesario.
+-- Ejecutar desde servidor CENTRAL.
+
+-- Verificar primero
+SELECT NUMERO_SERIE, NUMERO_DOCUMENTO, FECHA_DOCUMENTO, FECHA_CREACION
+FROM [10.20.0.158].[SOLUFLEX_FARO].[dbo].[CABECERA_DOCUMENTO]
+WHERE NUMERO_SERIE = 404 AND NUMERO_DOCUMENTO = 7;
+
+-- Solo ejecutar el UPDATE si FECHA_DOCUMENTO = '20261123'
+UPDATE [10.20.0.158].[SOLUFLEX_FARO].[dbo].[CABECERA_DOCUMENTO]
+SET FECHA_DOCUMENTO = CONVERT(VARCHAR(8), FECHA_CREACION, 112)
+WHERE NUMERO_SERIE = 404 AND NUMERO_DOCUMENTO = 7
+  AND FECHA_DOCUMENTO = '20261123';
