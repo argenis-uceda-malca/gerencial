@@ -1,0 +1,22 @@
+-- Fix: CUZ01 F410-00000007 — cambiar FECHA_DOCUMENTO a hoy (2026-11-24)
+-- Error SUNAT 2108 "Presentacion fuera de fecha": fechaEmision=2026-11-19 rechazada
+-- Estrategia: cambiar a 2026-11-24 para que Bizlinks la reenvíe con fecha de hoy
+-- RESTAURAR después de aceptación con: sql/restaurar_cuz01_f410_7.sql
+--
+-- Servidor: 10.20.0.141 (CUZ01 - EXIT RP CUSCO, SOLUFLEX_FARO)
+-- idtransaccion: 344 | serie: F410 | numero: 7 | original: 2026-11-19
+
+-- Verificar antes:
+SELECT IDTRANSACCION, NUMERO_SERIE, NUMERO_DOCUMENTO, FECHA_DOCUMENTO, FECHA_CREACION
+FROM [10.20.0.141].[SOLUFLEX_FARO].[dbo].[CABECERA_DOCUMENTO]
+WHERE IDTRANSACCION = 344;
+
+-- Aplicar:
+UPDATE [10.20.0.141].[SOLUFLEX_FARO].[dbo].[CABECERA_DOCUMENTO]
+SET FECHA_DOCUMENTO = '2026-11-24'
+WHERE IDTRANSACCION = 344;
+
+-- Verificar después:
+SELECT IDTRANSACCION, NUMERO_SERIE, NUMERO_DOCUMENTO, FECHA_DOCUMENTO, FECHA_CREACION
+FROM [10.20.0.141].[SOLUFLEX_FARO].[dbo].[CABECERA_DOCUMENTO]
+WHERE IDTRANSACCION = 344;
