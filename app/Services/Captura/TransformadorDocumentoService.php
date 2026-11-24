@@ -89,8 +89,8 @@ class TransformadorDocumentoService
                 'unidadMedida'                   => $this->obtenerUnidadMedidaSunat($conexion, $item->CODIGO_UNIMED ?? null, $pfx),
                 'codigoProducto'                 => $item->CODIGO_PRODUCTO ?? '-',
                 'descripcion'                    => $this->obtenerDescripcionProducto($conexion, $item->CODIGO_PRODUCTO, $pfx) ?? '-',
-                'importeUnitarioSinImpuesto'     => (string) round($subtotal / $cantidad, 6),
-                'importeUnitarioConImpuesto'     => (string) round($total / $cantidad, 6),
+                'importeUnitarioSinImpuesto'     => number_format($subtotal / $cantidad, 6, '.', ''),
+                'importeUnitarioConImpuesto'     => number_format($total / $cantidad, 6, '.', ''),
                 'codigoImporteUnitarioConImpues' => '01',
                 // Totales por línea — requeridos por Bizlinks para armar el XML SUNAT
                 'codigoRazonExoneracion'         => $codigoRazonExoneracion,
