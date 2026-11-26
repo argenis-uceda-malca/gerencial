@@ -465,54 +465,40 @@ class TransformadorDocumentoService
 
     private function obtenerDatosCliente(ConnectionInterface $conexion, ?int $idPersona, ?string $identidadFallback, ?string $nombreFallback, string $pfx): array
     {
-        if ($idPersona) {
-            // Algunos servidores usan M_TIPOIDENTIDAD (sin guión bajo) en lugar
-            // de M_TIPO_IDENTIDAD. Intentar ambas antes de rendirse.
+        $identidadDoc = trim($identidadFallback ?? '');
+
+        // Buscar por NUMERO_IDENTIDAD = CABECERA_DOCUMENTO.IDENTIDAD.
+        // M_PERSONAS se recrea diariamente en algunos Soluflex, por lo que IDPERSONA
+        // queda obsoleto al día siguiente. El número de identidad del comprobante
+        // es estable y es el que SUNAT valida. TOP 1 ORDER BY IDPERSONA DESC
+        // resuelve duplicados tomando el registro más reciente.
+        if (filled($identidadDoc) && $identidadDoc !== '00000000') {
             $persona = null;
             foreach (['M_TIPO_IDENTIDAD', 'M_TIPOIDENTIDAD'] as $tablaIdentidad) {
                 try {
                     $persona = $conexion->selectOne("
-                        SELECT p.NUMERO_IDENTIDAD, p.PERSONA, p.EMAIL1, t.CODIGO_SUNAT
+                        SELECT TOP 1 p.NUMERO_IDENTIDAD, p.PERSONA, p.EMAIL1, t.CODIGO_SUNAT
                         FROM {$pfx}[M_PERSONAS] p
                         LEFT JOIN {$pfx}[{$tablaIdentidad}] t ON t.TIPO_IDENTIDAD = p.TIPO_IDENTIDAD
-                        WHERE p.IDPERSONA = ?
-                    ", [$idPersona]);
+                        WHERE p.NUMERO_IDENTIDAD = ?
+                        ORDER BY p.IDPERSONA DESC
+                    ", [$identidadDoc]);
                     break;
                 } catch (\Throwable $e) {
                     if ($tablaIdentidad === 'M_TIPOIDENTIDAD') {
-                        throw $e;
+                        // Ambas tablas fallaron; $persona queda null y se usa el fallback.
                     }
                 }
             }
 
             if ($persona) {
-                $identidadDoc    = trim($identidadFallback ?? '');
-                $identidadPadron = trim($persona->NUMERO_IDENTIDAD ?? '');
-
-                // Si CABECERA_DOCUMENTO.IDENTIDAD tiene 11 dígitos (RUC) pero
-                // M_PERSONAS registra solo el DNI de la misma persona (8 dígitos),
-                // la factura debe enviarse con el RUC del comprobante, no con el
-                // DNI del padrón. Ocurre cuando una empresa ingresa su RUC en
-                // Soluflex pero la ficha de cliente está creada con su DNI personal.
-                if (strlen($identidadDoc) === 11 && ctype_digit($identidadDoc)
-                    && strlen($identidadPadron) !== 11) {
-                    return [
-                        'tipoDocumentoSunat' => '6',
-                        'numeroDocumento'    => $identidadDoc,
-                        'razonSocial'        => $persona->PERSONA,
-                        'correo'             => $persona->EMAIL1,
-                    ];
-                }
-
-                // M_TIPO_IDENTIDAD puede estar vacía en algunos ERPs: inferir
-                // el tipo SUNAT por longitud del número de identidad.
                 $tipoSunat = filled($persona->CODIGO_SUNAT)
                     ? $persona->CODIGO_SUNAT
-                    : $this->inferirTipoDocumentoSunat($persona->NUMERO_IDENTIDAD);
+                    : $this->inferirTipoDocumentoSunat($identidadDoc);
 
                 return [
                     'tipoDocumentoSunat' => $tipoSunat,
-                    'numeroDocumento'    => $persona->NUMERO_IDENTIDAD,
+                    'numeroDocumento'    => $identidadDoc,
                     'razonSocial'        => $persona->PERSONA,
                     'correo'             => $persona->EMAIL1,
                 ];
