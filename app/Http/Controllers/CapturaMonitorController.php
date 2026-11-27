@@ -443,7 +443,13 @@ class CapturaMonitorController extends Controller
         // ── Rezagados: docs de días anteriores sin aceptación ────────────
         $porTienda = FeControlRegistro::where('fecha_venta', '<', $hoy)
             ->where(function ($q) {
-                $q->whereIn('estado', ['PENDIENTE', 'ERROR_CAPTURA', 'CUARENTENA'])
+                $q->where(function ($estados) {
+                        $estados->whereIn('estado', ['PENDIENTE', 'ERROR_CAPTURA'])
+                                ->orWhere(function ($cur) {
+                                    $cur->where('estado', 'CUARENTENA')
+                                        ->where('motivo_cuarentena', '!=', 'EXCLUIDO');
+                                });
+                    })
                   ->orWhere(function ($inner) {
                       $inner->where('estado', 'CAPTURADO')
                             ->where(function ($biz) {
